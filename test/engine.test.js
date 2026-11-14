@@ -108,7 +108,7 @@ describe('Simulation', () => {
   it('validates mass budgets', () => {
     const v = validateLoadout(cfg, cfg.recommended, 'cadet');
     expect(v.ok).toBe(true);
-    const heavy = validateLoadout(cfg, { modules: { fission: 3, greenhouse: 3 }, supplies: {} }, 'cadet');
+    const heavy = validateLoadout(cfg, { modules: { fission: 3, greenhouse: 3, battery: 6 }, supplies: {} }, 'cadet');
     expect(heavy.ok).toBe(false);
     expect(loadoutMass({ modules: { solar: 2 }, supplies: { water: 100 } })).toBe(600 + 110);
   });

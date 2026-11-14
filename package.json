@@ -1,6 +1,7 @@
 {
   "name": "sol-survivor",
   "private": true,
+  "license": "MIT",
   "version": "1.0.0",
   "description": "Sol Survivor: a Junior Astronaut Mission Trainer for NASA Space Apps 2026",
   "type": "module",

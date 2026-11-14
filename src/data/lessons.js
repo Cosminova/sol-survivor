@@ -40,7 +40,7 @@ export const LESSONS = [
     warmUp: 'If the Sun set and did not rise again for two weeks, what at home would stop working?',
     steps: [
       'Model the lunar day with a lamp (Sun) and a ball (Moon) that always shows one face to a globe (Earth).',
-      'Teach energy = power × time. A 3 kW habitat needs 72 kWh per Earth day, about 1,000 kWh for a 14-day night.',
+      'Teach energy = power × time. An 8 kW habitat needs 192 kWh per Earth day before any heating, more than 2,600 kWh for a 14-day night. That is why the game’s Moon bases need fission power.',
       'One 100 kWh battery bank weighs 700 kg in the game. How many would the night need? What would they weigh?',
       'Play Chapter 2, “The Long Night”, choosing either batteries only or a fission unit. Compare results across the room.',
       'Graph the battery level over the mission from the in-game chart.',
