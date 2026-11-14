@@ -1,11 +1,13 @@
 // Mission Control dashboard: animated outpost scene, gauges, crew, CAPCOM, log and the sol loop.
 import '../../styles/play.css';
-import { h, mount, announce } from '../dom.js';
+import '../../styles/outpost3d.css';
+import { h, mount, announce, prefersReducedMotion } from '../dom.js';
 import { beginSol, resolveEvent, runSol, setTask, toggleModule, computePower, isOnEva } from '../../engine/sim.js';
 import { forecast, advise } from '../../engine/advisor.js';
 import { getState, setMission } from '../../state/store.js';
 import { loadSimContext } from '../../state/nasaData.js';
 import { createScene } from '../scene.js';
+import { createOutpostBackdrop } from '../outpost3d/host.js';
 import { navigate } from '../router.js';
 import { play } from '../audio.js';
 import { didYouKnow } from '../components/common.js';
@@ -52,13 +54,27 @@ export function render(root) {
   let ctx = null;
   let busy = false;
   const ctxReady = loadSimContext().then((c) => { ctx = c; return c; });
-  const canvas = h('canvas', { class: 'scene-canvas' });
-  const scene = createScene(canvas, { label: describe(m) });
+  // Backdrop: the orbiting 3D outpost by default. The painted 2D map is built only while "Map 2D" is showing
+  // (or when WebGL is missing), so just one of the two ever renders.
+  const canvas = h('canvas', { class: 'scene-canvas', hidden: true });
+  let scene = null;
+  const outpost = createOutpostBackdrop({ reducedMotion: prefersReducedMotion, onUnavailable: () => view3d.outpostUnavailable() });
+  const onMode = (mode) => {
+    outpost.setActive(mode === 'outpost');
+    canvas.hidden = mode !== 'map';
+    if (mode === 'map' && !scene) {
+      scene = createScene(canvas, { label: describe(m) });
+      scene.update(m, describe(m));
+    } else if (mode !== 'map' && scene) {
+      scene.stop();
+      scene = null;
+    }
+  };
   const els = Object.fromEntries(['hud', 'overlay', 'res', 'power', 'rad', 'crew', 'capcom', 'mods', 'log'].map((k) => [k, h('div', { class: `slot-${k}` })]));
   const commit = (next) => { m = next; setMission(m); draw(); };
   const onTask = (crewId, task) => { play('click'); commit(setTask(m, crewId, task)); document.getElementById(`task-${crewId}-${task}`)?.focus(); };
   const onToggle = (id) => { play('click'); commit(toggleModule(m, id)); document.getElementById(`mod-switch-${id}`)?.focus(); };
-  const view3d = viewToggle({ canvas, getMission: () => m, commit, onTask, onToggle, onEndSol: () => nextSol() });
+  const view3d = viewToggle({ onMode, getMission: () => m, commit, onTask, onToggle, onEndSol: () => nextSol() });
 
   function afterRun() {
     const today = m.log.filter((l) => l.sol === m.sol);
@@ -74,6 +90,7 @@ export function render(root) {
 
   function showEvent(withEvent) {
     play('alert');
+    outpost.setDimmed(true);
     return new Promise((resolve) => {
       openEventModal(withEvent, {
         onChoose: (i) => { commit(resolveEvent(m, i)); return m; },
@@ -82,6 +99,7 @@ export function render(root) {
             commit(runSol(m));
             afterRun();
           }
+          outpost.setDimmed(false);
           resolve(true);
           document.getElementById('next-sol')?.focus();
         },
@@ -128,7 +146,8 @@ export function render(root) {
     mount(els.capcom, capcomPanel(advise(m)));
     mount(els.mods, modulesPanel(m, power, onToggle));
     mount(els.log, logPanel(m));
-    scene.update(m, describe(m));
+    outpost.update(m, describe(m));
+    scene?.update(m, describe(m));
     view3d.update(m);
     setTickerItems(telemetryItems(m, fc));
   }
@@ -144,7 +163,7 @@ export function render(root) {
   root.append(
     els.hud,
     h('div', { class: 'play-grid' },
-      h('div', { class: ['play-stage', m.config.body] }, canvas, view3d.mount, els.overlay, view3d.toggle),
+      h('div', { class: ['play-stage', m.config.body] }, outpost.layer, canvas, view3d.mount, outpost.overlay, els.overlay, view3d.toggle),
       h('div', { class: 'play-side' }, els.capcom, els.power),
       h('div', { class: 'play-left' }, els.res, els.rad),
       h('div', { class: 'play-mid' }, els.crew),
@@ -154,7 +173,8 @@ export function render(root) {
   if (m.phase === 'event' && m.pendingEvent) showEvent(m);
 
   return () => {
-    scene.stop();
+    outpost.stop();
+    scene?.stop();
     view3d.stop();
     document.removeEventListener('keydown', onKey);
     setTickerItems(null);
