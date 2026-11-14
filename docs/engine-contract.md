@@ -11,10 +11,11 @@ export const LANDER_CAPACITY_KG = 12000;        // total mass budget for modules
 export const MISSION_LENGTHS = [30, 60];        // selectable sols (Moon: Earth days)
 export const DEFAULT_START_DATE = '2024-05-01'; // so the real May 2024 DONKI storms land mid-mission
 
+export function prepareData({ rems, donki }) -> MissionData   // { weatherIndex: buildWeatherIndex(rems), sepEvents: classifySepEvents(donki) }; built once by the UI from public/data/*.json
 export function landerMass(loadout) -> { modulesKg, suppliesKg, totalKg, overBy }   // overBy > 0 means too heavy
-export function createMission({ body, siteId, crew, loadout, seed, lengthSols, startDate }) -> MissionState
-export function advanceSol(state) -> MissionState        // one turn; refuses (returns state unchanged) while state.pendingCard is set or state.status.over
-export function applyChoice(state, choiceIndex) -> MissionState   // resolves state.pendingCard; refuses if choice not available
+export function createMission({ body, siteId, crew, loadout, seed, lengthSols, startDate }, data) -> MissionState   // data = prepareData(...); never stored in state
+export function advanceSol(state, data) -> MissionState  // one turn; refuses (returns state unchanged) while state.pendingCard is set or state.status.over
+export function applyChoice(state, choiceIndex, data) -> MissionState   // resolves state.pendingCard; refuses if choice not available
 export function describeEffects(effects, state) -> string[]       // plain-language preview lines, e.g. "Morale −2", "Battery +40 kWh"
 export function missionStatus(state) -> { over, outcome, reason, score, stars }  // same object as state.status
 ```
@@ -88,6 +89,12 @@ startDate: ISO date string, defaults to DEFAULT_START_DATE
   geologist ×1.5 science, engineer repairs one broken module per sol without spares, doctor +2 health/sol, botanist +25% harvest.
 - **Score**: science + 2 × average health + average morale − total dose; stars: 3 if all crew ≥ 70 health, 2 if all alive, 1 if won at all.
 - **Mission end**: won when `sol === lengthSols` with everyone alive. Lost when a crew member reaches 0 health. Reason is a short kid-readable sentence.
+
+### Data injection
+
+The engine never reads files. The UI fetches `public/data/rems.json` and `public/data/donki.json` once at startup, calls
+`prepareData`, and passes the result to every engine call. Tests load the same JSON with `fs.readFileSync`.
+`createMission` must also work with `data = null` (uses `FALLBACK` weather and no SEP events) so the UI can render offline.
 
 ### Determinism test
 
