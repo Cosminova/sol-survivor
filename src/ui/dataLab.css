@@ -1,0 +1,168 @@
+/* Data Lab styles. Uses the app's theme tokens with fallbacks so it reads fine on its own. */
+.data-lab {
+  --dl-bg: var(--bg, #0b1020);
+  --dl-panel: var(--panel, #161c2e);
+  --dl-text: var(--text, #f2f4f8);
+  --dl-muted: var(--muted, #a3abbd);
+  --dl-accent: var(--accent, #ffb347);
+  --dl-good: var(--good, #52c97a);
+  --dl-warn: var(--warn, #ffd166);
+  --dl-danger: var(--danger, #ff5c5c);
+  --dl-line: color-mix(in srgb, var(--dl-text) 14%, transparent);
+  color: var(--dl-text);
+  background: var(--dl-bg);
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 16px;
+  line-height: 1.5;
+  font-size: 1rem;
+}
+
+.dl-section {
+  background: var(--dl-panel);
+  border: 1px solid var(--dl-line);
+  border-radius: 16px;
+  padding: 20px 20px 16px;
+  margin-bottom: 20px;
+}
+.dl-section h2 { margin: 0 0 8px; font-size: 1.35rem; line-height: 1.25; }
+.dl-section p { margin: 0 0 12px; }
+.dl-section em { color: var(--dl-accent); font-style: normal; font-weight: 600; }
+
+.dl-banner { border-color: var(--dl-accent); }
+.dl-snapshots { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.dl-snapshots li { font-size: 0.95rem; }
+.dl-pill, .data-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: var(--dl-accent, #ffb347);
+  color: #1a1200;
+  vertical-align: middle;
+}
+.data-badge {
+  --dl-accent: var(--accent, #ffb347);
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.data-badge:hover, .data-badge:focus-visible { filter: brightness(1.1); outline: 2px solid var(--text, #f2f4f8); outline-offset: 2px; }
+
+/* Charts */
+.dl-chart { display: block; width: 100%; max-width: 900px; height: auto; margin: 8px auto 10px; font-family: inherit; }
+.dl-chart-bg { fill: color-mix(in srgb, var(--dl-bg) 60%, var(--dl-panel)); }
+.dl-grid { stroke: var(--dl-line); stroke-width: 1; }
+.dl-tick, .dl-season, .dl-note { fill: var(--dl-muted); font-size: 13px; }
+.dl-season { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+.dl-note { font-size: 12px; font-style: italic; }
+.dl-axis { fill: var(--dl-text); font-size: 14px; font-weight: 600; }
+.dl-storm-season { fill: var(--dl-danger); opacity: 0.08; }
+.dl-band { fill: var(--dl-accent); opacity: 0.12; }
+.dl-line { fill: none; stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; }
+.dl-line-max { stroke: var(--dl-accent); }
+.dl-line-min { stroke: #6fb7ff; }
+.dl-current { stroke: var(--dl-good); stroke-width: 2.5; stroke-dasharray: 6 5; }
+.dl-current-label { fill: var(--dl-good); font-size: 13px; font-weight: 700; }
+.dl-current-month { fill: var(--dl-good); opacity: 0.16; }
+.dl-legend text { fill: var(--dl-text); font-size: 13px; }
+.dl-legend-bg { fill: var(--dl-panel); opacity: 0.9; stroke: var(--dl-line); }
+.dl-bar { stroke: none; }
+.dl-bar-m { fill: var(--dl-warn); }
+.dl-bar-x { fill: var(--dl-danger); }
+.dl-bar-sep { fill: #6fb7ff; }
+
+.dl-caption, .dl-source-line { color: var(--dl-muted); font-size: 0.9rem; }
+.dl-source-line a, .dl-sources a { color: var(--dl-accent); }
+.dl-facts { margin: 0 0 12px; padding-left: 20px; display: grid; gap: 6px; }
+.dl-cme { margin-bottom: 12px; }
+.dl-empty { color: var(--dl-muted); font-style: italic; }
+
+/* Gallery */
+.dl-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.dl-filter {
+  font: inherit; font-size: 0.85rem; cursor: pointer;
+  padding: 6px 12px; border-radius: 999px;
+  border: 1px solid var(--dl-line); background: transparent; color: var(--dl-text);
+}
+.dl-filter.is-active { background: var(--dl-accent); color: #1a1200; border-color: var(--dl-accent); font-weight: 700; }
+.dl-filter:focus-visible { outline: 2px solid var(--dl-accent); outline-offset: 2px; }
+.dl-gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 12px; }
+.dl-photo { margin: 0; background: var(--dl-bg); border: 1px solid var(--dl-line); border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; }
+.dl-photo[hidden] { display: none; }
+.dl-photo img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; background: #000; }
+.dl-photo figcaption { padding: 10px 12px 12px; display: grid; gap: 4px; font-size: 0.9rem; }
+.dl-photo-meta { color: var(--dl-muted); font-size: 0.8rem; }
+.dl-photo-desc { color: var(--dl-muted); font-size: 0.85rem; }
+
+/* Maps */
+.dl-map { margin: 0 0 18px; }
+.dl-map figcaption { margin-bottom: 6px; font-size: 0.95rem; color: var(--dl-muted); }
+.dl-map figcaption strong { color: var(--dl-text); font-size: 1.05rem; }
+.dl-mosaic {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(var(--dl-cols, 8), 1fr);
+  grid-template-rows: repeat(var(--dl-rows, 4), 1fr);
+  aspect-ratio: 2 / 1;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+  border: 1px solid var(--dl-line);
+  user-select: none;
+}
+.dl-mosaic > img { display: block; width: 100%; height: 100%; object-fit: fill; }
+.dl-graticule { position: absolute; inset: 0; pointer-events: none; border-left: 1px dashed rgba(255, 255, 255, 0.25); }
+.dl-graticule::before { content: ''; position: absolute; left: 50%; top: 0; bottom: 0; border-left: 1px dashed rgba(255, 255, 255, 0.35); }
+.dl-graticule::after { content: ''; position: absolute; top: 50%; left: 0; right: 0; border-top: 1px dashed rgba(255, 255, 255, 0.35); }
+.dl-lon { position: absolute; top: 4px; left: 6px; font-size: 0.7rem; color: #fff; text-shadow: 0 0 4px #000, 0 0 2px #000; }
+.dl-lon-mid { left: 50%; transform: translateX(4px); }
+.dl-lon-end { left: auto; right: 6px; }
+.dl-marker { position: absolute; width: 0; height: 0; }
+.dl-marker-dot {
+  position: absolute; left: -7px; top: -7px; width: 14px; height: 14px; border-radius: 50%;
+  background: var(--dl-accent); border: 2px solid #fff; box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.6);
+}
+.dl-marker.is-current .dl-marker-dot {
+  background: var(--dl-good); width: 18px; height: 18px; left: -9px; top: -9px;
+  animation: dl-pulse 1.6s ease-in-out infinite;
+}
+.dl-marker-label {
+  position: absolute; left: 0; transform: translateX(-50%); white-space: nowrap;
+  padding: 2px 8px; border-radius: 6px; font-size: 0.78rem; font-weight: 700;
+  background: rgba(0, 0, 0, 0.75); color: #fff; border: 1px solid rgba(255, 255, 255, 0.3);
+}
+.dl-marker.is-above .dl-marker-label { bottom: 12px; }
+.dl-marker.is-below .dl-marker-label { top: 12px; }
+.dl-marker.is-left .dl-marker-label { transform: none; left: -8px; }
+.dl-marker.is-right .dl-marker-label { transform: translateX(-100%); left: 8px; }
+.dl-marker.is-current .dl-marker-label { background: var(--dl-good); color: #04200d; border-color: #fff; }
+@keyframes dl-pulse { 0%, 100% { box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.6); } 50% { box-shadow: 0 0 0 8px rgba(82, 201, 122, 0.35); } }
+.dl-sites { margin: 10px 0 0; padding-left: 20px; font-size: 0.9rem; color: var(--dl-muted); display: grid; gap: 4px; }
+.dl-sites strong { color: var(--dl-text); }
+.dl-sites li.is-current { color: var(--dl-text); }
+.dl-sites li.is-current strong { color: var(--dl-good); }
+
+/* Sources */
+.dl-sources { margin: 0; padding-left: 24px; display: grid; gap: 10px; }
+.dl-sources li { padding: 6px 10px; border-radius: 8px; transition: background 0.3s; scroll-margin-top: 80px; }
+.dl-sources li.is-highlight { background: color-mix(in srgb, var(--dl-accent) 22%, transparent); outline: 2px solid var(--dl-accent); }
+.dl-sources a { font-weight: 600; }
+.dl-source-org, .dl-source-use { display: block; font-size: 0.88rem; color: var(--dl-muted); }
+.dl-kind { text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.72rem; }
+
+@media (max-width: 600px) {
+  .data-lab { padding: 10px; }
+  .dl-section { padding: 14px 12px; border-radius: 12px; }
+  .dl-section h2 { font-size: 1.15rem; }
+  .dl-marker-label { font-size: 0.68rem; padding: 1px 5px; }
+  .dl-gallery { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) { .dl-marker.is-current .dl-marker-dot { animation: none; } }
