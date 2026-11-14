@@ -11,7 +11,7 @@ import {
 import { seasonCycleCard } from './seasonCycle.js';
 import { statCard, statGrid, sectionHead, caption, withData, fmtNum, fmtDate } from './shared.js';
 
-const COLORS = { max: '#ff9a5c', min: '#4fe3ff', pressure: '#b197fc', today: '#4ade80' };
+const COLORS = { max: '#ff9a5c', min: '#4fe3ff', pressure: '#5eead4', today: '#4ade80' };
 const FAINT = { max: 'rgba(255, 154, 92, 0.28)', min: 'rgba(79, 227, 255, 0.26)', pressure: 'rgba(177, 151, 252, 0.3)' };
 const DUST_BAND = { from: 180, to: 330, color: 'rgba(255, 122, 61, 0.13)' };
 const SEASON_BANDS = ['N. spring', 'N. summer', 'N. autumn', 'N. winter']

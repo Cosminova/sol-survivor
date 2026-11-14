@@ -35,7 +35,7 @@ const configFor = (missionId, draft) => (missionId === 'free-play'
   ? freePlayConfig({ ...draft.free, difficulty: draft.difficulty })
   : missionById(missionId));
 
-export function render(root, { params }) {
+export function render(root, { params, query }) {
   const missionId = params[0] ?? 'artemis-dawn';
   if (missionId !== 'free-play' && !missionById(missionId)) {
     navigate('campaign');
@@ -44,12 +44,16 @@ export function render(root, { params }) {
   const index = CAMPAIGN.findIndex((c) => c.id === missionId);
   const { progress, settings } = getState();
   if (index > 0 && !isUnlocked(index, progress, settings)) {
-    toast('That chapter is still locked. Finish the one before it first!', { icon: '🔒' });
+    toast('That chapter is still locked. Finish the one before it first!', { icon: 'lock' });
     navigate('campaign');
     return undefined;
   }
 
   let draft = initialDraft(missionId);
+  // "Play now" from the home page: start with Mission Control's recommended loadout already packed
+  // (the same thing the "Use recommended" button does), so a new player only has to press Launch.
+  const quick = query?.quick === '1' && Boolean(missionById(missionId)?.recommended);
+  if (quick && !drafts.has(missionId)) draft = { ...draft, loadout: missionById(missionId).recommended };
   const setDraft = (patch) => {
     draft = { ...draft, ...patch };
     drafts.set(missionId, draft);
@@ -71,7 +75,7 @@ export function render(root, { params }) {
       navigate('play');
     } catch (err) {
       console.error('[loadout] launch failed', err);
-      toast(`Launch scrubbed: ${err.message}`, { icon: '🛑' });
+      toast(`The launch did not work. Please try again. (${err.message})`, { icon: 'alert' });
     }
   }
 
@@ -85,17 +89,20 @@ export function render(root, { params }) {
     mount(head,
       h('div', null,
         h('span', { class: ['kicker', config.body === 'mars' && 'mars'] }, missionId === 'free-play' ? 'Free Play' : `Chapter ${config.chapter} · ${config.title}`),
-        h('h1', null, 'Pack the Lander'),
-        h('p', null, richText('Every kilogram rides a rocket. Choose machines and supplies that keep your crew alive for the whole mission, without going over the [[payload|mass budget]].', openTermPopover))),
+        h('h1', null, 'Pack the lander'),
+        h('p', null, richText('Pick the machines and supplies your crew needs to stay safe for the whole mission. A rocket can only lift so much, so stay under the [[payload|weight limit]].', openTermPopover)),
+        quick ? h('div', { class: 'kid-quick', role: 'status' },
+          h('p', null, 'Mission Control already packed a good lander for you. Press Launch mission to start, or scroll down to change anything you like.'),
+          h('button', { type: 'button', id: 'quick-launch', class: 'btn btn-primary btn-lg btn-caps', disabled: !result.ok, onclick: () => launch(config) }, 'Launch mission')) : null),
       h('div', { class: 'row' },
-        config.recommended ? h('button', { type: 'button', class: 'btn btn-cyan', onclick: () => { setDraft({ loadout: config.recommended }); toast('Loaded Mission Control’s recommended loadout.', { icon: '🧑‍✈️' }); } }, '🧑‍✈️ Use recommended') : null,
+        config.recommended ? h('button', { type: 'button', class: 'btn btn-cyan', onclick: () => { setDraft({ loadout: config.recommended }); toast('Mission Control packed the lander for you.', { icon: 'check' }); } }, 'Use recommended') : null,
         h('button', { type: 'button', class: 'btn btn-ghost', onclick: () => setDraft({ loadout: EMPTY }) }, 'Empty lander'),
-        h('a', { class: 'btn btn-ghost', href: '#/campaign' }, '← Campaign')));
+        h('a', { class: 'btn btn-ghost', href: '#/campaign' }, 'Back to missions')));
 
     mount(left,
       missionId === 'free-play' ? freePlayPanel(draft.free, (patch) => setDraft({ free: { ...draft.free, ...patch } })) : null,
       h('section', { class: 'panel' },
-        h('h2', { class: 'panel-title' }, 'Machines & modules'),
+        h('h2', { class: 'panel-title' }, 'Machines'),
         h('div', { class: 'lo-modules' }, modules.map((mod) => moduleCard(mod, draft.loadout.modules[mod.id] ?? 0, (n) => { play('click'); setModules(mod.id, n); })))),
       h('section', { class: 'panel' },
         h('h2', { class: 'panel-title' }, 'Supplies from Earth'),
@@ -110,7 +117,7 @@ export function render(root, { params }) {
         difficultyPicker(draft.difficulty, (difficulty) => setDraft({ difficulty })),
         codeField(draft.code, (code) => setDraft({ code })),
         crewFields(draft.crew, (crew) => setDraft({ crew })),
-        h('button', { type: 'button', class: 'btn btn-primary btn-lg lo-launch', disabled: !result.ok, onclick: () => launch(config) }, result.ok ? '🚀 Launch mission' : '🚫 Fix the errors to launch')));
+        h('button', { type: 'button', class: 'btn btn-primary btn-lg lo-launch', disabled: !result.ok, onclick: () => launch(config) }, result.ok ? 'Launch mission' : 'Fix the red notes to launch')));
     window.scrollTo({ top: scrollY });
     if (focusedId) document.getElementById(focusedId)?.focus({ preventScroll: true });
   }

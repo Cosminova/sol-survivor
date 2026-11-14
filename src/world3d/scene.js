@@ -36,7 +36,7 @@ export function createStage(container, { quality }) {
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1;
   renderer.shadowMap.enabled = high;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap; // PCFSoftShadowMap is deprecated in three 0.187 (falls back to PCF with a console warning)
   renderer.domElement.className = 'w3d-canvas';
   renderer.domElement.setAttribute('aria-label', '3D outpost view');
   renderer.domElement.tabIndex = 0;

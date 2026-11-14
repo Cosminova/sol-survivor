@@ -50,7 +50,7 @@ export function openModal({ title, content, wide = false, dismissible = true, on
     'aria-modal': 'true',
     'aria-labelledby': titleId,
   },
-  dismissible ? h('button', { type: 'button', class: 'btn btn-ghost btn-icon modal-close', 'aria-label': 'Close', onclick: close }, '✕') : null,
+  dismissible ? h('button', { type: 'button', class: 'btn btn-ghost btn-icon modal-close', onclick: close }, h('span', null, 'Close'), h('span', { 'aria-hidden': 'true' }, '✕')) : null,
   h('h2', { id: titleId }, title),
   typeof content === 'function' ? content(close) : content);
 
@@ -63,7 +63,8 @@ export function openModal({ title, content, wide = false, dismissible = true, on
   document.addEventListener('keydown', onKey, true);
   requestAnimationFrame(() => {
     const target = dialog.querySelector('[data-autofocus]') ?? dialog.querySelector(FOCUSABLE);
-    target?.focus();
+    target?.focus({ preventScroll: true });
+    dialog.scrollTop = 0;
   });
   return close;
 }

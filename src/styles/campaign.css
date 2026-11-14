@@ -1,16 +1,21 @@
 /* Campaign map */
 .camp-map {
   position: relative;
-  border-radius: var(--r-lg);
   border: 1px solid var(--line);
   background:
-    radial-gradient(500px 260px at 12% 60%, rgba(207, 216, 234, 0.12), transparent 70%),
-    radial-gradient(700px 320px at 85% 40%, rgba(255, 122, 61, 0.16), transparent 70%),
-    linear-gradient(180deg, rgba(8, 14, 36, 0.9), rgba(4, 7, 20, 0.9));
+    linear-gradient(var(--cyan), var(--cyan)) top left / 14px 2px no-repeat, linear-gradient(var(--cyan), var(--cyan)) top left / 2px 14px no-repeat,
+    linear-gradient(var(--cyan), var(--cyan)) top right / 14px 2px no-repeat, linear-gradient(var(--cyan), var(--cyan)) top right / 2px 14px no-repeat,
+    linear-gradient(var(--cyan), var(--cyan)) bottom left / 14px 2px no-repeat, linear-gradient(var(--cyan), var(--cyan)) bottom left / 2px 14px no-repeat,
+    linear-gradient(var(--cyan), var(--cyan)) bottom right / 14px 2px no-repeat, linear-gradient(var(--cyan), var(--cyan)) bottom right / 2px 14px no-repeat,
+    var(--surface);
+  background-origin: border-box;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   padding: 2rem clamp(0.75rem, 2vw, 2rem) 2.5rem;
   margin-bottom: 1.25rem;
   overflow-x: auto;
 }
+/* The map scrolls sideways on phones, so it keeps square corners with brackets instead of a clip-path chamfer. */
 .camp-stars { position: absolute; inset: 0; opacity: 0.5; background-image: radial-gradient(1px 1px at 20% 30%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 60% 70%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 80% 20%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 40% 85%, #fff 50%, transparent 51%); background-size: 180px 120px; pointer-events: none; }
 .camp-path {
   position: relative;
@@ -28,9 +33,8 @@
   left: 8%;
   right: 8%;
   top: 70px;
-  height: 3px;
-  background: repeating-linear-gradient(90deg, rgba(255, 209, 102, 0.55) 0 10px, transparent 10px 18px);
-  filter: drop-shadow(0 0 6px rgba(255, 209, 102, 0.5));
+  height: 1.5px;
+  background: repeating-linear-gradient(90deg, var(--cyan) 0 10px, transparent 10px 18px);
 }
 .camp-node { position: relative; display: grid; justify-items: center; animation: fade-up var(--t-slow) var(--ease) both; animation-delay: calc(var(--i) * 70ms); }
 .camp-node:nth-child(even) { margin-top: 2.2rem; }
@@ -42,10 +46,10 @@
   padding: 0.5rem;
   min-width: 120px;
   border: 0;
-  border-radius: var(--r-md);
   background: none;
   color: var(--text);
   text-align: center;
+  transition: background var(--t-fast);
 }
 .camp-planet {
   position: relative;
@@ -60,26 +64,28 @@
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
   transition: transform var(--t-med) var(--ease), box-shadow var(--t-med);
 }
-.camp-node.moon .camp-planet { background: radial-gradient(circle at 35% 30%, #f4f6fb, #9aa3b5 55%, #4b5263); box-shadow: 0 0 0 3px rgba(207, 216, 234, 0.35), 0 0 30px rgba(207, 216, 234, 0.25); }
-.camp-node.mars .camp-planet { background: radial-gradient(circle at 35% 30%, #ffc49a, #e2602a 55%, #6b1e05); box-shadow: 0 0 0 3px rgba(255, 122, 61, 0.35), 0 0 30px rgba(255, 122, 61, 0.3); }
+.camp-node.moon .camp-planet { background: radial-gradient(circle at 35% 30%, #f4f6fb, #9aa3b5 55%, #4b5263); box-shadow: 0 0 0 1px var(--surface-solid), 0 0 0 2px rgba(197, 210, 222, 0.6); }
+.camp-node.mars .camp-planet { background: radial-gradient(circle at 35% 30%, #ffc49a, #e2602a 55%, #6b1e05); box-shadow: 0 0 0 1px var(--surface-solid), 0 0 0 2px rgba(244, 135, 75, 0.7); }
 .camp-node.locked .camp-planet { filter: grayscale(0.85) brightness(0.55); }
 .camp-node.locked .camp-node-title { color: var(--text-faint); }
 .camp-node-btn:hover .camp-planet { transform: scale(1.06); }
-.camp-node.selected .camp-planet { transform: scale(1.12); box-shadow: 0 0 0 4px var(--gold), 0 0 40px rgba(255, 209, 102, 0.55); }
+.camp-node.selected .camp-planet { transform: scale(1.1); box-shadow: 0 0 0 3px var(--surface-solid), 0 0 0 5px var(--cyan), 0 0 18px rgba(56, 189, 248, 0.45); }
+.camp-node.selected .camp-node-title { color: var(--cyan-bright); }
+.camp-node-btn:hover { background: var(--surface-2); }
 .camp-node.done .camp-planet::after { content: '✓'; position: absolute; right: -4px; bottom: -4px; width: 26px; height: 26px; border-radius: 50%; background: var(--good); color: #04120a; font-size: 0.9rem; display: grid; place-items: center; text-shadow: none; }
-.camp-num { font-size: 1.8rem; }
-.camp-node-title { font-weight: 800; line-height: 1.2; }
+.camp-num { font-family: var(--font-display); font-size: 1.6rem; }
+.camp-node-title { font-family: var(--font-display); font-size: var(--fs-sm); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; line-height: 1.25; }
 .camp-node-body { font-size: var(--fs-xs); color: var(--text-faint); letter-spacing: 0.12em; text-transform: uppercase; }
 
-.camp-node-teaser { font-size: var(--fs-xs); color: var(--text-dim); max-width: 18ch; line-height: 1.35; }
+.camp-node-teaser { font-size: var(--fs-xs); color: var(--text-dim); max-width: 20ch; line-height: 1.4; }
 .camp-teaser { font-size: 1.15rem; font-weight: 700; color: var(--text); margin-top: -0.3rem; }
-.camp-real { margin: 0 0 1rem; padding: 0.8rem 1rem; border-radius: var(--r-md); border: 1px solid rgba(255, 209, 102, 0.35); background: rgba(255, 209, 102, 0.06); }
-.camp-real strong { color: var(--gold); }
+.camp-real { margin: 0 0 1rem; padding: 0.8rem 1rem; border: 1px solid rgba(251, 191, 36, 0.35); border-left: 3px solid var(--gold); background: var(--warn-bg); }
+.camp-real strong { color: var(--gold); font-size: var(--fs-xs); letter-spacing: var(--track); text-transform: uppercase; }
 .camp-real p { margin: 0.3rem 0 0.5rem; font-size: var(--fs-sm); }
 
 .camp-lower { display: grid; gap: var(--gap); grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); align-items: start; }
 .camp-brief { overflow: hidden; animation: fade-up var(--t-med) var(--ease); }
-.camp-brief-art { position: absolute; right: -60px; top: -60px; width: 220px; height: 220px; opacity: 0.3; pointer-events: none; }
+.camp-brief-art { position: absolute; right: -60px; top: -60px; width: 220px; height: 220px; opacity: 0.22; pointer-events: none; }
 .camp-brief-planet { display: block; width: 100%; height: 100%; border-radius: 50%; }
 .camp-brief.mars .camp-brief-planet { background: radial-gradient(circle at 35% 30%, #ffc49a, #e2602a 55%, #3d1003); }
 .camp-brief.moon .camp-brief-planet { background: radial-gradient(circle at 35% 30%, #f4f6fb, #9aa3b5 55%, #2b2f3a); }
@@ -88,12 +94,13 @@
 .camp-story {
   margin: 0 0 1rem;
   padding: 1rem 1.2rem;
-  border-left: 4px solid var(--cyan);
-  border-radius: 0 var(--r-md) var(--r-md) 0;
-  background: rgba(79, 227, 255, 0.06);
-  font-size: 1.08rem;
+  border-left: 3px solid var(--cyan);
+  background: var(--surface-2);
+  font-size: 1.0625rem;
   line-height: 1.65;
 }
-.camp-brief.mars .camp-story { border-left-color: var(--mars); background: rgba(255, 122, 61, 0.07); }
+.camp-brief.mars .camp-story { border-left-color: var(--mars); background: rgba(244, 135, 75, 0.07); }
+.camp-brief h2 { color: var(--cyan-bright); }
+.camp-facts .badge { white-space: normal; }
 
 @media (max-width: 900px) { .camp-lower { grid-template-columns: 1fr; } }

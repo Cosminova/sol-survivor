@@ -1,4 +1,5 @@
-// 2D/3D view toggle for the play stage. The 3D walkable outpost lives in src/world3d/.
+// View toggle for the play stage: the orbiting 3D outpost backdrop (src/ui/outpost3d/, the default), the painted
+// 2D map (src/ui/scene/) and the walkable 3D outpost (src/world3d/). Only the view in front renders.
 import { h } from '../../dom.js';
 import { getState, update } from '../../../state/store.js';
 import { openTermPopover } from '../../components/termPopover.js';
@@ -30,21 +31,28 @@ export function applyHazard(m, { phase, moduleId }) {
   return { ...m, broken: { ...m.broken, [moduleId]: (m.broken[moduleId] ?? 0) + 1 } };
 }
 
-export function viewToggle({ canvas, getMission, commit, onTask, onToggle, onEndSol }) {
+export const VIEW_MODES = ['outpost', 'map', 'walk'];
+
+// onMode(mode) lets the play screen show/hide and pause the outpost backdrop and the 2D map canvas.
+export function viewToggle({ onMode, getMission, commit, onTask, onToggle, onEndSol }) {
   const mountEl = h('div', { id: 'play-3d-mount', class: 'play-3d-mount', hidden: true, 'aria-label': '3D outpost view' });
   let world = null;
-  let mode = '2d';
+  let mode = 'outpost';
 
-  const btn2d = h('button', { type: 'button', class: 'chip', 'aria-pressed': 'true', onclick: () => setMode('2d') }, '2D');
-  const btn3d = h('button', {
-    type: 'button',
-    class: 'chip',
-    'aria-pressed': 'false',
-    disabled: !loader,
-    title: loader ? 'Walk around your outpost in 3D' : '3D outpost unavailable',
-    onclick: () => setMode('3d'),
-  }, '3D');
-  const toggle = h('div', { class: 'view-toggle', role: 'group', 'aria-label': 'Outpost view' }, btn2d, btn3d);
+  const buttons = {
+    outpost: h('button', { type: 'button', class: 'chip', 'data-view': 'outpost', 'aria-pressed': 'true', title: 'Look around your outpost in 3D', onclick: () => setMode('outpost') }, 'Outpost 3D'),
+    map: h('button', { type: 'button', class: 'chip', 'data-view': 'map', 'aria-pressed': 'false', title: 'Flat picture of your outpost', onclick: () => setMode('map') }, 'Map 2D'),
+    walk: h('button', {
+      type: 'button',
+      class: 'chip',
+      'data-view': 'walk',
+      'aria-pressed': 'false',
+      disabled: !loader,
+      title: loader ? 'Walk around your outpost in 3D' : '3D outpost unavailable',
+      onclick: () => setMode('walk'),
+    }, 'Walk 3D'),
+  };
+  const toggle = h('div', { class: 'view-toggle', role: 'group', 'aria-label': 'Outpost view' }, buttons.outpost, buttons.map, buttons.walk);
 
   const options = () => {
     const { settings, world3d } = getState();
@@ -64,18 +72,17 @@ export function viewToggle({ canvas, getMission, commit, onTask, onToggle, onEnd
       onHazard: (hz) => commit(applyHazard(getMission(), hz)),
       onProgress: (p) => update((st) => ({ ...st, world3d: p })),
       onOpenTerm: (id) => openTermPopover(id, mountEl),
-      onExit: () => setMode('2d'),
+      onExit: () => setMode(buttons.outpost.disabled ? 'map' : 'outpost'),
     };
   };
 
   async function setMode(next) {
     if (next === mode) return;
     mode = next;
-    btn2d.setAttribute('aria-pressed', String(mode === '2d'));
-    btn3d.setAttribute('aria-pressed', String(mode === '3d'));
-    canvas.hidden = mode === '3d';
-    mountEl.hidden = mode !== '3d';
-    if (mode === '3d' && !world && loader) {
+    for (const id of VIEW_MODES) buttons[id].setAttribute('aria-pressed', String(mode === id));
+    mountEl.hidden = mode !== 'walk';
+    onMode?.(mode);
+    if (mode === 'walk' && !world && loader) {
       try {
         const mod = await loader();
         if (!mod.isWebGLAvailable()) {
@@ -95,6 +102,13 @@ export function viewToggle({ canvas, getMission, commit, onTask, onToggle, onEnd
   return {
     mount: mountEl,
     toggle,
+    mode: () => mode,
+    // No WebGL (or three.js failed to load): the orbit view is off and the 2D map takes over as the backdrop.
+    outpostUnavailable: () => {
+      buttons.outpost.disabled = true;
+      buttons.outpost.title = 'The 3D outpost needs WebGL, which this device has switched off';
+      if (mode === 'outpost') setMode('map');
+    },
     update: (mission) => world?.update(mission),
     stop: () => { world?.dispose(); world = null; },
   };

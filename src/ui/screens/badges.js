@@ -1,5 +1,6 @@
 // Badges: every achievement (earned in color, locked as a silhouette with a hint), campaign stars and patch link.
 import '../../styles/learn.css';
+import { icon, MODULE_ICONS, SUPPLY_ICONS } from '../icons.js';
 import { h, mount } from '../dom.js';
 import { getState, subscribe } from '../../state/store.js';
 import { ACHIEVEMENTS } from '../../state/learn.js';
@@ -20,7 +21,7 @@ function badgeTile(badge, profile) {
   const info = earnedInfo(profile, badge.id);
   return h('li', { class: ['bdg-tile', info ? 'is-earned' : 'is-locked'] },
     h('div', { class: 'bdg-medal', 'aria-hidden': 'true' },
-      h('span', { class: 'bdg-icon' }, badge.icon ?? '🏅'),
+      h('span', { class: 'bdg-icon' }, icon('award', { size: 28 })),
       info ? null : h('span', { class: 'bdg-lock' }, '🔒')),
     h('div', { class: 'bdg-text' },
       h('h3', null, badge.title, h('span', { class: 'sr-only' }, info ? ' (earned)' : ' (locked)')),

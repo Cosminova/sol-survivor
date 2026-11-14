@@ -1,0 +1,137 @@
+/* three.js outpost backdrop (play screen) and globe site picker (free-play loadout).
+   Stacking mirrors .scene-canvas in play.css: the layer is position:fixed at z-index 0, so it paints above the
+   non-positioned layout boxes and below every HUD piece (z-index >= 1). Drags in the empty areas therefore land
+   on the WebGL canvas and orbit the camera; panels keep their own clicks. */
+.outpost3d-layer { position: fixed; inset: 0; z-index: 0; background: #05070c; transition: filter 0.35s ease; }
+.outpost3d-layer[hidden] { display: none; }
+.outpost3d-layer.dimmed { filter: brightness(0.42) saturate(0.6); }
+.outpost3d-canvas { display: block; width: 100% !important; height: 100% !important; cursor: grab; outline: none; }
+.outpost3d-canvas:active { cursor: grabbing; }
+
+/* Labels drawn by the scene sit inside the stage window, never over a panel, and are click-through. */
+.outpost3d-overlay { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.outpost3d-overlay[hidden] { display: none; }
+.outpost3d-hud {
+  --ch: 10px;
+  --frame-line: var(--line-strong);
+  position: absolute;
+  top: var(--o3d-top, 34px);
+  right: 10px;
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+  max-width: min(300px, 62%);
+  padding: var(--s-2) var(--s-3);
+  text-align: right;
+  border: 1px solid var(--frame-line);
+  background-color: rgba(6, 11, 20, 0.82);
+  background-image:
+    linear-gradient(135deg, var(--frame-line) calc(var(--ch) * 0.7071 + 1px), transparent calc(var(--ch) * 0.7071 + 1px)),
+    linear-gradient(315deg, var(--frame-line) calc(var(--ch) * 0.7071 + 1px), transparent calc(var(--ch) * 0.7071 + 1px));
+  background-position: top left, bottom right;
+  background-size: calc(var(--ch) * 2) calc(var(--ch) * 2);
+  background-repeat: no-repeat;
+  background-origin: border-box;
+  clip-path: polygon(var(--ch) 0, 100% 0, 100% calc(100% - var(--ch)), calc(100% - var(--ch)) 100%, 0 100%, 0 var(--ch));
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.o3d-sol { font-family: var(--font-display); font-size: 1rem; font-weight: 800; line-height: 1.15; letter-spacing: 0.1em; text-transform: uppercase; color: var(--cyan-bright); text-shadow: 0 0 12px rgba(56, 189, 248, 0.45); }
+.o3d-time { font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--text-dim); }
+.o3d-tags { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; }
+.o3d-tags:empty { display: none; }
+.o3d-tag { display: inline-flex; align-items: center; min-height: 22px; padding: 0 var(--s-2); border: 1px solid var(--line); border-left-width: 3px; background: rgba(3, 7, 14, 0.6); font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 700; letter-spacing: var(--track); text-transform: uppercase; color: var(--text); white-space: nowrap; }
+.o3d-tag.danger { border-color: var(--danger); color: #ffd0d0; }
+.o3d-tag.warn { border-color: var(--warn); color: #fde9a8; }
+.o3d-tag.good { border-color: var(--good); color: #c5f7e8; }
+.o3d-credit { margin-top: 2px; padding-top: 4px; border-top: 1px solid var(--line-soft); font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 600; letter-spacing: var(--track); text-transform: uppercase; color: var(--text-faint); }
+
+.outpost3d-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 58px;
+  transform: translateX(-50%);
+  padding: 2px var(--s-3);
+  border: 1px solid var(--line-soft);
+  background: rgba(6, 11, 20, 0.8);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: var(--track);
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--text-dim);
+  pointer-events: none;
+  animation: o3d-hint-out 0.6s ease 9s forwards;
+  transition: opacity 0.3s ease;
+}
+.outpost3d-hint.gone { opacity: 0; }
+@keyframes o3d-hint-out { to { opacity: 0; } }
+
+/* Three-way view toggle: Outpost 3D | Map 2D | Walk 3D. It is wider than the old 2D/3D pair, so the weather
+   source line moves up to its own row instead of running underneath it. */
+.view-toggle .chip { padding: 0 var(--s-3); white-space: nowrap; }
+.play-stage .scene-ref { bottom: 62px; max-width: calc(100% - 20px); }
+
+/* ---- Globe site picker ---- */
+.lo-globe { display: grid; gap: var(--s-2); min-width: 0; }
+.globe3d {
+  position: relative;
+  height: clamp(260px, 44vh, 440px);
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  background: radial-gradient(ellipse at 50% 55%, #0a1626 0%, var(--bg) 72%);
+}
+.globe3d[hidden] { display: none; }
+.globe3d::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  z-index: 1;
+  pointer-events: none;
+  --b: rgba(139, 220, 255, 0.85);
+  background:
+    linear-gradient(var(--b), var(--b)) top left / 18px 1.5px no-repeat, linear-gradient(var(--b), var(--b)) top left / 1.5px 18px no-repeat,
+    linear-gradient(var(--b), var(--b)) top right / 18px 1.5px no-repeat, linear-gradient(var(--b), var(--b)) top right / 1.5px 18px no-repeat,
+    linear-gradient(var(--b), var(--b)) bottom left / 18px 1.5px no-repeat, linear-gradient(var(--b), var(--b)) bottom left / 1.5px 18px no-repeat,
+    linear-gradient(var(--b), var(--b)) bottom right / 18px 1.5px no-repeat, linear-gradient(var(--b), var(--b)) bottom right / 1.5px 18px no-repeat;
+}
+.globe3d-wrap { position: absolute; inset: 0; }
+.globe3d-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 1;
+  padding: 2px var(--s-2);
+  border: 1px solid var(--line-strong);
+  border-left: 3px solid var(--cyan-bright);
+  background: rgba(6, 11, 20, 0.85);
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--cyan-bright);
+  pointer-events: none;
+  will-change: transform;
+}
+.globe3d .outpost3d-hint { left: 14px; bottom: 12px; transform: none; z-index: 1; }
+.globe3d-credit { position: absolute; right: 14px; bottom: 12px; z-index: 1; padding: 2px var(--s-2); background: rgba(3, 7, 14, 0.6); font-family: var(--font-mono); font-size: 0.6875rem; font-weight: 600; letter-spacing: var(--track); text-transform: uppercase; color: var(--text-faint); pointer-events: none; }
+.lo-flatmap summary { display: flex; align-items: center; min-height: var(--tap); cursor: pointer; font-size: var(--fs-xs); font-weight: 700; letter-spacing: var(--track); text-transform: uppercase; color: var(--text-dim); }
+.lo-flatmap summary:hover { color: var(--cyan-bright); }
+
+@media (max-width: 640px) {
+  .outpost3d-hud { right: auto; left: 10px; justify-items: start; text-align: left; max-width: calc(100% - 20px); }
+  .play-stage:has(.scene-alert) .o3d-tags { display: none; } /* the alerts above already say it */
+  .o3d-tags { justify-content: flex-start; }
+  .outpost3d-overlay .outpost3d-hint { display: none; }
+  .view-toggle { left: 10px; }
+  .view-toggle .chip { flex: 1; padding: 0 var(--s-2); }
+  .globe3d { height: clamp(240px, 40vh, 340px); }
+  .globe3d .outpost3d-hint { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .outpost3d-layer { transition: none; }
+  .outpost3d-hint { animation: none; }
+}

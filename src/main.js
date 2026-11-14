@@ -1,3 +1,14 @@
+// Bundled fonts (no CDN): the game must work offline in classrooms.
+import '@fontsource/orbitron/500.css';
+import '@fontsource/orbitron/700.css';
+import '@fontsource/orbitron/800.css';
+import '@fontsource/jetbrains-mono/400.css';
+import '@fontsource/jetbrains-mono/500.css';
+import '@fontsource/jetbrains-mono/600.css';
+import '@fontsource/jetbrains-mono/700.css';
+import '@fontsource/jetbrains-mono/800.css';
+import '@fontsource/atkinson-hyperlegible/400.css';
+import '@fontsource/atkinson-hyperlegible/700.css';
 import './styles/index.css';
 import { h, mount } from './ui/dom.js';
 import { logo } from './ui/logo.js';
@@ -8,6 +19,9 @@ import { loadSimContext } from './state/nasaData.js';
 import { closeTermPopover } from './ui/components/termPopover.js';
 import { trapFocus } from './ui/components/modal.js';
 import { stopSpeaking } from './ui/speech.js';
+import { createStarfield } from './ui/starfield.js';
+import { createTicker } from './ui/components/ticker.js';
+import { maybeShowHowToPlay } from './ui/kid/howToPlay.js';
 
 const NAV = [['campaign', 'Missions'], ['dictionary', 'Dictionary'], ['academy', 'Academy'], ['datalab', 'Data'], ['educators', 'Educators']];
 const MENU = [
@@ -21,13 +35,15 @@ const FOOTER = [
   ['About', [['educators', 'For Educators'], ['settings', 'Settings']]],
 ];
 const SECTION = { loadout: 'campaign', play: 'campaign', debrief: 'campaign', patch: 'badges' };
-const DARK_ROUTES = new Set(['play']);
+// The whole app uses the flight-control HUD theme. data-theme is still set per route so the mechanism keeps working.
+const themeFor = () => 'dark';
 
 function applySettings({ settings }) {
   const root = document.documentElement;
   root.dataset.text = settings.textSize;
   root.dataset.contrast = settings.highContrast ? 'high' : 'normal';
   root.dataset.motion = settings.reducedMotion ? 'reduced' : 'full';
+  root.dataset.view = settings.expertView ? 'expert' : 'cadet';
 }
 
 function mobileMenu(toggle) {
@@ -62,9 +78,9 @@ function mobileMenu(toggle) {
 }
 
 function header() {
-  const toggle = h('button', { type: 'button', class: 'btn btn-ghost btn-icon nav-toggle', 'aria-label': 'Open menu', 'aria-controls': 'menu-sheet', 'aria-expanded': 'false' }, icon('menu', { size: 24 }));
+  const toggle = h('button', { type: 'button', class: 'btn btn-ghost btn-icon nav-toggle', 'aria-label': 'Open menu', 'aria-controls': 'menu-sheet', 'aria-expanded': 'false' }, icon('menu', { size: 24 }), h('span', { class: 'header-action-label' }, 'Menu'));
   const menu = mobileMenu(toggle);
-  const strip = h('div', { class: 'utility-strip' },
+  const strip = h('div', { class: 'utility-strip', role: 'region', 'aria-label': 'About this site' },
     h('span', null, 'NASA Space Apps Challenge 2026 · Seattle'),
     h('nav', { 'aria-label': 'Utility' }, h('a', { href: '#/educators' }, 'For Educators'), h('a', { href: '#/datalab/methodology' }, 'Data sources')));
   const bar = h('header', { class: 'site-header' },
@@ -72,13 +88,13 @@ function header() {
       h('a', { class: 'brand', href: '#/home', 'aria-label': 'Sol Survivor home' }, logo()),
       h('nav', { class: 'main-nav', 'aria-label': 'Main' }, h('ul', null, NAV.map(([route, label]) => h('li', null, h('a', { href: `#/${route}`, dataset: { route } }, label))))),
       h('div', { class: 'header-actions' },
-        h('a', { class: 'btn btn-ghost btn-icon', href: '#/badges', 'aria-label': 'Badges and profile', dataset: { route: 'badges' } }, icon('award', { size: 22 })),
-        h('a', { class: 'btn btn-ghost btn-icon', href: '#/settings', 'aria-label': 'Settings', dataset: { route: 'settings' } }, icon('settings', { size: 22 })),
+        h('a', { class: 'btn btn-ghost btn-icon', href: '#/badges', 'aria-label': 'Badges and profile', dataset: { route: 'badges' } }, icon('award', { size: 22 }), h('span', { class: 'header-action-label' }, 'Badges')),
+        h('a', { class: 'btn btn-ghost btn-icon', href: '#/settings', 'aria-label': 'Settings', dataset: { route: 'settings' } }, icon('settings', { size: 22 }), h('span', { class: 'header-action-label' }, 'Settings')),
         toggle)));
   return { strip, bar, menu };
 }
 
-// Nike-style: the header slides away while scrolling down and returns on any scroll up.
+// The header slides away while scrolling down and returns on any scroll up.
 function autoHide(bar) {
   let last = window.scrollY;
   let ticking = false;
@@ -102,14 +118,16 @@ function footer() {
       h('ul', null, links.map(([route, label]) => h('li', null, h('a', { href: `#/${route}` }, label))))))),
     h('div', { class: 'site-footer-base' },
       h('p', null, 'Sol Survivor · NASA Space Apps Challenge 2026 · Seattle'),
-      h('p', null, 'Built with archived NASA data: Curiosity REMS, DONKI, Mars and Moon Trek, NASA Image Library. Not an official NASA product.')));
+      h('p', null, 'Built with real NASA data saved from NASA records (not live): Curiosity REMS weather, DONKI solar storms, Mars and Moon Trek maps, NASA Image Library. Not an official NASA product.')));
 }
 
 function buildShell() {
   const { strip, bar, menu } = header();
   const view = h('main', { id: 'view', tabindex: '-1' });
   const live = h('div', { id: 'live-region', class: 'sr-only', 'aria-live': 'polite' });
-  mount(document.getElementById('app'), strip, bar, view, footer(), menu.sheet, live);
+  const backdrop = h('canvas', { class: 'hud-backdrop', 'aria-hidden': 'true' });
+  mount(document.getElementById('app'), backdrop, strip, bar, view, footer(), createTicker(), menu.sheet, live);
+  createStarfield(backdrop, { density: 0.00012, shooting: false });
   autoHide(bar);
   return { view, menu, links: [...document.querySelectorAll('#app [data-route]')] };
 }
@@ -132,7 +150,8 @@ startRouter(view, {
     stopSpeaking();
     menu.close();
     document.body.dataset.route = route.name;
-    document.documentElement.dataset.theme = DARK_ROUTES.has(route.name) ? 'dark' : 'light';
+    document.documentElement.dataset.theme = themeFor(route.name);
     highlight(links, route.name);
+    maybeShowHowToPlay(route.name);
   },
 });

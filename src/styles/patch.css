@@ -61,3 +61,6 @@
   .patch-canvas { width: 14cm; max-width: 100%; filter: none; }
   .patch-printing .patch-layout { display: block; }
 }
+
+/* ---- Flight-control HUD pass ---- */
+.patch-opt input:focus-visible + .patch-opt-face, .patch-swatch input:focus-visible + .patch-swatch-dot { outline: 2px solid var(--focus-color); outline-offset: 2px; box-shadow: none; }

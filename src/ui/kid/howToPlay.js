@@ -1,0 +1,56 @@
+// "How to play": a short three-step card. Opens by itself on the first visit (home or play screen),
+// can be skipped with Escape, the close button or "Skip", and reopened from any "How to play" button.
+import { h } from '../dom.js';
+import { icon } from '../icons.js';
+import { openModal } from '../components/modal.js';
+import { speak, canSpeak } from '../speech.js';
+
+const FLAG = 'sol-survivor:howto-seen';
+
+export const STEPS = [
+  { icon: 'package', title: 'Pack your lander.', text: 'Choose the machines and supplies your crew will need.' },
+  { icon: 'user', title: 'Each day, choose what your crew does and press Next Day.', text: 'Rest, explore, fix things or build a shield.' },
+  { icon: 'shield', title: 'Keep Air, Power and Shielding out of the red.', text: 'Green is good. Yellow means watch out. Red means danger.' },
+];
+
+const seen = () => {
+  try { return localStorage.getItem(FLAG) === '1'; } catch { return true; }
+};
+const markSeen = () => {
+  try { localStorage.setItem(FLAG, '1'); } catch { /* storage unavailable: show it again next time */ }
+};
+
+export function openHowToPlay() {
+  markSeen();
+  const spoken = `How to play. ${STEPS.map((s, i) => `Step ${i + 1}. ${s.title} ${s.text}`).join(' ')}`;
+  return openModal({
+    title: 'How to play',
+    className: 'howto-modal',
+    content: (close) => h('div', { class: 'howto' },
+      h('ol', { class: 'howto-steps' }, STEPS.map((s, i) => h('li', { class: 'howto-step' },
+        h('span', { class: 'howto-num', 'aria-hidden': 'true' }, String(i + 1)),
+        h('span', { class: 'howto-icon', 'aria-hidden': 'true' }, icon(s.icon, { size: 30 })),
+        h('span', { class: 'howto-copy' }, h('strong', null, s.title), h('span', null, s.text))))),
+      h('p', { class: 'howto-note' }, 'If a mission ends early, that is okay. You can always try again.'),
+      h('div', { class: 'row howto-actions' },
+        h('button', { type: 'button', class: 'btn btn-primary btn-lg btn-caps', 'data-autofocus': true, onclick: close }, icon('play', { size: 18 }), 'Got it'),
+        canSpeak() ? h('button', { type: 'button', class: 'btn', onclick: () => speak(spoken, true) }, icon('volume', { size: 18 }), 'Read aloud') : null,
+        h('button', { type: 'button', class: 'btn btn-ghost', onclick: close }, 'Skip'))),
+  });
+}
+
+// Called by the app shell on every route change.
+export function maybeShowHowToPlay(routeName) {
+  if (routeName !== 'home' && routeName !== 'play') return;
+  if (seen()) return;
+  // Wait for the screen to draw; never stack on top of another dialog (for example an event card).
+  setTimeout(() => {
+    if (seen() || document.querySelector('.modal-backdrop')) return;
+    const now = (location.hash.replace(/^#\/?/, '').split(/[/?]/)[0]) || 'home';
+    if (now === 'home' || now === 'play') openHowToPlay();
+  }, 500);
+}
+
+export function howToPlayButton({ className = 'btn btn-sm' } = {}) {
+  return h('button', { type: 'button', class: `${className} howto-btn`, onclick: () => openHowToPlay() }, icon('lightbulb', { size: 18 }), 'How to play');
+}

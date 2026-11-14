@@ -1,5 +1,6 @@
 // Debrief building blocks: score breakdown, lessons, radiation comparison, history charts, badges, certificate.
 import { h } from '../../dom.js';
+import { icon, MODULE_ICONS, SUPPLY_ICONS } from '../../icons.js';
 import { lineChart } from '../../charts.js';
 import { stars, sourceBadge, termButton } from '../../components/common.js';
 import { compareDose } from '../../../engine/dataLab.js';
@@ -7,7 +8,7 @@ import { RADIATION } from '../../../data/constants.js';
 import { logo } from '../../logo.js';
 
 const PARTS = [
-  { key: 'survival', icon: '🫁', label: 'Survival', max: 400, color: 'var(--cyan)', tip: 'How many of the planned sols the crew lasted.' },
+  { key: 'survival', icon: '🫁', label: 'Survival', max: 400, color: 'var(--cyan)', tip: 'How many of the planned days the crew lasted.' },
   { key: 'science', icon: '🔬', label: 'Science', max: 250, color: 'var(--violet)', tip: 'How close you got to the science goal.' },
   { key: 'health', icon: '❤️', label: 'Crew health', max: 150, color: 'var(--good)', tip: 'Average crew health at the end.' },
   { key: 'morale', icon: '🙂', label: 'Morale', max: 50, color: 'var(--gold)', tip: 'Happy crews work better.' },
@@ -25,7 +26,7 @@ export function scoreBreakdown(score) {
           h('span', { style: { width: `${Math.min(100, (100 * v) / p.max)}%`, background: p.color } })),
         h('span', { class: 'db-bar-num mono' }, `${v}`, h('small', null, ` / ${p.max}`)));
     })),
-    h('p', { class: 'db-star-rules faint' }, '⭐ Finish the mission · ⭐ Reach the science goal · ⭐ Crew health 70+ and every dose under the limit'));
+    h('p', { class: 'db-star-rules faint' }, 'How to earn 3 stars: finish the mission, reach the science goal, and keep the crew healthy (health 70 or more, radiation under the limit).'));
 }
 
 export function lessonsPanel(report) {
@@ -37,8 +38,8 @@ export function lessonsPanel(report) {
       h('h2', { class: 'panel-title' }, '✅ What went well'),
       list(report.went, 'good', 'You survived the landing. Every mission teaches something!')),
     h('div', { class: 'panel db-improve' },
-      h('h2', { class: 'panel-title' }, '🛠️ Try next time'),
-      list(report.improve, 'warn', 'Nothing to fix. Textbook mission, Commander!')));
+      h('h2', { class: 'panel-title' }, 'Try next time'),
+      list(report.improve, 'warn', 'Nothing to fix. A perfect mission, Commander!')));
 }
 
 export function radiationPanel(report, mission) {
@@ -67,13 +68,13 @@ const pts = (hist, key) => hist.map((x) => ({ x: x.sol, y: x[key] }));
 export function historyCharts(mission) {
   const hist = mission.history ?? [];
   if (hist.length < 2) {
-    return h('section', { class: 'panel db-charts' }, h('h2', { class: 'panel-title' }, 'Mission telemetry'),
-      h('p', { class: 'faint' }, 'The mission ended too quickly to draw charts. Survive a few more sols next time!'));
+    return h('section', { class: 'panel db-charts' }, h('h2', { class: 'panel-title' }, 'Mission charts'),
+      h('p', { class: 'faint' }, 'The mission was too short to draw charts. Next time you will get further!'));
   }
   const unit = mission.config.body === 'mars' ? 'Sol' : 'Day';
   const common = { xLabel: unit, xFormat: (v) => String(Math.round(v)), width: 560, height: 230, yZero: true };
   return h('section', { class: 'panel db-charts', 'aria-label': 'Mission telemetry charts' },
-    h('h2', { class: 'panel-title' }, '📈 Mission telemetry'),
+    h('h2', { class: 'panel-title' }, 'Mission charts'),
     h('div', { class: 'db-chart-grid' },
       lineChart({ ...common, title: 'Supplies over time', yLabel: 'kg',
         desc: 'Oxygen, water and food remaining at the end of each sol.',
@@ -87,7 +88,7 @@ export function historyCharts(mission) {
         series: [
           { label: 'Made', color: '#fde047', values: pts(hist, 'generated') },
           { label: 'Used', color: '#4fe3ff', values: pts(hist, 'demand') },
-          { label: 'Battery', color: '#c4b5fd', values: pts(hist, 'battery'), dashed: true },
+          { label: 'Battery', color: '#c5d2de', values: pts(hist, 'battery'), dashed: true },
         ] }),
       lineChart({ ...common, title: 'Crew health and morale', yLabel: '%', yDomain: [0, 100],
         desc: 'Average crew health and morale each sol.',
@@ -105,7 +106,7 @@ export function badgesPanel(badges) {
   return h('section', { class: 'panel db-badges', 'aria-label': 'New badges' },
     h('h2', { class: 'panel-title' }, '🏅 New badges earned!'),
     h('ul', { class: 'db-badge-list' }, badges.map((b, i) => h('li', { class: 'db-badge', style: { '--i': i } },
-      h('span', { class: 'db-badge-icon', 'aria-hidden': 'true' }, b.icon ?? '🏅'),
+      h('span', { class: 'db-badge-icon', 'aria-hidden': 'true' }, icon('award', { size: 30 })),
       h('span', null, h('strong', null, b.title), h('br'), h('span', { class: 'faint' }, b.desc))))),
     h('a', { class: 'btn btn-sm', href: '#/badges' }, 'See all badges'));
 }
@@ -126,5 +127,5 @@ export function certificate({ mission, report, commander, date }) {
       h('div', { class: 'db-cert-stars' }, stars(report.score.stars, 3, { size: '2rem' })),
       h('p', { class: 'db-cert-meta mono' }, `${report.score.points} points · Crew: ${mission.crew.map((c) => c.name).join(', ')}`),
       h('p', { class: 'db-cert-meta mono' }, `${date} · Mission code ${mission.code}`),
-      h('p', { class: 'db-cert-foot' }, 'Built with real NASA data: Curiosity REMS weather, DONKI space weather, and Moon/Mars Trek maps.')));
+      h('p', { class: 'db-cert-foot' }, 'Built with real NASA data from NASA records: Curiosity REMS weather, DONKI space weather, and Moon/Mars Trek maps.')));
 }

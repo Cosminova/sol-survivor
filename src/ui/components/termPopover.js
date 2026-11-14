@@ -5,6 +5,7 @@ import { getState, setProfile } from '../../state/store.js';
 import { call } from '../../state/learn.js';
 import { speak, canSpeak } from '../speech.js';
 import { trapFocus } from './modal.js';
+import { kidHint } from '../kid/words.js';
 
 let current = null;
 
@@ -43,9 +44,10 @@ function markViewed(id) {
 function content(term, show, close) {
   const cat = CATEGORIES[term.category];
   return [
-    h('button', { type: 'button', class: 'btn btn-ghost btn-icon modal-close', 'aria-label': 'Close definition', onclick: close }, '✕'),
+    h('button', { type: 'button', class: 'btn btn-ghost btn-icon modal-close', 'aria-label': 'Close definition', onclick: close }, h('span', null, 'Close'), h('span', { 'aria-hidden': 'true' }, '✕')),
     h('span', { class: 'kicker' }, cat ? `${cat.icon} ${cat.label}` : 'Astronaut Dictionary'),
     h('h3', { id: 'term-pop-title' }, term.term),
+    kidHint(term.id) ? h('p', { class: 'term-short' }, h('strong', null, 'In short: '), kidHint(term.id)) : null,
     h('p', null, term.def),
     term.example ? h('p', { class: 'example' }, h('strong', null, 'Example: '), term.example) : null,
     term.related?.length
@@ -56,8 +58,8 @@ function content(term, show, close) {
         }))
       : null,
     h('div', { class: 'row', style: { marginTop: '0.8rem' } },
-      canSpeak() ? h('button', { type: 'button', class: 'btn btn-sm', onclick: () => speak(`${term.term}. ${term.def} ${term.example ?? ''}`, true) }, '🔊 Read aloud') : null,
-      h('a', { class: 'btn btn-sm btn-ghost', href: `#/dictionary?term=${encodeURIComponent(term.id)}`, onclick: close }, '📖 Open in Dictionary')),
+      canSpeak() ? h('button', { type: 'button', class: 'btn btn-sm', onclick: () => speak(`${term.term}. ${kidHint(term.id) ?? ''} ${term.def} ${term.example ? `For example: ${term.example}` : ''}`, true) }, 'Read aloud') : null,
+      h('a', { class: 'btn btn-sm btn-ghost', href: `#/dictionary?term=${encodeURIComponent(term.id)}`, onclick: close }, 'Open in Dictionary')),
   ];
 }
 

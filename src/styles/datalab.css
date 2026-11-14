@@ -251,3 +251,30 @@
   .dl-timeline { --rail: 0.55rem; }
   .dl-rung-head { flex-direction: column; gap: 0.1rem; }
 }
+
+/* ---- Flight-control HUD pass: flat slate frames instead of decorative gradients ---- */
+.dl-hero {
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(var(--cyan), var(--cyan)) top right / 14px 2px no-repeat, linear-gradient(var(--cyan), var(--cyan)) top right / 2px 14px no-repeat,
+    linear-gradient(var(--cyan), var(--cyan)) bottom left / 14px 2px no-repeat, linear-gradient(var(--cyan), var(--cyan)) bottom left / 2px 14px no-repeat,
+    linear-gradient(135deg, var(--line) calc(var(--ch) * 0.7071 + 1px), transparent calc(var(--ch) * 0.7071 + 1px)) top left / calc(var(--ch) * 2) calc(var(--ch) * 2) no-repeat,
+    linear-gradient(315deg, var(--line) calc(var(--ch) * 0.7071 + 1px), transparent calc(var(--ch) * 0.7071 + 1px)) bottom right / calc(var(--ch) * 2) calc(var(--ch) * 2) no-repeat,
+    var(--surface);
+  background-origin: border-box;
+  clip-path: polygon(var(--ch) 0, 100% 0, 100% calc(100% - var(--ch)), calc(100% - var(--ch)) 100%, 0 100%, 0 var(--ch));
+  box-shadow: none;
+}
+.dl-hero::after { display: none; }
+.dl-hero-chips span { border-color: var(--line); background: rgba(3, 7, 14, 0.5); letter-spacing: 0.08em; text-transform: uppercase; }
+.dl-stat { background: rgba(3, 7, 14, 0.55); border-color: var(--line-soft); }
+.dl-stat::before { box-shadow: none; }
+.dl-stat-icon:empty, .dl-screen span[aria-hidden='true']:empty { display: none; }
+.dl-ladder-bar { background: var(--cyan); }
+.dl-rung-bar { background: var(--rad); box-shadow: none; }
+.dl-rung-limit .dl-rung-bar { background: var(--danger); box-shadow: none; }
+.dl-gbar-fill { background: var(--c); }
+.dl-month-storm { box-shadow: none; }
+.dl-tile-btn:hover { transform: translateY(-1px); }
+.dl-tl-year { font-family: var(--font-display); }
+.dl-dose-figure-btn { background: #e8f3fb; }

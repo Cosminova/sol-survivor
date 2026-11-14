@@ -61,7 +61,7 @@ function siteCard(site, landersHere) {
     h('p', { class: 'dl-coords' }, formatLatLon(site.lat, site.lon)),
     h('p', null, site.blurb),
     meterRow('💧', 'Ice access', site.iceAccess * 100, '#60a5fa', `${Math.round(site.iceAccess * 100)}%`),
-    meterRow('🔬', 'Science value', Math.min(100, (site.science / 2) * 100), '#b197fc', `×${site.science}`),
+    meterRow('🔬', 'Science value', Math.min(100, (site.science / 2) * 100), '#5eead4', `×${site.science}`),
     Number.isFinite(site.sunlit) ? meterRow('☀️', 'Sunlight', site.sunlit * 100, '#fde047', `${Math.round(site.sunlit * 100)}%`) : null,
     climate ? h('p', { class: 'muted dl-small' }, climate) : null,
     landersHere.length ? h('p', { class: 'dl-small' }, '🛬 Real landers here: ', landersHere.map((l) => `${l.name} (${l.year})`).join(', ')) : null,
