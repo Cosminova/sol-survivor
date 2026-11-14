@@ -49,5 +49,5 @@ export function mapView({ body, sites = [], selectedId = null, onSelect, extraPi
   h('div', { class: 'map-graticule', 'aria-hidden': 'true' }),
   pins,
   extras,
-  h('span', { class: 'map-credit' }, body === 'mars' ? 'Viking MDIM 2.1 · NASA Mars Trek' : 'LRO WAC · NASA Moon Trek'));
+  h('span', { class: 'map-credit' }, body === 'mars' ? 'Real NASA data, recorded 1976 to 1980 by the Viking orbiters · NASA Mars Trek map' : 'Real NASA data, recorded from 2009 by the Lunar Reconnaissance Orbiter · NASA Moon Trek map'));
 }

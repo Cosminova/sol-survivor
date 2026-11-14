@@ -22,14 +22,15 @@ function node(ch, index, { progress, settings, selectedId, onSelect }) {
       type: 'button',
       class: 'camp-node-btn',
       'aria-pressed': String(selected),
-      'aria-label': `Chapter ${ch.chapter}: ${ch.title}. ${unlocked ? `${earned} of 3 stars` : 'Locked. Finish the previous chapter to unlock.'}`,
+      'aria-describedby': `camp-node-desc-${ch.id}`,
       onclick: () => onSelect(ch.id),
     },
     h('span', { class: 'camp-planet', 'aria-hidden': 'true' }, unlocked ? h('span', { class: 'camp-num' }, ch.chapter) : '🔒'),
     h('span', { class: 'camp-node-title' }, ch.title),
     h('span', { class: 'camp-node-body' }, ch.body === 'mars' ? 'Mars' : 'Moon'),
     ch.teaser ? h('span', { class: 'camp-node-teaser' }, ch.teaser) : null,
-    stars(earned, 3, { size: '1rem' })));
+    stars(earned, 3, { size: '1rem' }),
+    h('span', { class: 'sr-only', id: `camp-node-desc-${ch.id}` }, unlocked ? `Chapter ${ch.chapter}.` : `Chapter ${ch.chapter}. Locked. Finish the chapter before it to unlock.`)));
 }
 
 function briefing(ch, index, { progress, settings }) {
@@ -43,10 +44,10 @@ function briefing(ch, index, { progress, settings }) {
     ch.teaser ? h('p', { class: 'camp-teaser' }, ch.teaser) : null,
     h('div', { class: 'row camp-facts' },
       h('span', { class: 'badge' }, `📍 ${site?.name ?? ch.siteId}`),
-      h('span', { class: 'badge' }, `🗓️ ${ch.targetSols} ${ch.body === 'mars' ? 'sols' : 'days'}`),
-      h('span', { class: 'badge' }, `⚖️ ${ch.budgetKg.toLocaleString()} kg`),
+      h('span', { class: 'badge' }, ch.body === 'mars' ? `${ch.targetSols} sols (Mars days)` : `${ch.targetSols} days`),
+      h('span', { class: 'badge' }, `Lander can carry ${ch.budgetKg.toLocaleString()} kg`),
       h('span', { class: 'badge' }, `🔬 Science goal ${ch.scienceGoal}`),
-      ch.includeTransitDose ? h('span', { class: 'badge warn' }, '☢️ Arrives with cruise radiation') : null),
+      ch.includeTransitDose ? h('span', { class: 'badge warn' }, 'Crew starts with radiation from the trip') : null),
     h('p', { class: 'camp-lesson' }, h('strong', null, 'You will learn: '), ch.lesson),
     h('blockquote', { class: 'camp-story' }, richText(ch.intro, openTermPopover)),
     site?.blurb ? h('p', { class: 'muted' }, site.blurb) : null,
@@ -57,9 +58,9 @@ function briefing(ch, index, { progress, settings }) {
     best ? h('p', { class: 'muted' }, `Best: ${best.points} points · ${best.stars}★ · played ${best.plays}×`) : null,
     h('div', { class: 'row' },
       unlocked
-        ? h('a', { class: 'btn btn-primary btn-lg', href: `#/loadout/${ch.id}`, onclick: () => play('click') }, '🧳 Pack the lander')
-        : h('button', { type: 'button', class: 'btn btn-lg', disabled: true }, `🔒 Finish Chapter ${ch.chapter - 1} first`),
-      canSpeak() ? h('button', { type: 'button', class: 'btn', onclick: () => speak(`${ch.title}. ${ch.intro}`, true) }, '🔊 Read briefing') : null));
+        ? h('a', { class: 'btn btn-primary btn-lg', href: `#/loadout/${ch.id}`, onclick: () => play('click') }, 'Pack the lander')
+        : h('button', { type: 'button', class: 'btn btn-lg', disabled: true }, `Finish Chapter ${ch.chapter - 1} first`),
+      canSpeak() ? h('button', { type: 'button', class: 'btn', onclick: () => speak(`${ch.title}. ${ch.intro}`, true) }, 'Read aloud') : null));
 }
 
 export function render(root) {
@@ -81,9 +82,9 @@ export function render(root) {
   root.append(
     h('header', { class: 'screen-head' },
       h('div', null,
-        h('span', { class: 'kicker' }, 'Mission Campaign'),
+        h('span', { class: 'kicker' }, 'Missions'),
         h('h1', null, 'From the Moon to Mars'),
-        h('p', null, 'Each chapter teaches one big ', termButton('trade-off', 'trade-off'), '. Win a chapter to unlock the next. Earn up to 3 stars: survive, hit the science goal, keep the crew healthy.')),
+        h('p', null, 'Each chapter teaches one big ', termButton('trade-off', 'trade-off'), '. Win a chapter to unlock the next one. You can earn 3 stars: finish the mission, reach the science goal, and keep the crew healthy.')),
       h('div', { class: 'row' },
         h('span', { class: 'badge' }, `⭐ ${total} / ${CAMPAIGN.length * 3}`),
         savedMission?.status === 'active' ? h('a', { class: 'btn btn-cyan', href: '#/play' }, `▶ Resume ${savedMission.config.title}`) : null,

@@ -10,6 +10,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   textSize: 'normal', // normal | large | xl
   highContrast: false,
   unlockAll: false,
+  expertView: false, // false = Cadet view (simple, ages 7-12); true = every number and chart
 });
 
 function safeParse(raw) {

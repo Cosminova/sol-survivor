@@ -6,6 +6,7 @@ import { play } from '../audio.js';
 import { speak, canSpeak } from '../speech.js';
 import { openModal } from '../components/modal.js';
 import { toast } from '../components/common.js';
+import { howToPlayButton } from '../kid/howToPlay.js';
 
 const TEXT_SIZES = [
   { id: 'normal', label: 'A', name: 'Normal' },
@@ -45,13 +46,17 @@ function view() {
     h('header', { class: 'screen-head' },
       h('div', null,
         h('span', { class: 'kicker' }, '⚙️ Settings'),
-        h('h1', null, 'Make Sol Survivor work for you'),
-        h('p', null, 'Changes save automatically on this device.'))),
+        h('h1', null, 'Set up the game your way'),
+        h('p', null, 'Your choices are saved on this device.'))),
     h('div', { class: 'set-grid' },
+      h('section', { class: 'panel', 'aria-labelledby': 'set-view' },
+        h('h2', { class: 'panel-title', id: 'set-view' }, 'Game view'),
+        toggle('set-expert', 'Expert view', 'Off: Cadet view, with three big gauges and plain words (best for ages 7 to 12). On: every number, chart and science word, for older kids, parents and classrooms. Nothing in the game changes, only what you see.', settings.expertView, (v) => setSettings({ expertView: v })),
+        h('div', { class: 'row set-tests' }, howToPlayButton(), h('span', { class: 'faint' }, 'Shows the three steps again.'))),
       h('section', { class: 'panel', 'aria-labelledby': 'set-sound' },
         h('h2', { class: 'panel-title', id: 'set-sound' }, '🔊 Sound and voice'),
-        toggle('set-sfx', 'Sound effects', 'Beeps for new sols, alerts and wins', settings.sound, (v) => { setSettings({ sound: v }); if (v) setTimeout(() => play('good'), 50); }),
-        toggle('set-read', 'Read aloud', canSpeak() ? 'Reads events and briefings out loud' : 'Not supported in this browser', settings.readAloud, (v) => { setSettings({ readAloud: v }); if (v) speak('Read aloud is on, Commander.', true); }),
+        toggle('set-sfx', 'Sound effects', 'Beeps for new days, alerts and wins', settings.sound, (v) => { setSettings({ sound: v }); if (v) setTimeout(() => play('good'), 50); }),
+        toggle('set-read', 'Read aloud', canSpeak() ? 'Reads stories and mission news out loud' : 'This browser cannot read aloud', settings.readAloud, (v) => { setSettings({ readAloud: v }); if (v) speak('Read aloud is on, Commander.', true); }),
         h('div', { class: 'row set-tests' },
           h('button', { type: 'button', class: 'btn btn-sm', onclick: () => play('win') }, '▶ Test sound'),
           canSpeak() ? h('button', { type: 'button', class: 'btn btn-sm', onclick: () => speak('Houston, Sol Survivor is ready for launch.', true) }, '▶ Test voice') : null)),
@@ -60,11 +65,11 @@ function view() {
         h('div', { class: 'set-row' },
           h('span', { class: 'set-label', id: 'set-text-label' }, h('strong', null, 'Text size'), h('span', { class: 'faint' }, 'Bigger text for projectors and tablets')),
           h('div', { class: 'row', role: 'group', 'aria-labelledby': 'set-text-label' }, TEXT_SIZES.map((t) => h('button', {
-            type: 'button', class: 'chip set-size', 'aria-pressed': String(settings.textSize === t.id), 'aria-label': t.name, id: `set-size-${t.id}`,
+            type: 'button', class: 'chip set-size', 'aria-pressed': String(settings.textSize === t.id), id: `set-size-${t.id}`,
             onclick: () => setSettings({ textSize: t.id }),
-          }, t.label)))),
+          }, h('span', { 'aria-hidden': 'true' }, t.label), h('span', { class: 'set-size-name' }, t.name))))),
         toggle('set-contrast', 'High contrast', 'Brighter text and stronger outlines', settings.highContrast, (v) => setSettings({ highContrast: v })),
-        toggle('set-motion', 'Reduce motion', 'Stops spinning planets, dust and animations', settings.reducedMotion, (v) => setSettings({ reducedMotion: v }))),
+        toggle('set-motion', 'Reduce motion', 'Stops spinning planets, blinking lights and the scrolling ticker', settings.reducedMotion, (v) => setSettings({ reducedMotion: v }))),
       h('section', { class: 'panel', 'aria-labelledby': 'set-you' },
         h('h2', { class: 'panel-title', id: 'set-you' }, '🧑‍🚀 Commander'),
         h('label', { class: 'field', for: 'set-name' }, h('span', null, 'Name on your certificate'), nameInput),
@@ -73,7 +78,7 @@ function view() {
           h('span', { class: 'faint' }, 'Use a first name or nickname only. Nothing leaves this device.'))),
       h('section', { class: 'panel', 'aria-labelledby': 'set-teach' },
         h('h2', { class: 'panel-title', id: 'set-teach' }, '🍎 For teachers'),
-        toggle('set-unlock', 'Unlock all chapters', 'Jump to any chapter for a lesson or demo', settings.unlockAll, (v) => setSettings({ unlockAll: v })),
+        toggle('set-unlock', 'Unlock all chapters', 'Jump to any chapter for a lesson or a demo', settings.unlockAll, (v) => setSettings({ unlockAll: v })),
         h('div', { class: 'row set-tests' },
           h('a', { class: 'btn btn-sm', href: '#/educators' }, '📚 Educator guide'),
           h('button', { type: 'button', class: 'btn btn-sm btn-danger', onclick: confirmReset }, '🧹 Reset all progress')))));

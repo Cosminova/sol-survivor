@@ -1,6 +1,6 @@
-// "MISSION TELEMETRY" ticker: a read-only marquee along the bottom of the viewport. On the play screen
-// it shows live mission values (set from the dashboard's draw cycle); elsewhere it shows facts computed
-// from the bundled NASA datasets. Holds no game state. Static (no scrolling) when motion is reduced.
+// Ticker: a read-only marquee along the bottom of the viewport. On the play screen it shows the player's
+// own mission values ("Your mission"); elsewhere it shows facts from the bundled, archived NASA datasets
+// and is labelled "From NASA records" so nothing reads as a live feed. Holds no game state. Static (no scrolling) when motion is reduced.
 import { h } from '../dom.js';
 import { icon } from '../icons.js';
 import { MARS, MOON, RADIATION } from '../../data/constants.js';
@@ -8,6 +8,9 @@ import { marsTime, seasonName, lightDelaySeconds } from '../../engine/marsTime.j
 import { loadRems, loadDonki } from '../../state/nasaData.js';
 
 const SECONDS_PER_ITEM = 5;
+// Off the play screen every readout comes from saved NASA datasets or simple calendar math: say so.
+const RECORDS_TAG = 'From NASA records';
+const MISSION_TAG = 'Your mission';
 let els = null;
 let override = null;
 let datasetItems = [];
@@ -19,12 +22,12 @@ function liveItems() {
   const now = new Date();
   const { ls, marsYear } = marsTime(now);
   return [
-    { label: 'Mars season now', value: `Ls ${Math.round(ls)}° · ${seasonName(ls, true)} (north) · Mars year ${marsYear}` },
-    { label: 'Earth to Mars signal', value: `${fmtDelay(lightDelaySeconds(now))} one way` },
-    { label: 'Earth to Moon signal', value: `${MOON.lightSeconds} s one way` },
-    { label: 'Mars sol length', value: `${MARS.dayHours.toFixed(2)} h` },
+    { label: 'Mars season today (worked out from the calendar)', value: `Ls ${Math.round(ls)}° · ${seasonName(ls, true)} (north) · Mars year ${marsYear}` },
+    { label: 'Radio from Earth to Mars today (worked out)', value: `${fmtDelay(lightDelaySeconds(now))} one way` },
+    { label: 'Radio from Earth to the Moon', value: `${MOON.lightSeconds} s one way` },
+    { label: 'One Mars day (a sol)', value: `${MARS.dayHours.toFixed(2)} hours` },
     { label: 'Gravity', value: `Mars ${Math.round(MARS.gravity * 100)}% · Moon ${Math.round(MOON.gravity * 100)}% of Earth` },
-    { label: 'Career dose limit', value: `${RADIATION.careerLimitMsv} mSv` },
+    { label: 'Astronaut radiation limit', value: `${RADIATION.careerLimitMsv} mSv in a whole career` },
   ];
 }
 
@@ -37,8 +40,8 @@ function remsItems(rems) {
   const coldest = temps.reduce((lo, r) => Math.min(lo, r[col.minC]), Infinity);
   const warmest = temps.reduce((hi, r) => Math.max(hi, r[col.maxC]), -Infinity);
   const items = [
-    { label: 'Curiosity REMS archive', value: `${rows.length.toLocaleString()} sols of Mars weather` },
-    { label: 'Latest REMS reading', value: `sol ${last[col.sol]} · ${last[col.earthDate]} · ${last[col.minC]}° to ${last[col.maxC]}°C · ${last[col.pressurePa]} Pa` },
+    { label: 'Curiosity rover weather records', value: `${rows.length.toLocaleString()} sols of Mars weather saved` },
+    { label: 'Newest saved Curiosity reading', value: `sol ${last[col.sol]} · ${last[col.earthDate]} · ${last[col.minC]}° to ${last[col.maxC]}°C · ${last[col.pressurePa]} Pa` },
   ];
   if (temps.length) items.push({ label: 'Gale Crater extremes', value: `${coldest}°C to ${warmest}°C` });
   return items;
@@ -50,9 +53,9 @@ function donkiItems(donki) {
   const xClass = flares.filter((f) => String(f.c).startsWith('X')).length;
   const span = donki.range?.length === 2 ? `${donki.range[0].slice(0, 4)} to ${donki.range[1].slice(0, 4)}` : 'archive';
   return [
-    { label: `DONKI solar flares ${span}`, value: `${flares.length.toLocaleString()} recorded · ${xClass} X-class` },
-    { label: 'Coronal mass ejections', value: (donki.cmes?.length ?? 0).toLocaleString() },
-    { label: 'Solar particle events', value: (donki.seps?.length ?? 0).toLocaleString() },
+    { label: `Solar flares in NASA records ${span}`, value: `${flares.length.toLocaleString()} recorded · ${xClass} of the biggest kind (X-class)` },
+    { label: 'Giant Sun eruptions recorded (CMEs)', value: (donki.cmes?.length ?? 0).toLocaleString() },
+    { label: 'Solar radiation storms recorded', value: (donki.seps?.length ?? 0).toLocaleString() },
   ];
 }
 
@@ -85,10 +88,11 @@ function render() {
 // Builds the ticker bar once. Call from the app shell.
 export function createTicker() {
   const track = h('div', { class: 'ticker-track' });
-  const root = h('aside', { class: 'ticker', 'aria-label': 'Mission telemetry' },
-    h('span', { class: 'ticker-tag' }, icon('status', { size: 16 }), h('span', { class: 'ticker-tag-text' }, 'Mission telemetry')),
+  const tagText = h('span', { class: 'ticker-tag-text' }, RECORDS_TAG);
+  const root = h('aside', { class: 'ticker', 'aria-label': RECORDS_TAG },
+    h('span', { class: 'ticker-tag' }, icon('status', { size: 16 }), tagText),
     h('div', { class: 'ticker-window' }, track));
-  els = { root, track };
+  els = { root, track, tagText };
   render();
   Promise.allSettled([loadRems(), loadDonki()]).then(([rems, donki]) => {
     datasetItems = [
@@ -103,5 +107,10 @@ export function createTicker() {
 // setTickerItems([{ label, value, tone? }]) shows live readouts; setTickerItems(null) returns to dataset facts.
 export function setTickerItems(items) {
   override = items?.length ? items : null;
+  if (els) {
+    const tag = override ? MISSION_TAG : RECORDS_TAG;
+    els.tagText.textContent = tag;
+    els.root.setAttribute('aria-label', tag);
+  }
   render();
 }
