@@ -1,80 +1,160 @@
-/* Sol Survivor design tokens: deep-space navy, Mars rust, Moon silver, cyan telemetry. */
+/* Sol Survivor design tokens. Editorial and restrained: white and near-black surfaces,
+   photography for colour, one Mars-rust accent. The play dashboard switches to the dark theme. */
+@import '@fontsource/anton/400.css';
+@import '@fontsource-variable/inter/wght.css';
+
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
-  --bg-0: #040714;
-  --bg-1: #080e24;
-  --bg-2: #0e1736;
-  --bg-3: #16224a;
-  --panel: rgba(14, 23, 54, 0.78);
-  --panel-solid: #0e1736;
-  --panel-raised: rgba(24, 36, 78, 0.85);
-  --line: rgba(130, 170, 255, 0.18);
-  --line-strong: rgba(130, 190, 255, 0.38);
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f5f5f5;
+  --surface-3: #e5e5e5;
+  --inverse: #111111;
+  --on-inverse: #ffffff;
+  --line: #e5e5e5;
+  --line-strong: #cacacb;
 
-  --text: #eef3ff;
-  --text-dim: #b3c0e0;
-  --text-faint: #8593ba;
+  --text: #111111;
+  --text-dim: #4f4f52;
+  --text-faint: #6b6b6e;
 
-  --cyan: #4fe3ff;
-  --cyan-dim: #2ab3d6;
-  --mars: #ff7a3d;
-  --mars-deep: #d4521c;
-  --mars-sand: #e9b27a;
-  --moon: #cfd8ea;
-  --moon-deep: #8a96b0;
-  --gold: #ffd166;
-  --good: #4ade80;
-  --warn: #fbbf24;
-  --danger: #ff5d6c;
-  --violet: #b197fc;
-  --o2: #7dd3fc;
-  --water: #60a5fa;
-  --food: #a3e635;
-  --power: #fde047;
-  --spares: #c4b5fd;
-  --rad: #f472b6;
+  --accent: #c1440e;
+  --accent-hover: #a2380b;
+  --on-accent: #ffffff;
+  --accent-soft: #fbeee8;
 
-  --font-ui: ui-rounded, 'SF Pro Rounded', 'Nunito', 'Segoe UI Variable Display', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
-  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Menlo, Consolas, monospace;
+  --good: #1d7a45;
+  --good-bg: #e7f3ec;
+  --warn: #8a5a00;
+  --warn-bg: #fbf1dc;
+  --danger: #c4162a;
+  --danger-bg: #fbe9ea;
 
-  --fs-base: 1rem;
+  /* Data palette for charts and meters (works on light and dark surfaces). */
+  --data-1: #c1440e;
+  --data-2: #4a6fa5;
+  --data-3: #8d8d8f;
+  --data-4: #d39a62;
+  --data-5: #2f8f6b;
+
+  /* Legacy aliases used by charts and older markup. */
+  --panel: var(--surface);
+  --panel-solid: var(--surface);
+  --panel-raised: var(--surface-2);
+  --cyan: var(--text);
+  --mars: var(--accent);
+  --moon: var(--text-dim);
+  --gold: var(--accent);
+  --violet: var(--data-2);
+  --o2: var(--data-2);
+  --water: var(--data-2);
+  --food: var(--data-5);
+  --power: var(--data-4);
+  --spares: var(--data-3);
+  --rad: var(--accent);
+
+  --font-display: 'Anton', 'Arial Narrow', 'Helvetica Neue Condensed', Impact, sans-serif;
+  --font-ui: 'Inter Variable', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  --fs-xs: 0.8125rem;
   --fs-sm: 0.875rem;
-  --fs-xs: 0.78rem;
-  --fs-lg: 1.15rem;
+  --fs-base: 1rem;
+  --fs-md: 1.125rem;
+  --fs-lg: 1.25rem;
   --fs-xl: 1.5rem;
-  --fs-2xl: clamp(1.7rem, 1.2rem + 2vw, 2.4rem);
-  --fs-hero: clamp(2.6rem, 1.4rem + 6vw, 5.4rem);
+  --fs-2xl: 2rem;
+  --fs-display-sm: clamp(2.25rem, 1.6rem + 2.6vw, 3.5rem);
+  --fs-display: clamp(2.75rem, 1.4rem + 5.4vw, 6rem);
+  --fs-display-xl: clamp(3.5rem, 1rem + 9vw, 9.5rem);
 
-  --r-sm: 8px;
-  --r-md: 14px;
-  --r-lg: 22px;
+  /* 8px spacing grid */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 64px;
+  --s-9: 96px;
+  --gap: var(--s-4);
+
+  --r-sm: 4px;
+  --r-md: 8px;
+  --r-lg: 12px;
   --r-pill: 999px;
-  --gap: 1rem;
   --tap: 44px;
 
-  --glow-cyan: 0 0 0 1px rgba(79, 227, 255, 0.35), 0 0 24px rgba(79, 227, 255, 0.18);
-  --glow-mars: 0 0 0 1px rgba(255, 122, 61, 0.45), 0 0 28px rgba(255, 122, 61, 0.25);
-  --shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
-  --focus: 0 0 0 3px #040714, 0 0 0 6px var(--gold);
+  --strip-h: 36px;
+  --header-h: 60px;
+  --page-max: 1440px;
+  --page-pad: clamp(16px, 3.4vw, 48px);
 
-  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --t-fast: 140ms;
-  --t-med: 260ms;
-  --t-slow: 600ms;
+  --focus-color: #1a5cff;
+  --focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--focus-color);
+  --shadow: none;
+
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --t-fast: 150ms;
+  --t-med: 250ms;
+  --t-slow: 500ms;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg: #0f0f10;
+  --surface: #18181a;
+  --surface-2: #222224;
+  --surface-3: #2e2e31;
+  --inverse: #f5f5f5;
+  --on-inverse: #111111;
+  --line: #2c2c2f;
+  --line-strong: #47474b;
+
+  --text: #f5f5f5;
+  --text-dim: #bdbdc0;
+  --text-faint: #9d9da1;
+
+  --accent: #e2622b;
+  --accent-hover: #f0743e;
+  --on-accent: #111111;
+  --accent-soft: rgba(226, 98, 43, 0.14);
+
+  --good: #4cc38a;
+  --good-bg: rgba(76, 195, 138, 0.12);
+  --warn: #e8b04a;
+  --warn-bg: rgba(232, 176, 74, 0.12);
+  --danger: #ff6b6b;
+  --danger-bg: rgba(255, 107, 107, 0.12);
+
+  --data-1: #e2622b;
+  --data-2: #7d9fd3;
+  --data-3: #a3a3a7;
+  --data-4: #e0aa70;
+  --data-5: #4cc38a;
+
+  --focus-color: #8fb2ff;
 }
 
 :root[data-text='large'] { font-size: 112.5%; }
 :root[data-text='xl'] { font-size: 125%; }
 
 :root[data-contrast='high'] {
-  --panel: #0a1230;
-  --panel-raised: #111c44;
-  --line: rgba(220, 235, 255, 0.55);
+  --line: #8d8d8f;
+  --line-strong: #111111;
+  --text-dim: #111111;
+  --text-faint: #2b2b2d;
+  --accent: #9e3208;
+}
+:root[data-contrast='high'][data-theme='dark'] {
+  --line: #8d8d91;
   --line-strong: #ffffff;
-  --text-dim: #e6ecff;
-  --text-faint: #c9d3f0;
-  --cyan: #7af0ff;
+  --text-dim: #ffffff;
+  --text-faint: #e5e5e7;
+  --accent: #ff8a55;
 }
 
 :root[data-motion='reduced'] {

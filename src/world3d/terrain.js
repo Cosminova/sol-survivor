@@ -63,7 +63,8 @@ export function trekTileUrl(body, site) {
   return { url: new URL(`tiles/${body}/${y}_${x}.jpg`, document.baseURI).href, x, y };
 }
 
-function sampleTrek(body, site) {
+// extentM: metres covered by the terrain (so the crop matches the real ground footprint).
+function sampleTrek(body, site, extentM) {
   return new Promise((resolve) => {
     const { url, y } = trekTileUrl(body, site);
     const img = new Image();
@@ -75,7 +76,8 @@ function sampleTrek(body, site) {
         const ctx = c.getContext('2d', { willReadFrequently: true });
         const px = ((((site.lon + 180) % 45) + 45) % 45) / 45 * img.width;
         const py = (((90 - site.lat) - y * 45) / 45) * img.height;
-        const span = img.width / 8;
+        const metresPerPx = ((45 / img.width) * Math.PI * (body === 'moon' ? 1737400 : 3389500)) / 180;
+        const span = Math.max(3, (2 * extentM) / metresPerPx);
         ctx.drawImage(img, clamp(px - span / 2, 0, img.width - span), clamp(py - span / 2, 0, img.height - span), span, span, 0, 0, n, n);
         const data = ctx.getImageData(0, 0, n, n).data;
         let sum = 0;
@@ -128,31 +130,71 @@ function scatterRocks({ body, heightfield, layout, high }) {
   return { rocks, rockMat, colliders };
 }
 
+// Polar grid: rings grow geometrically so spacing is ~square everywhere, dense under the player's
+// feet and coarse out at the lidar horizon. One seamless mesh, no near/far stitching.
+function polarGeometry(heightAt, { segs, r0, rMax }) {
+  const ratio = 1 + (2 * Math.PI) / segs;
+  const radii = [];
+  for (let r = r0; r < rMax; r *= ratio) radii.push(r);
+  radii.push(rMax);
+  const count = 1 + radii.length * segs;
+  const pos = new Float32Array(count * 3);
+  const uv = new Float32Array(count * 2);
+  pos.set([0, heightAt(0, 0), 0], 0);
+  radii.forEach((r, ri) => {
+    for (let s = 0; s < segs; s += 1) {
+      const a = (s / segs) * Math.PI * 2;
+      const x = Math.sin(a) * r;
+      const z = Math.cos(a) * r;
+      const i = 1 + ri * segs + s;
+      pos.set([x, heightAt(x, z), z], i * 3);
+      uv.set([x / 3.2, z / 3.2], i * 2);
+    }
+  });
+  const index = [];
+  for (let s = 0; s < segs; s += 1) index.push(0, 1 + ((s + 1) % segs), 1 + s);
+  for (let ri = 0; ri < radii.length - 1; ri += 1) {
+    for (let s = 0; s < segs; s += 1) {
+      const a = 1 + ri * segs + s;
+      const b = 1 + ri * segs + ((s + 1) % segs);
+      const c = a + segs;
+      const d = b + segs;
+      index.push(a, b, c, b, d, c);
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+  geo.setIndex(count > 65535 ? new THREE.Uint32BufferAttribute(index, 1) : new THREE.Uint16BufferAttribute(index, 1));
+  geo.computeVertexNormals();
+  return geo;
+}
+
 export function createTerrain({ body, site, heightfield, layout, high }) {
-  const size = high ? 440 : 360;
-  const seg = high ? 200 : 110;
-  const geo = new THREE.PlaneGeometry(size, size, seg, seg);
-  geo.rotateX(-Math.PI / 2);
+  const rMax = heightfield.hasDem ? Math.min(heightfield.extent * 0.98, high ? 30000 : 12000) : (high ? 1500 : 900);
+  const geo = polarGeometry(heightfield.heightAt, { segs: high ? 256 : 112, r0: 1.2, rMax });
   const pos = geo.attributes.position;
+  const nrm = geo.attributes.normal;
   const colors = new Float32Array(pos.count * 3);
   const pal = Object.fromEntries(Object.entries(PALETTE[body] ?? PALETTE.mars).map(([k, v]) => [k, new THREE.Color(v)]));
   const tmp = new THREE.Color();
   for (let i = 0; i < pos.count; i += 1) {
     const x = pos.getX(i);
     const z = pos.getZ(i);
-    pos.setY(i, heightfield.heightAt(x, z));
-    tmp.copy(pal.dark).lerp(pal.light, clamp(0.55 + fbm2(x / 22, z / 22, 3, 4) * 0.9, 0, 1));
-    tmp.lerp(pal.dust, clamp(fbm2(x / 70, z / 70, 8, 3) * 1.2, 0, 0.6));
+    const k = Math.max(1, Math.hypot(x, z) / 60); // broader colour patches further out
+    tmp.copy(pal.dark).lerp(pal.light, clamp(0.55 + fbm2(x / (22 * k), z / (22 * k), 3, 4) * 0.9, 0, 1));
+    tmp.lerp(pal.dust, clamp(fbm2(x / (70 * k), z / (70 * k), 8, 3) * 1.2, 0, 0.6));
     const cs = heightfield.craterShade(x, z);
     if (cs > 0) tmp.lerp(body === 'moon' ? pal.dust : pal.crater, cs * 0.35);
+    // Steep slopes from the lidar landform: darker bedrock on Mars, fresher brighter regolith on the Moon.
+    const slope = 1 - nrm.getY(i);
+    if (slope > 0.04) tmp.lerp(body === 'moon' ? pal.dust : pal.crater, clamp((slope - 0.04) * 4, 0, 0.55));
     colors.set([tmp.r, tmp.g, tmp.b], i * 3);
   }
   const baseColors = colors.slice();
   geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-  geo.computeVertexNormals();
 
   const detail = detailTexture(body, high ? 512 : 256);
-  detail.repeat.set(size / 3.2, size / 3.2);
   const material = new THREE.MeshStandardMaterial({ vertexColors: true, map: detail, bumpMap: detail, bumpScale: high ? 1.6 : 1, roughness: 0.97, metalness: 0 });
   const ground = new THREE.Mesh(geo, material);
   ground.receiveShadow = true;
@@ -165,12 +207,12 @@ export function createTerrain({ body, site, heightfield, layout, high }) {
 
   let disposed = false;
   if (site) {
-    sampleTrek(body, site).then((trek) => {
+    sampleTrek(body, site, rMax).then((trek) => {
       if (!trek || disposed) return;
       const attr = geo.attributes.color;
       for (let i = 0; i < pos.count; i += 1) {
-        const u = (pos.getX(i) + size / 2) / size;
-        const v = (pos.getZ(i) + size / 2) / size;
+        const u = (pos.getX(i) + rMax) / (2 * rMax);
+        const v = (pos.getZ(i) + rMax) / (2 * rMax);
         const k = clamp(1 + (trek.ratio(u, v) - 1) * 0.45, 0.7, 1.3);
         attr.setXYZ(i, baseColors[i * 3] * k, baseColors[i * 3 + 1] * k, baseColors[i * 3 + 2] * k);
       }

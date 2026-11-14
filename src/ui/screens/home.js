@@ -1,83 +1,77 @@
-// Home: cinematic title with starfield and rotating Mars/Moon globes, quick links, Mars clock.
+// Landing page: full-bleed hero, large photo panels, one editorial panel. Deliberately light on data.
 import '../../styles/home.css';
 import { h } from '../dom.js';
-import { createGlobe } from '../globe.js';
-import { createStarfield } from '../starfield.js';
-import { marsClock } from '../components/marsClock.js';
-import { wordOfSolCard } from '../components/wordOfSol.js';
-import { didYouKnow, stars } from '../components/common.js';
 import { getState } from '../../state/store.js';
-import { CAMPAIGN } from '../../data/missions.js';
 
-const TILES = [
-  ['#/dictionary', '📖', 'Astronaut Dictionary', 'Every space word, explained for explorers.'],
-  ['#/academy', '🎓', 'Academy', 'Quizzes that test your mission smarts.'],
-  ['#/datalab', '📊', 'Data Lab', 'Real Curiosity weather and solar storm data.'],
-  ['#/tools', '🧭', 'Mission Tools', 'Mars clock, light delay, your Mars age.'],
-  ['#/badges', '🏅', 'Badges & Patch', 'Earn badges and design your mission patch.'],
-  ['#/educators', '🍎', 'For Educators', 'Lesson plans aligned to NGSS.'],
+const img = (file) => `./images/${file}`;
+
+const CAMPAIGNS = [
+  { href: '#/campaign', file: 'PIA14838.jpg', alt: 'Artist concept of the Curiosity rover being lowered to the surface of Mars', kicker: 'Mars campaign', title: 'Red dust, real storms.', cta: 'Play Mars' },
+  { href: '#/campaign', file: '11_03_24_artemis_3_on_surface.jpg', alt: 'Artist concept of a Starship lander on the Moon with Earth in the sky', kicker: 'Moon campaign', title: 'Fourteen days of night.', cta: 'Play Moon' },
 ];
 
-function continueButton(saved) {
+const EXPLORE = [
+  { href: '#/dictionary', file: 'as11-40-5903.jpg', alt: 'Buzz Aldrin standing on the Moon during Apollo 11', title: 'Astronaut Dictionary', cta: 'Look it up' },
+  { href: '#/academy', file: '09_24_24_First_steps_Axiom_suits.jpg', alt: 'Artist concept of two astronauts in Artemis suits stepping onto the Moon', title: 'Academy', cta: 'Start training' },
+  { href: '#/datalab', file: 'PIA10789.jpg', alt: 'Dust storms swirling near the north pole of Mars, seen from orbit', title: 'Data Lab', cta: 'Open the data' },
+];
+
+function hero() {
+  return h('section', { class: 'hero' },
+    h('img', { class: 'hero-img', src: img('PIA23302.jpg'), alt: 'Artist concept of astronauts and habitats on the surface of Mars', fetchpriority: 'high' }),
+    h('div', { class: 'hero-copy' },
+      h('p', { class: 'hero-kicker' }, 'Junior Astronaut Mission Trainer'),
+      h('h1', { class: 'hero-title' }, 'Survive Mars.'),
+      h('p', { class: 'hero-lede' }, 'Run an outpost on the Moon or Mars. Balance air, water, food, power and radiation using real NASA data.'),
+      h('div', { class: 'row hero-cta' },
+        h('a', { class: 'btn btn-light btn-lg', href: '#/campaign' }, 'Start mission'),
+        h('a', { class: 'btn btn-outline-light btn-lg', href: '#/datalab' }, 'Explore the data'))),
+    h('p', { class: 'hero-credit' }, 'Image: NASA, First Humans on Mars (artist concept)'));
+}
+
+function resume(saved) {
   if (!saved || saved.status !== 'active') return null;
-  return h('a', { class: 'btn btn-cyan btn-lg', href: '#/play' }, `▶ Continue: ${saved.config.title} · Sol ${saved.sol}`);
+  const unit = saved.config.body === 'mars' ? 'Sol' : 'Day';
+  return h('section', { class: 'home-resume', 'aria-label': 'Mission in progress' },
+    h('p', null, h('strong', null, saved.config.title), ` · ${unit} ${saved.sol} of ${saved.config.targetSols}`),
+    h('a', { class: 'btn btn-primary', href: '#/play' }, 'Continue mission'));
 }
 
-function campaignStrip(progress) {
-  const total = CAMPAIGN.reduce((sum, ch) => sum + (progress[ch.id]?.stars ?? 0), 0);
-  return h('a', { class: 'card home-progress', href: '#/campaign' },
-    h('span', { class: 'kicker' }, 'Your campaign'),
-    h('div', { class: 'row between' },
-      h('strong', null, `${total} / ${CAMPAIGN.length * 3} stars`),
-      stars(Math.round((total / (CAMPAIGN.length * 3)) * 3))),
-    h('div', { class: 'home-chapters', 'aria-hidden': 'true' }, CAMPAIGN.map((ch) => h('span', {
-      class: ['home-chapter-dot', ch.body, (progress[ch.id]?.stars ?? 0) > 0 && 'done'],
-      title: ch.title,
-    }))));
+function photoTile({ href, file, alt, kicker, title, cta }, size) {
+  return h('a', { class: ['tile', size], href },
+    h('img', { src: img(file), alt, loading: 'lazy' }),
+    h('span', { class: 'tile-copy' },
+      kicker ? h('span', { class: 'tile-kicker' }, kicker) : null,
+      h('span', { class: 'tile-title' }, title),
+      h('span', { class: 'btn btn-light tile-btn' }, cta)));
 }
 
-function hero(saved) {
-  const sky = h('canvas', { class: 'home-stars', 'aria-hidden': 'true' });
-  const mars = h('canvas', { class: 'home-globe', role: 'img', 'aria-label': 'Rotating Mars, made from NASA Viking orbiter images' });
-  const moon = h('canvas', { class: 'home-moon', role: 'img', 'aria-label': 'Rotating Moon, made from NASA Lunar Reconnaissance Orbiter images' });
-  const el = h('section', { class: 'home-hero' },
-    sky,
-    h('div', { class: 'home-hero-text' },
-      h('span', { class: 'kicker' }, 'NASA Space Apps 2026 · Junior Astronaut Mission Trainer'),
-      h('h1', { class: 'home-title' }, 'Sol ', h('span', null, 'Survivor')),
-      h('p', { class: 'home-tagline' }, 'Command a base on the Moon or Mars. Balance oxygen, water, food, power and radiation shielding, using real NASA data, one sol at a time.'),
-      h('div', { class: 'row home-cta' },
-        continueButton(saved),
-        h('a', { class: 'btn btn-primary btn-lg', href: '#/campaign' }, '🚀 Play Campaign'),
-        h('a', { class: 'btn btn-lg', href: '#/loadout/free-play' }, '🛠️ Free Play')),
-      h('div', { class: 'row home-links' },
-        h('a', { class: 'chip', href: '#/dictionary' }, '📖 Dictionary'),
-        h('a', { class: 'chip', href: '#/academy' }, '🎓 Academy'),
-        h('a', { class: 'chip', href: '#/datalab' }, '📊 Data Lab'))),
-    h('div', { class: 'home-hero-art' }, h('div', { class: 'home-orbit', 'aria-hidden': 'true' }), mars, moon));
-  return { el, sky, mars, moon };
+function section(title, ...children) {
+  return h('section', { class: 'home-section' }, h('h2', { class: 'home-section-title' }, title), ...children);
+}
+
+function editorial() {
+  return h('section', { class: 'editorial' },
+    h('img', { src: img('art002e009282.jpg'), alt: 'Shadows across Vavilov crater on the Moon, photographed by the Artemis II crew', loading: 'lazy' }),
+    h('div', { class: 'editorial-copy' },
+      h('h2', { class: 'editorial-title' }, 'Built on real NASA data.'),
+      h('p', null, 'Weather from Curiosity, solar storms from DONKI, maps from Mars and Moon Trek.'),
+      h('a', { class: 'btn btn-light', href: '#/datalab' }, 'See the sources')));
 }
 
 export function render(root) {
-  const { savedMission, progress } = getState();
-  const top = hero(savedMission);
-  const clock = marsClock();
+  root.classList.add('view-bleed');
   root.append(
-    top.el,
-    h('div', { class: 'home-grid' }, clock.el, wordOfSolCard(), h('div', { class: 'stack' }, campaignStrip(progress), didYouKnow())),
-    h('section', { class: 'home-tiles', 'aria-label': 'Explore' }, TILES.map(([href, icon, title, desc]) => h('a', { class: 'card home-tile', href },
-      h('span', { class: 'home-tile-icon', 'aria-hidden': 'true' }, icon),
-      h('strong', null, title),
-      h('span', { class: 'muted' }, desc)))),
+    hero(),
+    resume(getState().savedMission),
+    section('Choose your world', h('div', { class: 'tile-grid two' }, CAMPAIGNS.map((t) => photoTile(t, 'tall')))),
+    editorial(),
+    section('Train like an astronaut', h('div', { class: 'tile-grid three' }, EXPLORE.map((t) => photoTile(t, 'square')))),
+    h('section', { class: 'home-closer' },
+      h('h2', { class: 'home-closer-title' }, 'Your outpost. Your call.'),
+      h('div', { class: 'row' },
+        h('a', { class: 'btn btn-primary btn-lg', href: '#/campaign' }, 'Start mission'),
+        h('a', { class: 'btn btn-lg', href: '#/educators' }, 'For educators'))),
   );
-  const size = Math.min(440, Math.max(220, window.innerWidth * 0.36));
-  const fx = [
-    createStarfield(top.sky),
-    createGlobe(top.mars, { body: 'mars', size, tiltDeg: 25, period: 70 }),
-    createGlobe(top.moon, { body: 'moon', size: size * 0.3, tiltDeg: 6, period: 40 }),
-  ];
-  return () => {
-    fx.forEach((f) => f.stop());
-    clock.stop();
-  };
+  return undefined;
 }

@@ -1,5 +1,6 @@
 // Floating name/task labels above astronauts and stations (CSS2DRenderer, inside the container).
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
+import { stripEmoji } from './hud.js';
 
 export function createLabels(container) {
   const renderer = new CSS2DRenderer();
@@ -10,14 +11,14 @@ export function createLabels(container) {
   function add(parent, { text = '', y = 2.3, className = '' } = {}) {
     const div = document.createElement('div');
     div.className = `w3d-lab ${className}`;
-    div.textContent = text;
+    div.textContent = stripEmoji(text).trim();
     const obj = new CSS2DObject(div);
     obj.position.set(0, y, 0);
     parent.add(obj);
     objects.add(obj);
     return {
       obj,
-      set(t) { if (div.textContent !== t) div.textContent = t; },
+      set(t) { const v = stripEmoji(t).trim(); if (div.textContent !== v) div.textContent = v; },
       show(v) { obj.visible = v; },
       remove() { parent.remove(obj); div.remove(); objects.delete(obj); },
     };

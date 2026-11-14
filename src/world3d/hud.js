@@ -12,9 +12,11 @@ export function el(tag, attrs = {}, ...children) {
     else if (k === 'style') node.style.cssText = v;
     else node.setAttribute(k, v === true ? '' : v);
   }
-  for (const c of children.flat()) if (c != null && c !== false) node.append(c.nodeType ? c : String(c));
+  for (const c of children.flat()) if (c != null && c !== false) node.append(c.nodeType ? c : stripEmoji(String(c)));
   return node;
 }
+
+export const stripEmoji = (s) => s.replace(/[\p{Extended_Pictographic}\u{1F3FB}-\u{1F3FF}\uFE0F\u200D\u20E3]+/gu, '').replace(/ {2,}/g, ' ');
 
 const pct = (v) => `${Math.round(Math.max(0, Math.min(1, v)) * 100)}%`;
 

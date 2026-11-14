@@ -12,6 +12,7 @@ import { createHazardFx } from './hazardFx.js';
 import { buildLander } from './meshes/habitat.js';
 import { sunDirection, earthDirection } from './gameLogic.js';
 import { disposeTree, disposeKit } from './meshes/kit.js';
+import { disposeSuitTemplate } from './suitModel.js';
 import { STATION_INFO } from './facts.js';
 
 export const LANDER_POS = { x: 3, z: 21 };
@@ -21,6 +22,7 @@ export function createWorld(stage, { high, reducedMotion, labels }) {
   stage.scene.add(root);
   let parts = null;
   let signature = '';
+  const assets = { dem: new Map(), suitTemplate: null };
   let bakeTimer = 0;
   const tmpFocus = new THREE.Vector3();
 
@@ -44,7 +46,8 @@ export function createWorld(stage, { high, reducedMotion, labels }) {
     const body = mission.config?.body ?? 'mars';
     const layout = buildLayout(mission);
     const pads = [...padsFor(layout), { x: LANDER_POS.x, z: LANDER_POS.z, r: 4 }];
-    const heightfield = makeHeightfield({ seed: layout.seed, body, pads });
+    const dem = assets.dem.get(mission.config?.siteId) ?? null;
+    const heightfield = makeHeightfield({ seed: layout.seed, body, pads, dem });
     const heightAt = heightfield.heightAt;
     const group = new THREE.Group();
     root.add(group);
@@ -57,7 +60,7 @@ export function createWorld(stage, { high, reducedMotion, labels }) {
     lander.group.rotation.y = 0.6;
     group.add(lander.group);
     const colliders = [...layout.colliders, ...terrain.rockColliders, { x: LANDER_POS.x, z: LANDER_POS.z, r: 2.3 }];
-    const crew = createCrew({ parent: group, layout, heightAt, colliders, high, labels });
+    const crew = createCrew({ parent: group, layout, heightAt, colliders, high, labels, suitTemplate: high ? assets.suitTemplate : null });
     crew.sync(mission);
     const collectibles = createCollectibles({ parent: group, layout, heightAt, body });
     const particles = createParticles({ body, high, reducedMotion });
@@ -72,14 +75,16 @@ export function createWorld(stage, { high, reducedMotion, labels }) {
       const lab = labels.add(it.built.group, { y: s.kind === 'fission' ? 5 : 3.2, className: 'w3d-st', text: `${STATION_INFO[s.kind]?.icon ?? ''} ${STATION_INFO[s.kind]?.name ?? s.kind}` });
       return Object.assign(lab, { station: s });
     });
-    parts = { body, layout, heightfield, heightAt, terrain, stations, lander, colliders, crew, collectibles, particles, hazards, sky, group, stationLabels };
-    signature = layoutSignature(mission);
+    parts = { body, layout, heightfield, heightAt, terrain, stations, lander, colliders, crew, collectibles, particles, hazards, sky, group, stationLabels, dem };
+    signature = `${layoutSignature(mission)}|${dem ? 'dem' : 'proc'}|${assets.suitTemplate ? 'suit' : 'prim'}`;
     bakeTimer = 0;
     return parts;
   }
 
   function ensure(mission) {
-    if (!parts || layoutSignature(mission) !== signature) build(mission);
+    const dem = assets.dem.get(mission.config?.siteId);
+    const sig = `${layoutSignature(mission)}|${dem ? 'dem' : 'proc'}|${assets.suitTemplate ? 'suit' : 'prim'}`;
+    if (!parts || sig !== signature) build(mission);
     return parts;
   }
 
@@ -120,10 +125,13 @@ export function createWorld(stage, { high, reducedMotion, labels }) {
     ensure,
     build,
     updateEnvironment,
+    setDem(siteId, dem) { if (dem) assets.dem.set(siteId, dem); },
+    setSuitTemplate(t) { assets.suitTemplate = t; },
     get parts() { return parts; },
     dispose() {
       teardown();
       stage.scene.remove(root);
+      disposeSuitTemplate(assets.suitTemplate);
       disposeKit();
     },
   };

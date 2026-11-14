@@ -148,9 +148,9 @@ export function createHazardFx({ body, high, heightAt }) {
       wallState.t += dt;
       wallMat.uniforms.uTime.value = time;
       const k = Math.min(1, wallState.t / wallState.lead);
-      const radius = 420 - k * 380;
-      wall.scale.set(radius, 90 + k * 40, radius);
-      wall.position.set(focus.x, 40, focus.z);
+      const radius = 2600 - k * 2560;
+      wall.scale.set(radius, 260 + k * 60, radius);
+      wall.position.set(focus.x, 110, focus.z);
       wallMat.uniforms.uOpacity.value = Math.min(1, wallState.t / 3) * (k < 1 ? 0.95 : Math.max(0, 1 - (wallState.t - wallState.lead) / 6));
       if (k >= 1 && wallState.t > wallState.lead + 6) { wall.visible = false; wallState = null; }
     }

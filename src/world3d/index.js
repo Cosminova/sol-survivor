@@ -21,9 +21,16 @@ import { AIRLOCK } from './layout.js';
 import { CAPCOM } from './facts.js';
 import { ROLES } from '../engine/sim.js';
 import { applyEvents, frameFeedback, emitProgress, cue } from './feedback.js';
+import { loadLidar } from './lidar.js';
+import { loadSuitTemplate, disposeSuitTemplate } from './suitModel.js';
 import { currentPrompt, interact, updateHold, endSolFlow, playerCrew } from './interaction.js';
 
 export { isWebGLAvailable };
+
+export const mountWorld3d = (container, opts) => {
+  const w = mountOutpost3D(container, opts);
+  return { ...w, stop: w.dispose };
+};
 
 const validMission = (m) => m && typeof m === 'object' && Array.isArray(m.crew) && m.crew.length > 0 && m.config && m.modules;
 
@@ -77,8 +84,7 @@ export function mountOutpost3D(container, options = {}) {
   const minimap = createMinimap(hud.map);
   const world = createWorld(stage, { high: stage.high, reducedMotion, labels });
   rt.world = world;
-  world.ensure(rt.mission);
-  const rig = createFollowCamera(stage.camera, { heightAt: (x, z) => world.parts.heightAt(x, z), colliders: world.parts.colliders, reducedMotion });
+  const rig = createFollowCamera(stage.camera, { heightAt: (x, z) => world.parts?.heightAt(x, z) ?? 0, colliders: [], reducedMotion });
   rt.rig = rig;
   const player = createPlayer({ world, rig, audio });
   rt.player = player;
@@ -113,6 +119,7 @@ export function mountOutpost3D(container, options = {}) {
 
   function setPlayer(crewId) {
     const p = world.parts;
+    if (!p) return;
     const m = p.crew.get(crewId);
     if (!m || crewId === rt.playerId || rt.modals.isOpen()) return;
     if (player.inRover) player.exitRover();
@@ -142,6 +149,7 @@ export function mountOutpost3D(container, options = {}) {
   }
 
   function onAction(action, arg) {
+    if (!booted) return;
     if (rt.introPlaying) { if (['interact', 'pause', 'skipIntro'].includes(action)) rt.intro?.skip(); return; }
     audio.unlock();
     const crew = rt.mission.crew;
@@ -174,7 +182,8 @@ export function mountOutpost3D(container, options = {}) {
     const pos0 = player.position();
     const push = p.hazards.devilPushAt(pos0.x, pos0.z);
     if (rt.workTimer > 0) rt.workTimer -= dt;
-    player.update(dt, input, { frozen: Boolean(rt.hold), push, reducedMotion, night: rt.night, work: rt.hold ? 'repair' : rt.workTimer > 0 ? rt.lastWorkVerb : null });
+    const pm = player.update(dt, input, { frozen: Boolean(rt.hold), push, reducedMotion, night: rt.night, work: rt.hold ? 'repair' : rt.workTimer > 0 ? rt.lastWorkVerb : null });
+    if (pm.fell) rt.radio.say('CAPCOM: Take it slow getting up. Apollo 16 astronaut Charlie Duke fell on the Moon too, and pushed himself back up.');
     if (Math.hypot(push.x, push.z) > 0.5 && Math.random() < dt * 2) rig.shake(0.08);
     const r = stepSol(rt.gs, { dt, ...z0, running: input.run && Math.hypot(input.x, input.y) > 0.2, playerId: rt.playerId });
     rt.gs = r.state;
@@ -265,29 +274,66 @@ export function mountOutpost3D(container, options = {}) {
   ro.observe(container);
   resize();
 
-  beginSol();
-  const wantIntro = options.intro !== false && !rt.gs.progress.introSeen && (rt.mission.sol === 0 || options.intro === true);
-  if (wantIntro) {
-    rt.introPlaying = true;
-    rt.intro = playIntro({
-      world, rig, hud, audio, reducedMotion,
-      title: `${rt.mission.config?.title ?? 'Sol Survivor'} · ${rt.mission.site?.name ?? ''}`,
-      getPlayerFocus: () => player.position(),
-      onDone: () => {
-        rt.introPlaying = false;
-        rt.gs = { ...rt.gs, progress: { ...rt.gs.progress, introSeen: true } };
-        rig.lookBehind(0);
-        emitProgress(rt);
-        hud.toast('Press H for controls. Walk to a station and press E!', 'good');
-      },
-    });
-  } else {
-    hud.toast('Press H for controls. Walk to a station and press E!', 'good');
+  function start() {
+    world.ensure(rt.mission);
+    rig.setColliders(world.parts.colliders);
+    booted = true;
+    hud.setTitle(null);
+    beginSol();
+    const wantIntro = options.intro !== false && !rt.gs.progress.introSeen && (rt.mission.sol === 0 || options.intro === true);
+    const hint = () => hud.toast('Press H for controls. Walk to a station and press E', 'good');
+    if (wantIntro) {
+      rt.introPlaying = true;
+      rt.intro = playIntro({
+        world, rig, hud, audio, reducedMotion,
+        title: `${rt.mission.config?.title ?? 'Sol Survivor'} · ${rt.mission.site?.name ?? ''}`,
+        getPlayerFocus: () => player.position(),
+        onDone: () => {
+          rt.introPlaying = false;
+          rt.gs = { ...rt.gs, progress: { ...rt.gs.progress, introSeen: true } };
+          rig.setYaw(0.45);
+          emitProgress(rt);
+          hint();
+        },
+      });
+    } else {
+      hint();
+    }
+    raf = requestAnimationFrame(frame);
   }
-  raf = requestAnimationFrame(frame);
+
+  // NASA lidar terrain + EMU suit load first (bundled locally); the game starts either way.
+  let booted = false;
+  const siteId = rt.mission.config?.siteId;
+  hud.setTitle('Loading NASA terrain');
+  Promise.all([loadLidar(siteId), stage.high ? loadSuitTemplate() : Promise.resolve(null)])
+    .then(([dem, suit]) => {
+      if (disposed) { disposeSuitTemplate(suit); return; }
+      world.setDem(siteId, dem);
+      world.setSuitTemplate(suit);
+      start();
+    });
+
+  function rebuildIfNeeded() {
+    const prev = world.parts;
+    const p = world.ensure(rt.mission);
+    if (p === prev) return false;
+    rig.setColliders(p.colliders);
+    rt.modals.close();
+    beginSol();
+    return true;
+  }
 
   function update(mission) {
     if (!validMission(mission)) return;
+    if (!booted) { rt.mission = mission; return; }
+    if (mission.config?.siteId !== rt.mission.config?.siteId) {
+      loadLidar(mission.config?.siteId).then((dem) => {
+        if (disposed || rt.mission.config?.siteId !== mission.config?.siteId) return;
+        world.setDem(mission.config.siteId, dem);
+        rebuildIfNeeded();
+      });
+    }
     const prevSol = rt.mission.sol;
     const prevSig = world.parts;
     rt.mission = mission;
@@ -320,6 +366,7 @@ export function mountOutpost3D(container, options = {}) {
       ro.disconnect();
       rt.cancelMinigame?.();
       rt.modals.close();
+      rt.intro?.skip();
       controls.dispose();
       rt.radio.dispose();
       audio.dispose();

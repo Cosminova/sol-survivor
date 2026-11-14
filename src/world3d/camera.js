@@ -59,6 +59,7 @@ export function createFollowCamera(camera, { heightAt, colliders, reducedMotion 
     shake(amount) { if (!reducedMotion) shake = Math.max(shake, amount); },
     setOverride(fn) { override = fn; if (!fn) first = true; },
     lookBehind(heading) { yaw = heading + Math.PI; },
+    setYaw(v) { yaw = v; first = true; },
     setColliders(list) { colliders = list; },
   };
 }

@@ -1,6 +1,7 @@
 // The controlled astronaut: camera-relative walking with low-gravity feel, footprints, and rover driving.
 import { resolveCollisions } from './npcLogic.js';
 import { AIRLOCK } from './layout.js';
+import { fallChancePerSecond } from './gaits.js';
 
 const GRAVITY = { mars: 0.38, moon: 0.17 };
 
@@ -34,7 +35,7 @@ export function createPlayer({ world, rig, audio }) {
     hidden = false;
     member.astro.setOpacity(1);
     parts().crew.place(member);
-    rig.lookBehind(0);
+    rig.setYaw(0.45); // camera out front, looking back at the astronaut and the airlock
   }
 
   function enterRover() {
@@ -98,9 +99,14 @@ export function createPlayer({ world, rig, audio }) {
       const target = Math.atan2(vel.x, vel.z);
       heading += Math.atan2(Math.sin(target - heading), Math.cos(target - heading)) * Math.min(1, dt * 10);
     }
+    // Rare stumble when moving fast in low gravity or shoved by a dust devil (Apollo 16/17 crews fell too).
+    const shove = Math.hypot(push.x, push.z);
+    const fell = !member.astro.falling && !frozen && (Math.random() < fallChancePerSecond(g, speed) * dt || (shove > 3.5 && Math.random() < dt * 0.5));
+    if (member.astro.falling || fell) { vel.x *= 0.9; vel.z *= 0.9; }
     member.pos = resolveCollisions({ x: member.pos.x + vel.x * dt, z: member.pos.z + vel.z * dt }, p.colliders);
     member.heading = heading;
-    const footDown = member.astro.animate(dt, { speed, gravity: g, work: speed < 0.2 ? work : null, reducedMotion, lamps: night });
+    const footDown = member.astro.animate(dt, { speed: member.astro.falling ? 0 : speed, gravity: g, work: speed < 0.2 ? work : null, reducedMotion, lamps: night, fall: fell });
+    if (fell) p.particles.dustCloud({ x: member.pos.x, y: p.heightAt(member.pos.x, member.pos.z), z: member.pos.z }, { count: 18, speed: 1.4, radius: 0.4 });
     if (!hidden) member.astro.setOpacity(1);
     p.crew.place(member);
     if (footDown && speed > 0.3) {
@@ -110,7 +116,7 @@ export function createPlayer({ world, rig, audio }) {
       audio.sfx.step(g < 0.25);
       if (g < 0.25) p.particles.dustCloud({ x: member.pos.x, y, z: member.pos.z }, { count: 4, speed: 0.9, radius: 0.2 });
     }
-    return { moving: speed > 0.2, running: run && speed > 3, inRover: false };
+    return { moving: speed > 0.2, running: run && speed > 3, inRover: false, fell };
   }
 
   return {

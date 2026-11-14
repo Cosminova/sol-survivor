@@ -52,11 +52,10 @@ export function render(root) {
   const canvas = h('canvas', { class: 'scene-canvas' });
   const scene = createScene(canvas, { label: describe(m) });
   const els = Object.fromEntries(['hud', 'overlay', 'res', 'power', 'rad', 'crew', 'capcom', 'mods', 'log'].map((k) => [k, h('div', { class: `slot-${k}` })]));
-  const view3d = viewToggle({ canvas, getMission: () => m });
-
   const commit = (next) => { m = next; setMission(m); draw(); };
   const onTask = (crewId, task) => { play('click'); commit(setTask(m, crewId, task)); document.getElementById(`task-${crewId}-${task}`)?.focus(); };
   const onToggle = (id) => { play('click'); commit(toggleModule(m, id)); document.getElementById(`mod-switch-${id}`)?.focus(); };
+  const view3d = viewToggle({ canvas, getMission: () => m, commit, onTask, onToggle, onEndSol: () => nextSol() });
 
   function afterRun() {
     const today = m.log.filter((l) => l.sol === m.sol);

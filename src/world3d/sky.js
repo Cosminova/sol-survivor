@@ -73,6 +73,9 @@ const EARTH_VERT = /* glsl */ `
   }
 `;
 
+// Stars and Earth sit beyond the farthest terrain (30 km) so mountains correctly hide them.
+const SKY_R = 38000;
+
 function starField(count, seed) {
   const rng = makeRng(seed);
   const pos = new Float32Array(count * 3);
@@ -81,7 +84,7 @@ function starField(count, seed) {
     const u = rng.range(-1, 1);
     const a = rng.range(0, Math.PI * 2);
     const r = Math.sqrt(1 - u * u);
-    pos.set([Math.cos(a) * r * 900, u * 900, Math.sin(a) * r * 900], i * 3);
+    pos.set([Math.cos(a) * r * SKY_R, u * SKY_R, Math.sin(a) * r * SKY_R], i * 3);
     const warm = rng.next();
     const b = 0.4 + rng.next() ** 3 * 1.6;
     col.set([b * (0.85 + warm * 0.25), b * 0.92, b * (1.1 - warm * 0.3)], i * 3);
@@ -124,7 +127,7 @@ export function createSky({ body, high }) {
   let earth = null;
   if (body === 'moon') {
     earth = new THREE.Mesh(
-      new THREE.SphereGeometry(15, 48, 32),
+      new THREE.SphereGeometry(SKY_R * 0.0175, 48, 32), // about 2 degrees across, as seen from the Moon
       new THREE.ShaderMaterial({ vertexShader: EARTH_VERT, fragmentShader: EARTH_FRAG, uniforms: { uSunDir: uniforms.uSunDir }, fog: false }),
     );
     earth.rotation.z = 0.41;
@@ -132,7 +135,7 @@ export function createSky({ body, high }) {
   }
 
   function setEarthDirection(dir) {
-    if (earth) earth.position.set(dir.x * 820, dir.y * 820, dir.z * 820);
+    if (earth) earth.position.set(dir.x * SKY_R, dir.y * SKY_R, dir.z * SKY_R);
   }
 
   function apply(look, sunDir, flash = 0) {
@@ -205,7 +208,8 @@ export function skyLook({ body, sunElev, tau = 0.5, lit = true, stormActive = fa
     sunIntensity: 3.4 * transmission * sstep(-2, 6, sunElev), sunColor: C('#fff0da').lerp(C('#ffb27a'), low * 0.6),
     hemiSky: zenith.clone().lerp(horizon, 0.5).multiplyScalar(1.6), hemiGround: C('#5a3220'),
     hemiIntensity: 0.15 + day * (0.55 + d * 0.5), fogColor,
-    fogDensity: (0.0022 + 0.0016 * tau) * (stormActive ? 9 : 1) + (1 - day) * 0.001,
+    // Exp2 haze tuned so tau 0.5 still shows crater rims ~20 km away; a storm cuts it to ~1 km.
+    fogDensity: (0.00004 + 0.000025 * tau) * (stormActive ? 22 : 1) + (1 - day) * 0.00002,
     exposure: 1 + (1 - day) * 0.35, fill: (1 - day) * 0.12,
   };
 }

@@ -43,7 +43,7 @@ export function createStage(container, { quality }) {
   container.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 2400);
+  const camera = new THREE.PerspectiveCamera(55, 1, 0.15, 45000); // far enough for the 30 km lidar horizon
   camera.position.set(0, 4, 14);
 
   const sun = new THREE.DirectionalLight('#fff4e6', 3);

@@ -1,6 +1,7 @@
 // Crew astronauts. The player's astronaut is moved by player.js; the rest walk to the station
 // matching their engine task and loop a work animation, or head inside to rest.
 import { buildAstronaut } from './astronaut.js';
+import { buildSuitAstronaut } from './suitModel.js';
 import { npcTarget, steer, resolveCollisions } from './npcLogic.js';
 import { AIRLOCK } from './layout.js';
 import { ROLE_COLORS } from './facts.js';
@@ -15,11 +16,12 @@ function workVerb(task, stationId) {
   return null;
 }
 
-export function createCrew({ parent, layout, heightAt, colliders, high, labels }) {
+export function createCrew({ parent, layout, heightAt, colliders, high, labels, suitTemplate = null }) {
   const members = new Map();
 
   function spawn(crew, index) {
-    const astro = buildAstronaut({ name: crew.name, roleColor: ROLE_COLORS[crew.role] ?? '#888', high });
+    const opts = { name: crew.name, role: crew.role, high };
+    const astro = suitTemplate ? buildSuitAstronaut(suitTemplate, opts) : buildAstronaut(opts);
     parent.add(astro.root);
     const angle = (index / 4) * Math.PI - Math.PI / 2;
     const pos = { x: AIRLOCK.x + Math.sin(angle) * 1.6, z: AIRLOCK.z + 1 + Math.cos(angle) * 0.6 };

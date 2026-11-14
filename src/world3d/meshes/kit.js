@@ -96,10 +96,10 @@ export function disposeKit() {
 export function disposeTree(root) {
   const shared = new Set(cache.values());
   root.traverse((o) => {
-    if (o.geometry) o.geometry.dispose();
+    if (o.geometry && !o.geometry.userData.shared) o.geometry.dispose();
     const mats = Array.isArray(o.material) ? o.material : o.material ? [o.material] : [];
     for (const m of mats) {
-      if (shared.has(m)) continue;
+      if (shared.has(m) || m.userData.shared) continue;
       for (const v of Object.values(m)) if (v && v.isTexture) v.dispose();
       m.dispose();
     }

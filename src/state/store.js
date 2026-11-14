@@ -30,6 +30,7 @@ function load() {
     lastResult: saved?.lastResult ?? null,
     progress: saved?.progress ?? {},
     patch: saved?.patch ?? null,
+    world3d: saved?.world3d ?? null,
     settings: { ...DEFAULT_SETTINGS, ...(saved?.settings ?? {}) },
     newBadges: [],
   };
@@ -40,8 +41,8 @@ const listeners = new Set();
 
 function persist(next) {
   try {
-    const { profile, savedMission, lastResult, progress, patch, settings } = next;
-    localStorage.setItem(KEY, JSON.stringify({ profile, savedMission, lastResult, progress, patch, settings }));
+    const { profile, savedMission, lastResult, progress, patch, settings, world3d } = next;
+    localStorage.setItem(KEY, JSON.stringify({ profile, savedMission, lastResult, progress, patch, settings, world3d }));
   } catch (err) {
     console.warn('[store] could not save progress', err);
   }

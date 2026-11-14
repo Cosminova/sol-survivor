@@ -1,5 +1,10 @@
 // Tiny DOM builder. Text is always inserted as text nodes, never as HTML.
 const SVG_NS = 'http://www.w3.org/2000/svg';
+const EMOJI = /(?:[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}\u{1F3FB}-\u{1F3FF}][\uFE0F\u200D]*)+ ?|[\uFE0F\u20E3]/gu;
+const TEXT_ATTRS = new Set(['aria-label', 'title', 'alt', 'placeholder']);
+
+// Emoji are never shown in the UI; data strings that still carry them are cleaned at render time.
+export const stripEmoji = (text) => String(text).replace(EMOJI, '');
 
 function applyProps(el, props, isSvg) {
   for (const [key, value] of Object.entries(props ?? {})) {
@@ -21,7 +26,7 @@ function applyProps(el, props, isSvg) {
     } else if (!isSvg && (key === 'value' || key === 'checked' || key === 'selected')) {
       el[key] = value;
     } else {
-      el.setAttribute(key, value === true ? '' : String(value));
+      el.setAttribute(key, value === true ? '' : TEXT_ATTRS.has(key) ? stripEmoji(value) : String(value));
     }
   }
 }
@@ -29,7 +34,7 @@ function applyProps(el, props, isSvg) {
 function appendChildren(el, children) {
   for (const child of children.flat(Infinity)) {
     if (child == null || child === false || child === true) continue;
-    el.append(child instanceof Node ? child : document.createTextNode(String(child)));
+    el.append(child instanceof Node ? child : document.createTextNode(stripEmoji(child)));
   }
 }
 

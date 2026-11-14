@@ -1,5 +1,6 @@
 // Small shared widgets: source badge, "Did you know?" card, toasts, stars, meters.
 import { h } from '../dom.js';
+import { icon } from '../icons.js';
 import { SOURCES } from '../../data/sources.js';
 import { randomFact } from '../../state/learn.js';
 import { openTermPopover } from './termPopover.js';
@@ -14,7 +15,7 @@ export function sourceBadge(id, { label = 'Archived NASA data' } = {}) {
     target: '_blank',
     rel: 'noopener noreferrer',
     title: `${src.title} (${src.org})`,
-  }, h('span', { 'aria-hidden': 'true' }, '🛰️'), `${label}: ${src.org.split(',')[0]}`, h('span', { class: 'sr-only' }, ' (opens in a new tab)'));
+  }, icon('satellite', { size: 16 }), `${label}: ${src.org.split(',')[0]}`, h('span', { class: 'sr-only' }, ' (opens in a new tab)'));
 }
 
 export function termButton(id, label) {
@@ -26,7 +27,7 @@ export function termButton(id, label) {
 export function didYouKnow(fact = randomFact()) {
   if (!fact) return null;
   return h('aside', { class: 'dyk', 'aria-label': 'Did you know?' },
-    h('span', { class: 'dyk-icon', 'aria-hidden': 'true' }, '💡'),
+    h('span', { class: 'dyk-icon' }, icon('lightbulb', { size: 22 })),
     h('div', null,
       h('strong', null, 'Did you know?'),
       h('p', null, fact.text),
@@ -42,7 +43,7 @@ export function loadingState(message = 'Downloading telemetry…') {
 
 export function stars(count, max = 3, { size = '1.4rem', animate = false } = {}) {
   return h('span', { class: ['stars', animate && 'stars-animate'], role: 'img', 'aria-label': `${count} of ${max} stars`, style: { fontSize: size } },
-    Array.from({ length: max }, (_, i) => h('span', { class: i < count ? 'star on' : 'star', style: { '--i': i }, 'aria-hidden': 'true' }, '★')));
+    Array.from({ length: max }, (_, i) => h('span', { class: i < count ? 'star on' : 'star', style: { '--i': i }, 'aria-hidden': 'true' }, icon('star', { size: 18 }))));
 }
 
 export function meter(pct, color, label) {
@@ -59,10 +60,10 @@ function toastStack() {
   return stack;
 }
 
-export function toast(text, { icon = '📡', kind = '', ms = 4200 } = {}) {
-  const el = h('div', { class: ['toast', kind] }, h('span', { class: 'toast-icon', 'aria-hidden': 'true' }, icon), h('div', null, text));
+export function toast(text, { icon: name = 'info', kind = '', ms = 4200 } = {}) {
+  const el = h('div', { class: ['toast', kind] }, h('span', { class: 'toast-icon' }, icon(typeof name === 'string' && /^[a-z-]+$/.test(name) ? name : 'info', { size: 18 })), h('div', null, text));
   toastStack().append(el);
   setTimeout(() => el.remove(), ms);
 }
 
-export const badgeToast = (badge) => toast(h('span', null, h('strong', null, 'Badge earned! '), `${badge.icon ?? '🏅'} ${badge.title}`), { icon: '🏅', kind: 'badge-toast', ms: 5200 });
+export const badgeToast = (badge) => toast(h('span', null, h('strong', null, 'Badge earned: '), badge.title), { icon: 'award', kind: 'badge-toast', ms: 5200 });

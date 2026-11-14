@@ -51,7 +51,7 @@ export function startRouter(view, { onRoute } = {}) {
       view.replaceChildren();
       const box = document.createElement('div');
       box.className = 'panel empty';
-      box.innerText = `🛰️ Lost signal loading this screen. ${err.message}`;
+      box.innerText = `Lost signal loading this screen. ${err.message}`;
       view.append(box);
     }
   }
