@@ -22,6 +22,8 @@
 .dl-split { display: grid; gap: 1rem; grid-template-columns: minmax(0, 1.6fr) minmax(min(320px, 100%), 1fr); align-items: start; }
 @media (max-width: 960px) { .dl-split { grid-template-columns: minmax(0, 1fr); } }
 .dl-flat { padding: 0.25rem; }
+.dl-split > *, .dl-map-layout > *, .dl-panel .stack > * { min-width: 0; }
+.dl-panel .source-badge { max-width: 100%; }
 
 /* Stat cards */
 .dl-stats { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fit, minmax(min(190px, 100%), 1fr)); }
@@ -120,6 +122,7 @@
 /* Compare worlds */
 .dl-compare th[scope='row'] { color: var(--text); font-size: var(--fs-sm); letter-spacing: 0; text-transform: none; min-width: 10rem; }
 .dl-compare thead th { font-size: var(--fs-sm); }
+.dl-compare-wrap { position: relative; }
 .dl-compare td { min-width: 9rem; }
 .dl-compare thead .dl-col-earth { color: #93c5fd; }
 .dl-compare thead .dl-col-moon { color: var(--moon); }

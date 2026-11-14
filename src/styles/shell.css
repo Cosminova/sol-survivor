@@ -1,4 +1,5 @@
 /* App shell: header, navigation, main view, footer. */
+html { scroll-padding-top: 76px; }
 .app-header {
   position: sticky;
   top: 0;
@@ -79,10 +80,27 @@
 .app-footer a { color: var(--text-dim); }
 
 @media (max-width: 760px) {
-  .brand-name { display: none; }
-  .main-nav { justify-content: flex-start; }
-  .main-nav .nav-label { display: none; }
-  .main-nav a { padding: 0 0.7rem; font-size: 1.15rem; }
+  .main-nav {
+    position: fixed;
+    z-index: 300;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    justify-content: space-around;
+    gap: 0;
+    padding: 0.25rem 0.25rem calc(0.25rem + env(safe-area-inset-bottom));
+    background: rgba(6, 10, 28, 0.94);
+    border-top: 1px solid var(--line-strong);
+    backdrop-filter: blur(10px);
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  .main-nav a { flex: 1 1 0; min-width: 0; flex-direction: column; gap: 0.1rem; min-height: 52px; padding: 0.3rem 0.1rem; border-radius: var(--r-md); justify-content: center; }
+  .main-nav .nav-icon { font-size: 1.25rem; }
+  .main-nav .nav-label { font-size: 0.6rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .app-header { justify-content: space-between; backdrop-filter: none; background: rgba(4, 7, 20, 0.96); }
+  .app-footer { padding-bottom: calc(5rem + env(safe-area-inset-bottom)); }
+  .toast-stack { bottom: calc(4.75rem + env(safe-area-inset-bottom)) !important; }
 }
 
 @media print {

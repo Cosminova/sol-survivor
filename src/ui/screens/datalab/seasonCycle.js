@@ -64,12 +64,13 @@ function xLabels() {
     s('text', { x: PAD.left + innerW / 2, y: H - 2, 'text-anchor': 'middle', class: 'chart-label' }, 'Season (solar longitude, Ls)'));
 }
 
+// Tables ignore the 1px sr-only box, so the hidden data table needs a wrapper.
 function srTable(bins) {
-  return h('table', { class: 'sr-only' },
+  return h('div', { class: 'sr-only' }, h('table', null,
     h('caption', null, 'Average weather at Gale Crater for each 30 degrees of solar longitude'),
     h('thead', null, h('tr', null, ['Ls', 'Pressure (Pa)', 'High (°C)', 'Low (°C)', 'Sols'].map((t) => h('th', { scope: 'col' }, t)))),
     h('tbody', null, bins.map((b) => h('tr', null,
-      h('th', { scope: 'row' }, `${b.lsStart}–${b.lsStart + 30}°`), h('td', null, b.pressurePa), h('td', null, b.maxC), h('td', null, b.minC), h('td', null, b.sols)))));
+      h('th', { scope: 'row' }, `${b.lsStart}–${b.lsStart + 30}°`), h('td', null, b.pressurePa), h('td', null, b.maxC), h('td', null, b.minC), h('td', null, b.sols))))));
 }
 
 const indexBy = (bins, pick) => bins.reduce((best, b, i) => (Number.isFinite(b.pressurePa) && (best < 0 || pick(b.pressurePa, bins[best].pressurePa)) ? i : best), -1);

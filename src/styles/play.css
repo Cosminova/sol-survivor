@@ -136,7 +136,9 @@
 .crew-stat { display: grid; grid-template-columns: 3.4rem minmax(0, 1fr) auto; align-items: center; gap: 0.5rem; font-size: var(--fs-xs); }
 .crew-stat-label { color: var(--text-dim); }
 .crew-stat-num { text-align: right; }
-.task-picker { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.3rem; margin-top: 0.2rem; }
+.task-picker { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.3rem; margin-top: 0.2rem; }
+.task-btn .task-name { hyphens: auto; text-align: center; }
+@media (max-width: 420px) { .task-btn .task-name { font-size: 0.56rem !important; } }
 .task-btn {
   display: grid;
   justify-items: center;
