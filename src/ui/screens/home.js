@@ -2,6 +2,7 @@
 import '../../styles/home.css';
 import { h } from '../dom.js';
 import { getState } from '../../state/store.js';
+import { icon } from '../icons.js';
 
 const img = (file) => `./images/${file}`;
 
@@ -19,12 +20,12 @@ const EXPLORE = [
 function hero() {
   return h('section', { class: 'hero' },
     h('img', { class: 'hero-img', src: img('PIA23302.jpg'), alt: 'Artist concept of astronauts and habitats on the surface of Mars', fetchpriority: 'high' }),
-    h('div', { class: 'hero-copy' },
-      h('p', { class: 'hero-kicker' }, 'Junior Astronaut Mission Trainer'),
+    h('div', { class: 'hero-copy hud-frame' },
+      h('p', { class: 'hero-kicker' }, icon('orbit', { size: 18 }), 'Junior Astronaut Mission Trainer'),
       h('h1', { class: 'hero-title' }, 'Survive Mars.'),
       h('p', { class: 'hero-lede' }, 'Run an outpost on the Moon or Mars. Balance air, water, food, power and radiation using real NASA data.'),
       h('div', { class: 'row hero-cta' },
-        h('a', { class: 'btn btn-light btn-lg', href: '#/campaign' }, 'Start mission'),
+        h('a', { class: 'btn btn-light btn-lg', href: '#/campaign' }, icon('play', { size: 18 }), 'Start mission'),
         h('a', { class: 'btn btn-outline-light btn-lg', href: '#/datalab' }, 'Explore the data'))),
     h('p', { class: 'hero-credit' }, 'Image: NASA, First Humans on Mars (artist concept)'));
 }
@@ -53,7 +54,7 @@ function section(title, ...children) {
 function editorial() {
   return h('section', { class: 'editorial' },
     h('img', { src: img('art002e009282.jpg'), alt: 'Shadows across Vavilov crater on the Moon, photographed by the Artemis II crew', loading: 'lazy' }),
-    h('div', { class: 'editorial-copy' },
+    h('div', { class: 'editorial-copy hud-frame' },
       h('h2', { class: 'editorial-title' }, 'Built on real NASA data.'),
       h('p', null, 'Weather from Curiosity, solar storms from DONKI, maps from Mars and Moon Trek.'),
       h('a', { class: 'btn btn-light', href: '#/datalab' }, 'See the sources')));

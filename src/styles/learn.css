@@ -248,3 +248,36 @@
   .edu-link, #view a { color: #000; }
   .edu-steps ol li::marker { color: #000; }
 }
+
+/* ---- Flight-control HUD pass: flat slate frames instead of decorative gradients ---- */
+.dict-wos, .bdg-patch-card {
+  --line: rgba(244, 135, 75, 0.55);
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(var(--cyan), var(--cyan)) top right / 14px 2px no-repeat, linear-gradient(var(--cyan), var(--cyan)) top right / 2px 14px no-repeat,
+    linear-gradient(var(--cyan), var(--cyan)) bottom left / 14px 2px no-repeat, linear-gradient(var(--cyan), var(--cyan)) bottom left / 2px 14px no-repeat,
+    linear-gradient(135deg, var(--line) calc(var(--ch) * 0.7071 + 1px), transparent calc(var(--ch) * 0.7071 + 1px)) top left / calc(var(--ch) * 2) calc(var(--ch) * 2) no-repeat,
+    linear-gradient(315deg, var(--line) calc(var(--ch) * 0.7071 + 1px), transparent calc(var(--ch) * 0.7071 + 1px)) bottom right / calc(var(--ch) * 2) calc(var(--ch) * 2) no-repeat,
+    var(--surface);
+  background-origin: border-box;
+  clip-path: polygon(var(--ch) 0, 100% 0, 100% calc(100% - var(--ch)), calc(100% - var(--ch)) 100%, 0 100%, 0 var(--ch));
+  box-shadow: none;
+}
+.dict-wos-glow { opacity: 0.18; }
+.bdg-patch-card:hover { transform: none; box-shadow: var(--glow-mars); }
+.flash-face { box-shadow: none; }
+.flash-front { background: var(--surface-solid); border-color: var(--line-strong); }
+.flash-back { background: #0a1422; border-color: rgba(244, 135, 75, 0.6); }
+.flash-term { font-family: var(--font-display); letter-spacing: 0.06em; text-transform: uppercase; }
+.flash-know { background: var(--good); border-color: var(--good); color: #03121c; }
+.flash-know:hover:not(:disabled) { background: #7aecd0; color: #03121c; }
+.flash-inner { transition-duration: var(--t-slow); }
+.bdg-tile { background: rgba(3, 7, 14, 0.5); border-color: var(--line-soft); }
+.bdg-tile.is-earned { border-color: rgba(251, 191, 36, 0.6); box-shadow: none; }
+.bdg-medal { border-radius: 0; border-width: 1px; background: rgba(3, 7, 14, 0.6); color: var(--text-faint); clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
+.is-earned .bdg-medal { background: var(--gold); color: #03121c; box-shadow: none; }
+.bdg-icon { display: inline-flex; }
+.acad-choice.is-correct { box-shadow: none; }
+.acad-ring.is-max .acad-ring-dial { box-shadow: none; }
+.dict-card.is-open { border-color: var(--cyan); }
+.dict-cat span[aria-hidden='true']:empty, .chip > span[aria-hidden='true']:empty, .badge > span:empty { display: none; }

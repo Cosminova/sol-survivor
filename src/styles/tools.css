@@ -93,3 +93,23 @@
   .tools-seg { grid-column: auto; }
   .tools-hero { padding: 1rem; }
 }
+
+/* ---- Flight-control HUD pass: flat slate frames instead of decorative gradients ---- */
+.tools-hero {
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(var(--cyan), var(--cyan)) top right / 14px 2px no-repeat, linear-gradient(var(--cyan), var(--cyan)) top right / 2px 14px no-repeat,
+    linear-gradient(var(--cyan), var(--cyan)) bottom left / 14px 2px no-repeat, linear-gradient(var(--cyan), var(--cyan)) bottom left / 2px 14px no-repeat,
+    linear-gradient(135deg, var(--line) calc(var(--ch) * 0.7071 + 1px), transparent calc(var(--ch) * 0.7071 + 1px)) top left / calc(var(--ch) * 2) calc(var(--ch) * 2) no-repeat,
+    linear-gradient(315deg, var(--line) calc(var(--ch) * 0.7071 + 1px), transparent calc(var(--ch) * 0.7071 + 1px)) bottom right / calc(var(--ch) * 2) calc(var(--ch) * 2) no-repeat,
+    var(--surface);
+  background-origin: border-box;
+  clip-path: polygon(var(--ch) 0, 100% 0, 100% calc(100% - var(--ch)), calc(100% - var(--ch)) 100%, 0 100%, 0 var(--ch));
+  box-shadow: none;
+}
+.tools-readout-big { background: var(--warn-bg); border-color: rgba(251, 191, 36, 0.45); }
+.tools-age-hero { background: var(--surface-2); border: 1px solid var(--line); }
+.tools-age-hero strong, .tools-readout-value { font-family: var(--font-display); }
+.tools-jump-bar { background: var(--c); opacity: 0.85; }
+.tools-card-icon:empty { display: none; }
+.tools-orbit { border-radius: 0; background: rgba(3, 7, 14, 0.5); border: 1px solid var(--line-soft); }

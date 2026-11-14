@@ -6,7 +6,9 @@
   display: grid;
   place-items: center;
   padding: var(--s-4);
-  background: rgba(17, 17, 17, 0.55);
+  background: rgba(2, 5, 10, 0.72);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
   animation: fade-in var(--t-med) var(--ease);
 }
 .modal {
@@ -14,51 +16,52 @@
   width: min(720px, 100%);
   max-height: min(92vh, 920px);
   overflow: auto;
-  background: var(--surface);
+  --ch: 18px;
+  --frame-line: var(--line-strong);
+  background-color: rgba(6, 11, 20, 0.94);
   color: var(--text);
-  border-radius: var(--r-lg);
   padding: clamp(var(--s-5), 3vw, var(--s-7));
   animation: modal-in var(--t-med) var(--ease);
 }
 .modal.wide { width: min(980px, 100%); }
 .modal-close { position: absolute; top: var(--s-3); right: var(--s-3); }
-.modal > h2 { padding-right: var(--s-7); font-size: var(--fs-2xl); letter-spacing: -0.02em; }
-@keyframes modal-in { from { opacity: 0; transform: translateY(12px); } }
+.modal > h2 { padding-right: var(--s-7); font-size: var(--fs-xl); letter-spacing: 0.08em; text-transform: uppercase; color: var(--cyan-bright); }
+@keyframes modal-in { from { opacity: 0; transform: translateY(8px); } }
 
 .popover {
   position: fixed;
   z-index: 300;
   width: min(380px, calc(100vw - 24px));
-  background: var(--surface);
+  --ch: 12px;
+  --frame-line: var(--line-strong);
+  background-color: rgba(6, 11, 20, 0.96);
   color: var(--text);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--r-lg);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.16);
   padding: var(--s-5);
   animation: modal-in var(--t-fast) var(--ease);
 }
 .popover .kicker { font-size: var(--fs-sm); }
-.popover h3 { margin-right: var(--s-6); font-size: var(--fs-xl); }
-.popover .example { padding: var(--s-3) var(--s-4); background: var(--surface-2); border-radius: var(--r-md); font-size: var(--fs-sm); }
+.popover h3 { margin-right: var(--s-6); font-size: var(--fs-lg); text-transform: uppercase; color: var(--cyan-bright); }
+.popover .example { padding: var(--s-3) var(--s-4); background: var(--surface-2); border-left: 2px solid var(--cyan); font-size: var(--fs-sm); }
 .popover .related { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-3); }
 .popover .modal-close { top: var(--s-2); right: var(--s-2); }
 
-.toast-stack { position: fixed; z-index: 400; right: var(--s-4); bottom: var(--s-4); display: grid; gap: var(--s-2); max-width: min(400px, calc(100vw - 32px)); }
+.toast-stack { position: fixed; z-index: 400; right: var(--s-4); bottom: calc(var(--ticker-h) + var(--s-4)); display: grid; gap: var(--s-2); max-width: min(400px, calc(100vw - 32px)); }
 .toast {
   display: flex;
   gap: var(--s-3);
   align-items: center;
   padding: var(--s-3) var(--s-4);
-  border-radius: var(--r-md);
-  background: var(--inverse);
-  color: var(--on-inverse);
+  --ch: 10px;
+  --frame-line: var(--line-strong);
+  background-color: rgba(6, 11, 20, 0.96);
+  color: var(--text);
   font-size: var(--fs-sm);
   animation: modal-in var(--t-med) var(--ease);
 }
-.toast .toast-icon { display: inline-flex; }
+.toast .toast-icon { display: inline-flex; color: var(--cyan); }
 .toast:nth-last-child(n + 4) { display: none; }
 @media (max-width: 600px) {
-  .toast-stack { left: var(--s-3); right: var(--s-3); bottom: var(--s-3); max-width: none; }
+  .toast-stack { left: var(--s-3); right: var(--s-3); bottom: calc(var(--ticker-h) + var(--s-3)); max-width: none; }
   .toast:nth-last-child(n + 2) { display: none; }
 }
 

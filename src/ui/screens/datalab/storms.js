@@ -8,7 +8,7 @@ import { donkiHighlights } from '../../../engine/dataLab.js';
 import { statCard, statGrid, sectionHead, caption, withData, fmtNum, fmtDate, fmtMonth } from './shared.js';
 
 const STORM_MONTH = '2024-05';
-const COLORS = { C: '#4fe3ff', M: '#fbbf24', X: '#ff5d6c', cme: '#b197fc', sep: '#f472b6' };
+const COLORS = { C: '#4fe3ff', M: '#fbbf24', X: '#ff5d6c', cme: '#5eead4', sep: '#f472b6' };
 const SHORT = new Intl.DateTimeFormat('en-US', { month: 'short', timeZone: 'UTC' });
 
 const FLARE_LADDER = [

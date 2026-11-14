@@ -1,73 +1,82 @@
-/* Sol Survivor design tokens. Editorial and restrained: white and near-black surfaces,
-   photography for colour, one Mars-rust accent. The play dashboard switches to the dark theme. */
-@import '@fontsource/anton/400.css';
-@import '@fontsource-variable/inter/wght.css';
-
+/* Sol Survivor design tokens: Spacecraft Flight Control & Telemetry HUD.
+   One dark theme everywhere: deep-space background, translucent slate panels, crisp cyan 1px lines,
+   Orbitron for headers and JetBrains Mono for everything else. Fonts are bundled (see src/main.js). */
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 
-  --bg: #ffffff;
-  --surface: #ffffff;
-  --surface-2: #f5f5f5;
-  --surface-3: #e5e5e5;
-  --inverse: #111111;
-  --on-inverse: #ffffff;
-  --line: #e5e5e5;
-  --line-strong: #cacacb;
+  --bg: #03070e;
+  --surface: rgba(6, 11, 20, 0.85);
+  --surface-solid: #060b14;
+  --surface-2: rgba(56, 189, 248, 0.07);
+  --surface-3: rgba(148, 197, 233, 0.18);
+  --inverse: #38bdf8;
+  --on-inverse: #03121c;
+  --line: rgba(56, 189, 248, 0.3);
+  --line-soft: rgba(56, 189, 248, 0.16);
+  --line-strong: rgba(56, 189, 248, 0.6);
 
-  --text: #111111;
-  --text-dim: #4f4f52;
-  --text-faint: #6b6b6e;
+  --text: #e8f3fb;
+  --text-dim: #b7c9d9;
+  --text-faint: #93a9bc;
 
-  --accent: #c1440e;
-  --accent-hover: #a2380b;
-  --on-accent: #ffffff;
-  --accent-soft: #fbeee8;
+  --cyan: #38bdf8;
+  --cyan-bright: #8bdcff;
+  --accent: #38bdf8;
+  --accent-hover: #8bdcff;
+  --on-accent: #03121c;
+  --accent-soft: rgba(56, 189, 248, 0.12);
 
-  --good: #1d7a45;
-  --good-bg: #e7f3ec;
-  --warn: #8a5a00;
-  --warn-bg: #fbf1dc;
-  --danger: #c4162a;
-  --danger-bg: #fbe9ea;
+  --good: #3ddbb0;
+  --good-bg: rgba(61, 219, 176, 0.1);
+  --warn: #fbbf24;
+  --warn-bg: rgba(251, 191, 36, 0.1);
+  --danger: #ff7a7a;
+  --danger-bg: rgba(255, 122, 122, 0.1);
 
-  /* Data palette for charts and meters (works on light and dark surfaces). */
-  --data-1: #c1440e;
-  --data-2: #4a6fa5;
-  --data-3: #8d8d8f;
-  --data-4: #d39a62;
-  --data-5: #2f8f6b;
+  /* Data palette for charts and meters. */
+  --data-1: #f4874b;
+  --data-2: #38bdf8;
+  --data-3: #9db2c4;
+  --data-4: #fbbf24;
+  --data-5: #3ddbb0;
 
-  /* Legacy aliases used by charts and older markup. */
+  /* Aliases used by charts and screen styles. */
   --panel: var(--surface);
-  --panel-solid: var(--surface);
+  --panel-solid: var(--surface-solid);
   --panel-raised: var(--surface-2);
-  --cyan: var(--text);
-  --mars: var(--accent);
-  --moon: var(--text-dim);
-  --gold: var(--accent);
-  --violet: var(--data-2);
-  --o2: var(--data-2);
-  --water: var(--data-2);
-  --food: var(--data-5);
-  --power: var(--data-4);
-  --spares: var(--data-3);
-  --rad: var(--accent);
+  --mars: #f4874b;
+  --mars-deep: #9a3d12;
+  --moon: #c5d2de;
+  --gold: #fbbf24;
+  --violet: #5eead4;
+  --o2: #7dd3fc;
+  --water: #38bdf8;
+  --food: #a3e635;
+  --power: #fde047;
+  --spares: #c5d2de;
+  --rad: #f472b6;
+  --glow-cyan: inset 0 0 14px rgba(56, 189, 248, 0.22);
+  --glow-mars: inset 0 0 14px rgba(244, 135, 75, 0.22);
+  --bg-0: var(--bg);
+  --bg-1: var(--surface-solid);
+  --bg-2: #0a1422;
+  --bg-3: #12213a;
 
-  --font-display: 'Anton', 'Arial Narrow', 'Helvetica Neue Condensed', Impact, sans-serif;
-  --font-ui: 'Inter Variable', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --font-display: 'Orbitron', 'Eurostile', 'Bank Gothic', 'Arial Narrow', sans-serif;
+  --font-ui: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --track: 0.12em;
 
   --fs-xs: 0.8125rem;
-  --fs-sm: 0.875rem;
+  --fs-sm: 0.9375rem;
   --fs-base: 1rem;
-  --fs-md: 1.125rem;
-  --fs-lg: 1.25rem;
-  --fs-xl: 1.5rem;
-  --fs-2xl: 2rem;
-  --fs-display-sm: clamp(2.25rem, 1.6rem + 2.6vw, 3.5rem);
-  --fs-display: clamp(2.75rem, 1.4rem + 5.4vw, 6rem);
-  --fs-display-xl: clamp(3.5rem, 1rem + 9vw, 9.5rem);
+  --fs-md: 1.0625rem;
+  --fs-lg: 1.1875rem;
+  --fs-xl: 1.375rem;
+  --fs-2xl: 1.75rem;
+  --fs-display-sm: clamp(1.5rem, 1.1rem + 1.6vw, 2.25rem);
+  --fs-display: clamp(1.75rem, 1.1rem + 2.8vw, 3.25rem);
+  --fs-display-xl: clamp(2.1rem, 1rem + 5vw, 5rem);
 
   /* 8px spacing grid */
   --s-1: 4px;
@@ -81,80 +90,44 @@
   --s-9: 96px;
   --gap: var(--s-4);
 
-  --r-sm: 4px;
-  --r-md: 8px;
-  --r-lg: 12px;
-  --r-pill: 999px;
+  /* No rounded cards: every radius token is square. Chamfers come from clip-path (see components.css). */
+  --r-sm: 0px;
+  --r-md: 0px;
+  --r-lg: 0px;
+  --r-pill: 0px;
   --tap: 44px;
+  --ch: 14px;
 
-  --strip-h: 36px;
-  --header-h: 60px;
+  --strip-h: 30px;
+  --header-h: 58px;
+  --ticker-h: 34px;
   --page-max: 1440px;
   --page-pad: clamp(16px, 3.4vw, 48px);
 
-  --focus-color: #1a5cff;
+  --focus-color: #8bdcff;
   --focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--focus-color);
   --shadow: none;
 
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
-  --t-fast: 150ms;
-  --t-med: 250ms;
-  --t-slow: 500ms;
+  --t-fast: 120ms;
+  --t-med: 180ms;
+  --t-slow: 200ms;
 }
 
-:root[data-theme='dark'] {
-  color-scheme: dark;
-
-  --bg: #0f0f10;
-  --surface: #18181a;
-  --surface-2: #222224;
-  --surface-3: #2e2e31;
-  --inverse: #f5f5f5;
-  --on-inverse: #111111;
-  --line: #2c2c2f;
-  --line-strong: #47474b;
-
-  --text: #f5f5f5;
-  --text-dim: #bdbdc0;
-  --text-faint: #9d9da1;
-
-  --accent: #e2622b;
-  --accent-hover: #f0743e;
-  --on-accent: #111111;
-  --accent-soft: rgba(226, 98, 43, 0.14);
-
-  --good: #4cc38a;
-  --good-bg: rgba(76, 195, 138, 0.12);
-  --warn: #e8b04a;
-  --warn-bg: rgba(232, 176, 74, 0.12);
-  --danger: #ff6b6b;
-  --danger-bg: rgba(255, 107, 107, 0.12);
-
-  --data-1: #e2622b;
-  --data-2: #7d9fd3;
-  --data-3: #a3a3a7;
-  --data-4: #e0aa70;
-  --data-5: #4cc38a;
-
-  --focus-color: #8fb2ff;
-}
+/* The data-theme switch still exists (set per route in main.js) but both values use the HUD tokens above. */
+:root[data-theme='dark'], :root[data-theme='light'] { color-scheme: dark; }
 
 :root[data-text='large'] { font-size: 112.5%; }
 :root[data-text='xl'] { font-size: 125%; }
 
 :root[data-contrast='high'] {
-  --line: #8d8d8f;
-  --line-strong: #111111;
-  --text-dim: #111111;
-  --text-faint: #2b2b2d;
-  --accent: #9e3208;
-}
-:root[data-contrast='high'][data-theme='dark'] {
-  --line: #8d8d91;
-  --line-strong: #ffffff;
+  --surface: rgba(2, 5, 10, 0.96);
+  --line: rgba(125, 211, 252, 0.75);
+  --line-soft: rgba(125, 211, 252, 0.45);
+  --line-strong: #8bdcff;
+  --text: #ffffff;
   --text-dim: #ffffff;
-  --text-faint: #e5e5e7;
-  --accent: #ff8a55;
+  --text-faint: #dcebf7;
 }
 
 :root[data-motion='reduced'] {

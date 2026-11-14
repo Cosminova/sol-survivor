@@ -16,10 +16,13 @@ import { capcomPanel, modulesPanel, logPanel } from './play/side.js';
 import { openEventModal } from './play/eventModal.js';
 import { finishMission } from './play/finish.js';
 import { viewToggle } from './play/view3d.js';
+import { telemetryItems } from './play/status.js';
+import { setTickerItems } from '../components/ticker.js';
+import { icon } from '../icons.js';
 
 function noMission(root) {
   root.append(h('section', { class: 'panel empty' },
-    h('span', { class: 'big', 'aria-hidden': 'true' }, '🛰️'),
+    h('span', { class: 'big', 'aria-hidden': 'true' }, icon('satellite', { size: 56 })),
     h('h1', null, 'No mission in progress'),
     h('p', null, 'Pick a campaign chapter or design your own mission to start.'),
     h('div', { class: 'row' }, h('a', { class: 'btn btn-primary btn-lg', href: '#/campaign' }, '🚀 Campaign'), h('a', { class: 'btn btn-lg', href: '#/loadout/free-play' }, '🛠️ Free Play')),
@@ -116,7 +119,7 @@ export function render(root) {
   function draw() {
     const power = computePower(m);
     const fc = forecast(m);
-    mount(els.hud, hud(m, { onNext: nextSol, onRun: runFive, busy }));
+    mount(els.hud, hud(m, { onNext: nextSol, onRun: runFive, busy, fc }));
     mount(els.overlay, sceneOverlay(m, { onDebrief: () => navigate('debrief') }));
     mount(els.res, resourcesPanel(m, fc));
     mount(els.power, powerPanel(m, power));
@@ -127,6 +130,7 @@ export function render(root) {
     mount(els.log, logPanel(m));
     scene.update(m, describe(m));
     view3d.update(m);
+    setTickerItems(telemetryItems(m, fc));
   }
 
   const onKey = (e) => {
@@ -153,5 +157,6 @@ export function render(root) {
     scene.stop();
     view3d.stop();
     document.removeEventListener('keydown', onKey);
+    setTickerItems(null);
   };
 }

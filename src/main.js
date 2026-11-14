@@ -1,3 +1,12 @@
+// Bundled fonts (no CDN): the game must work offline in classrooms.
+import '@fontsource/orbitron/500.css';
+import '@fontsource/orbitron/700.css';
+import '@fontsource/orbitron/800.css';
+import '@fontsource/jetbrains-mono/400.css';
+import '@fontsource/jetbrains-mono/500.css';
+import '@fontsource/jetbrains-mono/600.css';
+import '@fontsource/jetbrains-mono/700.css';
+import '@fontsource/jetbrains-mono/800.css';
 import './styles/index.css';
 import { h, mount } from './ui/dom.js';
 import { logo } from './ui/logo.js';
@@ -8,6 +17,8 @@ import { loadSimContext } from './state/nasaData.js';
 import { closeTermPopover } from './ui/components/termPopover.js';
 import { trapFocus } from './ui/components/modal.js';
 import { stopSpeaking } from './ui/speech.js';
+import { createStarfield } from './ui/starfield.js';
+import { createTicker } from './ui/components/ticker.js';
 
 const NAV = [['campaign', 'Missions'], ['dictionary', 'Dictionary'], ['academy', 'Academy'], ['datalab', 'Data'], ['educators', 'Educators']];
 const MENU = [
@@ -21,7 +32,8 @@ const FOOTER = [
   ['About', [['educators', 'For Educators'], ['settings', 'Settings']]],
 ];
 const SECTION = { loadout: 'campaign', play: 'campaign', debrief: 'campaign', patch: 'badges' };
-const DARK_ROUTES = new Set(['play']);
+// The whole app uses the flight-control HUD theme. data-theme is still set per route so the mechanism keeps working.
+const themeFor = () => 'dark';
 
 function applySettings({ settings }) {
   const root = document.documentElement;
@@ -78,7 +90,7 @@ function header() {
   return { strip, bar, menu };
 }
 
-// Nike-style: the header slides away while scrolling down and returns on any scroll up.
+// The header slides away while scrolling down and returns on any scroll up.
 function autoHide(bar) {
   let last = window.scrollY;
   let ticking = false;
@@ -109,7 +121,9 @@ function buildShell() {
   const { strip, bar, menu } = header();
   const view = h('main', { id: 'view', tabindex: '-1' });
   const live = h('div', { id: 'live-region', class: 'sr-only', 'aria-live': 'polite' });
-  mount(document.getElementById('app'), strip, bar, view, footer(), menu.sheet, live);
+  const backdrop = h('canvas', { class: 'hud-backdrop', 'aria-hidden': 'true' });
+  mount(document.getElementById('app'), backdrop, strip, bar, view, footer(), createTicker(), menu.sheet, live);
+  createStarfield(backdrop, { density: 0.00012, shooting: false });
   autoHide(bar);
   return { view, menu, links: [...document.querySelectorAll('#app [data-route]')] };
 }
@@ -132,7 +146,7 @@ startRouter(view, {
     stopSpeaking();
     menu.close();
     document.body.dataset.route = route.name;
-    document.documentElement.dataset.theme = DARK_ROUTES.has(route.name) ? 'dark' : 'light';
+    document.documentElement.dataset.theme = themeFor(route.name);
     highlight(links, route.name);
   },
 });

@@ -10,6 +10,7 @@ import { openTermPopover } from '../../components/termPopover.js';
 import { sourceBadge } from '../../components/common.js';
 import { speak, canSpeak } from '../../speech.js';
 import { noteEventSeen } from './finish.js';
+import { icon } from '../../icons.js';
 
 const sign = (v) => (v > 0 ? `+${v}` : `${v}`);
 
@@ -44,7 +45,7 @@ function unavailableReason(choice) {
 
 function sciencePanel(card, vars) {
   return h('aside', { class: 'event-science', 'aria-label': 'Real science' },
-    h('h3', null, '🔬 Real Science'),
+    h('h3', null, icon('flask', { size: 18 }), '🔬 Real Science'),
     h('p', null, richText(fillTemplate(card.science ?? '', vars), openTermPopover)),
     h('div', { class: 'row' },
       sourceBadge(card.source, { label: 'Archived NASA data' }),
@@ -86,12 +87,14 @@ export function openEventModal(mission, { onChoose, onDone }) {
         sciencePanel(card, vars),
         h('h3', { class: 'event-q' }, 'What do you do, Commander?'),
         h('div', { class: 'event-choices' }, card.choices.map((choice, i) => {
+          // Autofocus the first choice the player can actually pick (a locked first choice would stall focus).
+          const firstAvailable = card.choices.findIndex((c) => choiceAvailable(mission, c));
           const ok = choiceAvailable(mission, choice);
           return h('button', {
             type: 'button',
             class: ['event-choice', !ok && 'locked'],
             disabled: !ok,
-            'data-autofocus': i === 0 ? true : null,
+            'data-autofocus': i === firstAvailable ? true : null,
             onclick: () => showOutcome(choice, onChoose(i)),
           },
           h('span', { class: 'event-choice-label' }, h('span', { class: 'event-choice-key', 'aria-hidden': 'true' }, String.fromCharCode(65 + i)), choice.label),

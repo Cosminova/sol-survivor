@@ -1,5 +1,6 @@
 // Debrief building blocks: score breakdown, lessons, radiation comparison, history charts, badges, certificate.
 import { h } from '../../dom.js';
+import { icon, MODULE_ICONS, SUPPLY_ICONS } from '../../icons.js';
 import { lineChart } from '../../charts.js';
 import { stars, sourceBadge, termButton } from '../../components/common.js';
 import { compareDose } from '../../../engine/dataLab.js';
@@ -87,7 +88,7 @@ export function historyCharts(mission) {
         series: [
           { label: 'Made', color: '#fde047', values: pts(hist, 'generated') },
           { label: 'Used', color: '#4fe3ff', values: pts(hist, 'demand') },
-          { label: 'Battery', color: '#c4b5fd', values: pts(hist, 'battery'), dashed: true },
+          { label: 'Battery', color: '#c5d2de', values: pts(hist, 'battery'), dashed: true },
         ] }),
       lineChart({ ...common, title: 'Crew health and morale', yLabel: '%', yDomain: [0, 100],
         desc: 'Average crew health and morale each sol.',
@@ -105,7 +106,7 @@ export function badgesPanel(badges) {
   return h('section', { class: 'panel db-badges', 'aria-label': 'New badges' },
     h('h2', { class: 'panel-title' }, '🏅 New badges earned!'),
     h('ul', { class: 'db-badge-list' }, badges.map((b, i) => h('li', { class: 'db-badge', style: { '--i': i } },
-      h('span', { class: 'db-badge-icon', 'aria-hidden': 'true' }, b.icon ?? '🏅'),
+      h('span', { class: 'db-badge-icon', 'aria-hidden': 'true' }, icon('award', { size: 30 })),
       h('span', null, h('strong', null, b.title), h('br'), h('span', { class: 'faint' }, b.desc))))),
     h('a', { class: 'btn btn-sm', href: '#/badges' }, 'See all badges'));
 }

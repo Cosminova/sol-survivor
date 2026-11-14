@@ -8,28 +8,44 @@ body {
   min-height: 100dvh;
   font-family: var(--font-ui);
   font-size: var(--fs-base);
-  line-height: 1.5;
+  line-height: 1.55;
   color: var(--text);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  font-feature-settings: 'cv11', 'ss01';
+  font-variant-ligatures: none;
+  overflow-wrap: break-word;
+  padding-bottom: var(--ticker-h);
 }
 
-h1, h2, h3, h4 { margin: 0 0 0.5em; line-height: 1.15; font-weight: 600; letter-spacing: -0.01em; }
+/* Full-bleed backdrop on every route: a fixed star canvas plus a faint survey grid. The play route
+   paints its outpost scene over this (see play.css). */
+.hud-backdrop { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; opacity: 0.75; }
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(56, 189, 248, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.045) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+h1, h2, h3, h4 { margin: 0 0 0.5em; line-height: 1.2; font-family: var(--font-display); font-weight: 700; letter-spacing: 0.04em; }
 h1 {
-  font-family: var(--font-display);
-  font-weight: 400;
+  font-weight: 800;
   font-size: var(--fs-display-sm);
-  line-height: 0.95;
-  letter-spacing: -0.005em;
+  line-height: 1.05;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
-h2 { font-size: var(--fs-xl); }
+h2 { font-size: var(--fs-xl); text-transform: uppercase; letter-spacing: 0.08em; }
 h3 { font-size: var(--fs-lg); }
 p { margin: 0 0 0.8em; }
 a { color: inherit; text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
-a:hover { color: var(--text-dim); }
+a:hover { color: var(--cyan-bright); }
 img { max-width: 100%; display: block; }
 svg { flex: none; }
 button, input, select, textarea { font: inherit; color: inherit; }
@@ -39,10 +55,10 @@ small { font-size: var(--fs-sm); }
 code { font-family: var(--font-mono); font-size: 0.92em; }
 .mono { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; }
 hr { border: 0; border-top: 1px solid var(--line); margin: var(--s-5) 0; }
-::selection { background: var(--text); color: var(--bg); }
+::selection { background: var(--cyan); color: var(--on-accent); }
 
 :focus { outline: none; }
-:focus-visible { outline: 2px solid var(--focus-color); outline-offset: 2px; border-radius: var(--r-sm); }
+:focus-visible { outline: 2px solid var(--focus-color); outline-offset: 2px; }
 
 .skip-link {
   position: absolute;
@@ -52,8 +68,9 @@ hr { border: 0; border-top: 1px solid var(--line); margin: var(--s-5) 0; }
   padding: var(--s-3) var(--s-4);
   background: var(--inverse);
   color: var(--on-inverse);
-  border-radius: var(--r-pill);
-  font-weight: 600;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: var(--track);
   text-decoration: none;
 }
 .skip-link:focus { top: var(--s-2); }
@@ -81,8 +98,8 @@ hr { border: 0; border-top: 1px solid var(--line); margin: var(--s-5) 0; }
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  border: 3px solid var(--line);
-  border-top-color: var(--text);
+  border: 1px solid var(--line);
+  border-top-color: var(--cyan);
   animation: spin 0.9s linear infinite;
 }
 

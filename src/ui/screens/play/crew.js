@@ -3,6 +3,7 @@ import { h } from '../../dom.js';
 import { ROLES, TASKS, isOnEva } from '../../../engine/sim.js';
 import { RADIATION } from '../../../data/constants.js';
 import { meter } from '../../components/common.js';
+import { icon, TASK_ICONS } from '../../icons.js';
 
 const colorFor = (v) => (v > 60 ? 'var(--good)' : v > 30 ? 'var(--warn)' : 'var(--danger)');
 
@@ -23,19 +24,19 @@ function taskPicker(c, disabled, onTask) {
       title: `${t.label}: ${t.desc}`,
       disabled,
       onclick: () => onTask(c.id, id),
-    }, h('span', { 'aria-hidden': 'true' }, t.icon), h('span', { class: 'task-name' }, t.label.replace(' (EVA)', '')))));
+    }, h('span', { class: 'task-icon', 'aria-hidden': 'true' }, icon(TASK_ICONS[id] ?? 'settings', { size: 20 })), h('span', { class: 'task-name' }, t.label.replace(' (EVA)', '')))));
 }
 
 export function crewPanel(m, onTask) {
   const locked = m.status !== 'active' || m.phase === 'event';
   return h('section', { class: 'panel play-crew', 'aria-label': 'Crew' },
-    h('h2', { class: 'panel-title' }, 'Crew assignments', h('span', { class: 'spacer' }), h('span', { class: 'faint' }, 'Pick a job for tomorrow')),
+    h('h2', { class: 'panel-title' }, icon('user', { size: 18 }), 'Crew assignments', h('span', { class: 'spacer' }), h('span', { class: 'faint' }, 'Pick a job for tomorrow')),
     h('div', { class: 'crew-grid' }, m.crew.map((c) => {
       const eva = isOnEva(m, c);
       const task = TASKS[c.task];
       return h('article', { class: ['crew-card', c.health <= 30 && 'hurt', eva && 'eva'] },
         h('div', { class: 'crew-head' },
-          h('span', { class: 'crew-avatar', 'aria-hidden': 'true' }, c.avatar),
+          h('span', { class: 'crew-avatar', 'aria-hidden': 'true' }, icon('user', { size: 24 })),
           h('div', null,
             h('h3', null, c.name),
             h('span', { class: 'crew-role', title: ROLES[c.role]?.bonus }, ROLES[c.role]?.label ?? c.role)),

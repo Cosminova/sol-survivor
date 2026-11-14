@@ -40,7 +40,7 @@ function hero(mission, report, pointsEl) {
   const won = mission.status === 'won';
   const unit = mission.config.body === 'mars' ? 'sols' : 'days';
   const story = won ? CAMPAIGN.find((c) => c.id === mission.config.id)?.win : report.improve[0];
-  return h('header', { class: ['db-hero', won ? 'won' : 'lost', mission.config.body] },
+  return h('header', { class: ['db-hero', 'hud-frame', won ? 'won' : 'lost', mission.config.body] },
     h('div', { class: 'db-hero-text' },
       h('span', { class: ['kicker', mission.config.body === 'mars' && 'mars'] }, mission.config.chapter ? `Chapter ${mission.config.chapter} debrief` : 'Free Play debrief'),
       h('h1', null, won ? '🏁 Mission complete!' : '🚨 Mission aborted'),

@@ -10,7 +10,7 @@ const P_MAX = 1000;
 // Wide temperature range keeps both lines inside the bars, below the pressure labels.
 const T_RANGE = [-90, 60];
 const SEASONS = ['N. spring', 'N. summer', 'N. autumn', 'N. winter'];
-const COLORS = { bar: '#b197fc', low: '#ffd166', max: '#ff9a5c', min: '#4fe3ff' };
+const COLORS = { bar: '#5eead4', low: '#ffd166', max: '#ff9a5c', min: '#4fe3ff' };
 
 const innerW = W - PAD.left - PAD.right;
 const innerH = H - PAD.top - PAD.bottom;

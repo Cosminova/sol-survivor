@@ -1,5 +1,6 @@
 // Mission setup controls: free-play site/length/date, difficulty, mission code, crew names.
 import { h } from '../../dom.js';
+import { icon, MODULE_ICONS, SUPPLY_ICONS } from '../../icons.js';
 import { DIFFICULTY } from '../../../data/missions.js';
 import { sitesForBody, siteById } from '../../../data/sites.js';
 import { ROLES } from '../../../engine/sim.js';
@@ -59,14 +60,14 @@ export function codeField(code, onChange) {
         oninput: (e) => { e.target.value = sanitizeCode(e.target.value); },
         onchange: (e) => onChange(sanitizeCode(e.target.value) || randomMissionCode()),
       }),
-      h('button', { type: 'button', class: 'btn btn-icon', 'aria-label': 'Random mission code', onclick: () => onChange(randomMissionCode()) }, '🎲')));
+      h('button', { type: 'button', class: 'btn btn-icon', 'aria-label': 'Random mission code', onclick: () => onChange(randomMissionCode()) }, icon('recycle', { size: 20 }))));
 }
 
 export function crewFields(crew, onChange) {
   return h('details', { class: 'lo-crew' },
     h('summary', null, '🧑‍🚀 Name your crew'),
     h('div', { class: 'stack-sm' }, crew.map((c, i) => h('label', { class: 'lo-crew-row' },
-      h('span', { class: 'lo-crew-avatar', 'aria-hidden': 'true' }, c.avatar),
+      h('span', { class: 'lo-crew-avatar', 'aria-hidden': 'true' }, icon('user', { size: 20 })),
       h('span', { class: 'lo-crew-role' }, ROLES[c.role]?.label ?? c.role),
       h('input', {
         class: 'input', value: c.name, maxlength: 16, 'aria-label': `${ROLES[c.role]?.label ?? c.role} name`,

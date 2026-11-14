@@ -1,5 +1,6 @@
 // Loadout building blocks: mass budget bar, module cards, supply sliders, validation list.
 import { h } from '../../dom.js';
+import { icon, MODULE_ICONS, SUPPLY_ICONS } from '../../icons.js';
 import { termButton, sourceBadge } from '../../components/common.js';
 
 const CATEGORY_LABEL = { power: '⚡ Power', life: '🫁 Life support', isru: '⛏️ Living off the land', safety: '🛡️ Safety', science: '🔬 Science' };
@@ -41,7 +42,7 @@ export function moduleCard(mod, count, onChange) {
   ].filter(Boolean);
   return h('article', { class: ['lo-module', count > 0 && 'packed', `cat-${mod.category}`] },
     h('div', { class: 'lo-module-head' },
-      h('span', { class: 'lo-module-icon', 'aria-hidden': 'true' }, mod.icon),
+      h('span', { class: 'lo-module-icon', 'aria-hidden': 'true' }, icon(MODULE_ICONS[mod.id] ?? 'settings', { size: 26 })),
       h('div', null, h('h3', null, mod.name), h('span', { class: 'lo-module-cat' }, CATEGORY_LABEL[mod.category] ?? mod.category))),
     h('p', { class: 'lo-module-blurb' }, mod.blurb),
     h('div', { class: 'lo-module-stats' }, stats.map((st) => h('span', { class: 'badge' }, st))),
@@ -62,7 +63,7 @@ export function supplySlider(sup, value, crewDayKg, onChange) {
   };
   paint(value);
   return h('div', { class: 'lo-supply' },
-    h('label', { for: id, class: 'row between' }, h('span', null, h('span', { 'aria-hidden': 'true' }, `${sup.icon} `), sup.name), amount),
+    h('label', { for: id, class: 'row between' }, h('span', null, h('span', { class: 'lo-supply-icon', 'aria-hidden': 'true' }, icon(SUPPLY_ICONS[sup.id] ?? 'package', { size: 18 })), sup.name), amount),
     h('input', {
       id, type: 'range', min: 0, max: 2000, step: 25, value,
       'aria-valuetext': `${value} kilograms, about ${crewDays} crew-days`,
