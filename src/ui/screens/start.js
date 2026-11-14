@@ -59,6 +59,8 @@ export function renderStart(store) {
   </div>
 
   <h2 style="margin-top:16px">2. Pick a landing site</h2>
+  <div class="hero3d planet" data-scene="planet"></div>
+  <p class="scene-caption">Globe: NASA ${s.body === 'moon' ? 'Moon' : 'Mars'} Trek global mosaic · tap a pin or a card</p>
   <div class="grid grid-2 collapse" role="radiogroup" aria-label="Landing site">
     ${sites.map(
       (site) => `<button type="button" role="radio" aria-checked="${s.siteId === site.id}" class="card selectable site-card ${s.siteId === site.id ? 'selected' : ''}" data-action="set-site" data-site="${site.id}">

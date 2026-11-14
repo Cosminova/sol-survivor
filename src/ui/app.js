@@ -11,6 +11,7 @@ import { renderDebrief } from './screens/debrief.js';
 import { initGlossaryPopover, renderGlossaryList } from './components/glossaryPopover.js';
 import { logEntriesFromSol } from './components/log.js';
 import { escapeHtml } from './text.js';
+import { mountScenes, sceneStats } from './scene/sceneHost.js';
 
 const STORAGE_KEY = 'sol-survivor:v1';
 const MAX_HISTORY = 400;
@@ -334,6 +335,7 @@ export function render() {
   root.innerHTML = `${topbar()}${errorHtml}<main>${body}</main>`;
   if (store.tab === 'datalab') renderDataLabTab(root.querySelector('[data-datalab-host]'));
   mountBadges(root);
+  mountScenes(root, store); // persistent 3D canvases re-attach into their [data-scene] slots
 
   if (store.pendingScroll) {
     const target = document.getElementById(store.pendingScroll);
@@ -382,6 +384,13 @@ export async function boot(root) {
   initGlossaryPopover();
   root.addEventListener('click', onClick);
   root.addEventListener('input', onInput);
+  root.addEventListener('select-site', (ev) => {
+    const siteId = ev?.detail?.siteId;
+    if (!siteId || !sitesForBody(store.setup.body).some((s) => s.id === siteId)) return;
+    store.setup.siteId = siteId;
+    render();
+  });
+  if (import.meta.env?.DEV) window.__solSurvivorSceneStats = sceneStats;
   document.addEventListener('open-source', (ev) => {
     const id = ev?.detail?.sourceId;
     store.tab = 'datalab';

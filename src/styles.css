@@ -219,3 +219,53 @@ details.science summary { cursor: pointer; font-weight: 700; min-height: 32px; d
 
 /* Loading */
 .loading { text-align: center; padding: 60px 16px; color: var(--muted); }
+
+/* 3D hero scenes (src/ui/scene). The wrapper persists across re-renders; the slot is rebuilt each time. */
+.hero3d {
+  position: relative;
+  height: 45vh;
+  min-height: 280px;
+  max-height: 580px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+}
+.hero3d.planet { height: 40vh; min-height: 240px; max-height: 420px; background: radial-gradient(ellipse at 50% 60%, #141a33 0%, var(--bg) 70%); }
+.hero3d::after {
+  content: "";
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 52%, rgba(5, 8, 20, 0.55) 100%);
+  border-radius: inherit;
+}
+.hero3d.scene-fallback { height: auto; min-height: 0; padding: 10px 14px; }
+.hero3d.scene-fallback::after { display: none; }
+.hero3d-wrap { position: absolute; inset: 0; transition: filter 0.3s ease; }
+.hero3d-wrap.dimmed { filter: brightness(0.45) saturate(0.6); }
+.hero3d .scene-canvas { display: block; width: 100% !important; height: 100% !important; cursor: grab; }
+.hero3d .scene-canvas:active { cursor: grabbing; }
+.hero3d-hud {
+  position: absolute; left: 14px; top: 12px; z-index: 2; pointer-events: none;
+  display: grid; gap: 4px; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7);
+}
+.hero3d-hud .hud-sol { font-size: 1.5rem; font-weight: 800; letter-spacing: 0.5px; line-height: 1.1; }
+.hero3d-hud .hud-time { font-size: 0.9rem; color: var(--text); opacity: 0.85; }
+.hero3d-hud .hud-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.hero3d-hud .pill { background: rgba(11, 16, 32, 0.72); backdrop-filter: blur(6px); font-weight: 700; }
+.hero3d-hint {
+  position: absolute; right: 12px; bottom: 10px; z-index: 2; pointer-events: none;
+  font-size: 0.75rem; color: var(--muted); background: rgba(11, 16, 32, 0.55); padding: 3px 9px; border-radius: 999px;
+}
+.planet-label {
+  position: absolute; left: 0; top: 0; z-index: 2; pointer-events: none; opacity: 0;
+  font-weight: 800; font-size: 0.95rem; color: var(--accent); text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8);
+  transition: opacity 0.2s ease; white-space: nowrap;
+}
+.scene-caption { font-size: 0.75rem; color: var(--muted); margin: 6px 4px 10px; text-align: right; }
+@media (max-width: 600px) {
+  .hero3d { height: 38vh; min-height: 220px; }
+  .hero3d.planet { height: 34vh; min-height: 200px; }
+  .hero3d-hud .hud-sol { font-size: 1.2rem; }
+  .hero3d-hint { display: none; }
+}

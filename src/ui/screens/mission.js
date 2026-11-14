@@ -173,6 +173,9 @@ export function renderMission(store) {
   const pending = state.pendingCard;
 
   return `
+  <div class="hero3d" data-scene="outpost" aria-label="3D view of your outpost"></div>
+  <p class="scene-caption">Terrain: NASA ${isMoon ? 'Moon' : 'Mars'} Trek global mosaic · drag to look around</p>
+
   <div class="card mission-head">
     <div class="row between">
       <div class="sol">Sol ${escapeHtml(state.sol ?? 0)} of ${escapeHtml(state.lengthSols ?? '?')}</div>
