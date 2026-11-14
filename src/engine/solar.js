@@ -23,6 +23,16 @@ export function dailyMeanInsolation(latDeg, ls) {
   return Math.max(0, q);
 }
 
+// Hours of daylight in one sol for a latitude and season (half-day hour angle h0 from the same geometry).
+// Gale Crater at Ls 246° gives ≈12.6 h, close to the REMS sunrise/sunset columns (05:40 → 17:56, 12.3 h).
+export function daylightHours(latDeg, ls) {
+  const phi = DEG * latDeg;
+  const delta = DEG * marsSolarDeclinationDeg(ls);
+  const cosH0 = -Math.tan(phi) * Math.tan(delta);
+  const h0 = cosH0 >= 1 ? 0 : cosH0 <= -1 ? Math.PI : Math.acos(cosH0);
+  return (h0 / Math.PI) * MARS.dayHours;
+}
+
 // Simplified direct + diffuse transmission through dust of optical depth tau.
 // tau 0.5 (clear) passes ~80%; tau 10.8 (Opportunity's 2018 storm) passes ~2%.
 export const atmosphericTransmission = (tau) => 0.95 * Math.exp(-0.35 * Math.max(0, tau));

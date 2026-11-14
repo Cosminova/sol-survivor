@@ -17,6 +17,12 @@ function onlineCount(state, id) {
 
 /** Sols of oxygen left, or Infinity when producing more than the crew breathes. */
 export function airSolsLeft(state) {
+  const b = state.lastSol?.budget;
+  if (b && Number.isFinite(b.o2Out) && Number.isFinite(b.o2In)) {
+    const net = b.o2Out - b.o2In;
+    const o2 = state.supplies?.o2Kg ?? 0;
+    return { sols: net <= 0 ? Infinity : o2 / net, use: b.o2Out, made: b.o2In };
+  }
   const crew = state.crew?.length ?? 0;
   const use = (LIFE_SUPPORT?.o2KgPerCrewDay ?? 0.82) * crew;
   let made = 0;
@@ -30,6 +36,11 @@ export function airSolsLeft(state) {
 }
 
 export function waterSolsLeft(state) {
+  const b = state.lastSol?.budget;
+  if (b && Number.isFinite(b.waterOut) && Number.isFinite(b.waterIn)) {
+    const net = b.waterOut - b.waterIn;
+    return net <= 0 ? Infinity : (state.supplies?.waterKg ?? 0) / net;
+  }
   const crew = state.crew?.length ?? 0;
   const use = (LIFE_SUPPORT?.waterKgPerCrewDay ?? 3.5) * crew;
   const recycler = moduleById('recycler');
@@ -42,6 +53,11 @@ export function waterSolsLeft(state) {
 }
 
 export function foodSolsLeft(state) {
+  const b = state.lastSol?.budget;
+  if (b && Number.isFinite(b.foodOut) && Number.isFinite(b.foodIn)) {
+    const net = b.foodOut - b.foodIn;
+    return net <= 0 ? Infinity : (state.supplies?.foodKg ?? 0) / net;
+  }
   const crew = state.crew?.length ?? 0;
   const use = (LIFE_SUPPORT?.foodKgPerCrewDay ?? 1.8) * crew;
   const gh = moduleById('greenhouse');

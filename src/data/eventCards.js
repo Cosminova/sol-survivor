@@ -18,9 +18,9 @@ export const EVENT_CARDS = [
     science: 'Mars dust storms happen most in southern spring and summer (Ls 180°–330°). In 2018 a planet-wide storm pushed tau to about 10.8 and ended the solar-powered Opportunity rover’s 15-year mission.',
     source: 'opportunity', terms: ['dust-storm', 'tau', 'solar-longitude', 'solar-array'],
     choices: [
-      { label: 'Switch off the greenhouse lights to save power', effects: { storm: { tau: 3, sols: 10 }, disable: 'greenhouse' }, outcome: 'The plants will be dark for a while, but life support is safe.' },
-      { label: 'Fill the batteries now and ride it out', effects: { storm: { tau: 3, sols: 10 }, battery: 40 }, outcome: 'The crew tops off the batteries while the sun still shines.' },
-      { label: 'Do an EVA to tie down and clean the panels', effects: { storm: { tau: 3, sols: 10 }, dust: -0.2, dose: 0.3, morale: 2 }, outcome: 'Panels are sparkling clean as the first dust arrives.' },
+      { label: 'Power down the science gear until it passes', effects: { storm: { tau: 3, sols: 10 }, disable: ['rover', 'relay', 'greenhouse', 'moxie', 'iceDrill'], morale: -1 }, outcome: 'The base goes quiet. Life support and heating get every spare watt.' },
+      { label: 'Keep everything running and work through it', effects: { storm: { tau: 3, sols: 10 }, science: 3 }, outcome: 'Work continues under an orange sky. Watch the battery every night.' },
+      { label: 'EVA to tie down and clean the panels', effects: { storm: { tau: 3, sols: 10 }, dust: -0.2, dose: 0.4, morale: 1 }, outcome: 'Panels are sparkling clean as the first dust arrives, but the cleaners took an extra dose outside.' },
     ],
   },
   {
@@ -29,8 +29,8 @@ export const EVENT_CARDS = [
     science: 'Global dust storms strike every few Mars years. Nuclear power (like the [[rtg|RTG]] on Curiosity and Perseverance) keeps working in the dark, which is why Curiosity kept roving during the 2018 storm.',
     source: 'opportunity', terms: ['dust-storm', 'tau', 'rtg', 'fission-surface-power'],
     choices: [
-      { label: 'Power down everything except life support', effects: { storm: { tau: 8, sols: 25 }, disable: ['greenhouse', 'rover', 'relay', 'moxie', 'iceDrill'] }, outcome: 'The base goes quiet. Only the life support hums.' },
-      { label: 'Keep systems running and hope', effects: { storm: { tau: 8, sols: 25 } }, outcome: 'Mission Control is nervous. Watch your battery!' },
+      { label: 'Power down everything except life support', effects: { storm: { tau: 8, sols: 25 }, disable: ['greenhouse', 'rover', 'relay', 'moxie', 'iceDrill'], morale: -3 }, outcome: 'The base goes quiet. Only the life support hums. Nobody can go outside.' },
+      { label: 'Keep systems running and hope', effects: { storm: { tau: 8, sols: 25 }, science: 2 }, outcome: 'Mission Control is nervous. Watch your battery!' },
     ],
   },
   {
@@ -176,6 +176,17 @@ export const EVENT_CARDS = [
     choices: [{ label: 'Salad party!', effects: { morale: 10, science: 5 }, outcome: 'The crew agrees: the best salad of their lives.' }],
   },
   {
+    id: 'berm', icon: '🏗️', title: 'Pile Dirt on the Roof?', bodies: ['mars', 'moon'], weight: 3, once: true,
+    condition: (m) => m.shielding.level < 3 && m.env.tau <= 3 && m.sol >= 2,
+    body: 'The engineer has an idea: spend two sols shoveling {bodyName} soil ([[regolith]]) over the habitat. A thick blanket of dirt blocks [[galactic-cosmic-rays|cosmic rays]] and keeps the heat in. But those are two sols not spent exploring.',
+    science: 'Regolith is free shielding. NASA habitat studies bury modules under half a metre or more of packed soil to cut radiation and insulate against the cold. In this game each shielding level cuts the cosmic-ray dose inside and trims the heating bill by 15%.',
+    source: 'rad-2014', terms: ['regolith', 'galactic-cosmic-rays', 'radiation-dose'],
+    choices: [
+      { label: 'Two sols of shoveling (+1 shielding level)', effects: { shieldWork: 6, science: -6, dose: 0.3, morale: -1 }, outcome: 'Dirt piled high. The dose inside drops and the habitat holds its heat better.' },
+      { label: 'Keep exploring instead', effects: { science: 6 }, outcome: 'More rocks, more data. The habitat stays as it is.' },
+    ],
+  },
+  {
     id: 'lava_tube', icon: '🕳️', title: 'Skylight into a Lava Tube', bodies: ['mars', 'moon'], weight: 1, once: true,
     body: 'Scouts find a deep pit, a skylight into an underground [[lava-tube|lava tube]]. Its thick rock roof could shield a future base from radiation.',
     science: 'NASA’s Lunar Reconnaissance Orbiter and Mars orbiters have photographed hundreds of pits. Meters of rock overhead would block most cosmic radiation.',
@@ -211,12 +222,13 @@ export const EVENT_CARDS = [
   },
   {
     id: 'supply_drop', icon: '📦', title: 'Cargo Lander Arrives', bodies: ['mars', 'moon'], weight: 0, once: true,
-    body: 'A robotic cargo lander touched down 2 km away with fresh supplies!',
-    science: 'NASA plans to send cargo ahead of crews so supplies are waiting when astronauts arrive. Some even propose landing supplies years early.',
-    source: 'mars-sites', terms: ['pre-deployment', 'edl'],
+    body: 'A robotic cargo lander touched down 2 km away. Hauling crates back is a full sol of EVA work for the whole crew, so pick what matters most.',
+    science: 'NASA plans to send cargo ahead of crews so supplies are waiting when astronauts arrive ([[pre-deployment|pre-deployment]]). Landing on target is hard: Curiosity landed 2.4 km from the centre of its 20 km × 7 km ellipse.',
+    source: 'mars-sites', terms: ['pre-deployment', 'edl', 'eva'],
     choices: [
-      { label: 'Haul back food and water', effects: { food: 150, water: 200 }, outcome: 'Pantry restocked!' },
-      { label: 'Haul back spare parts and oxygen', effects: { spares: 2, o2: 60 }, outcome: 'Toolbox and tanks refilled.' },
+      { label: 'Haul back spare parts and oxygen tanks (a sol of EVA)', effects: { spares: 2, o2: 60, dose: 0.3, science: -4 }, outcome: 'Toolbox and tanks refilled. No science got done today.' },
+      { label: 'Haul back food and water (a sol of EVA)', effects: { food: 150, water: 200, dose: 0.3, science: -4 }, outcome: 'Pantry restocked. No science got done today.' },
+      { label: 'Leave it sealed for the next crew and keep exploring', effects: { science: 6 }, outcome: 'The crates wait in the cold. Your team heads for the hills instead.' },
     ],
   },
   {

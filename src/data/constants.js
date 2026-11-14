@@ -56,7 +56,9 @@ export const SHIELDING = {
   sepFactor: [1, 0.4, 0.15, 0.05],
   shelterSepFactor: 0.05,
   maxLevel: 3,
-  bermWorkPerLevel: 8, // crew-sols of regolith moving per level
+  // Gameplay knob (untagged): crew-sols of regolith moving per level. 6 so that one "two sols of shoveling"
+  // card choice (shieldWork 6) raises exactly one level; the only way to earn it is to give up science time.
+  bermWorkPerLevel: 6,
   waterWallKg: 1500, // stored water this large acts as one extra level
 };
 
@@ -65,8 +67,14 @@ export const POWER = {
   dustPerSol: 0.002, // fraction of panel covered per sol [mer-dust]
   stormDustPerSol: 0.01,
   maxDust: 0.9,
-  habitatBaseKw: 3,
-  heatKwPerDegree: 0.012, // heat leak per °C below 21 °C
+  // Gameplay knobs (untagged). The budget runs dawn → dusk → dawn: panels work only by day, the battery carries the night.
+  // habitatBaseKw: lights, pumps, CO₂ scrubbing, thermal control, galley, comms and avionics for 4 crew (~2 kW each;
+  // Mars DRA 5.0 and lunar surface studies put a crewed habitat at 8–15 kW continuous).
+  habitatBaseKw: 8,
+  // heatKwPerDegree: effective heat leak of a lightly insulated inflatable habitat per °C below target.
+  // At a Gale Crater night (−70 °C) that is ~10 kW; at lunar night (−130 °C) ~17 kW, which is why a single
+  // 10 kW fission unit cannot carry a Moon base through the night on its own. Regolith berms cut it (see TUNING).
+  heatKwPerDegree: 0.11,
   habitatTargetC: 21,
 };
 

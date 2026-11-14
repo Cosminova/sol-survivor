@@ -1,5 +1,5 @@
 // App shell: one store, one render function, one delegated event handler. Rebuilds the current screen from state.
-import { prepareData, createMission, advanceSol, applyChoice, DEFAULT_START_DATE } from '../engine/mission.js';
+import { prepareData, createMission, advanceSol, applyChoice, DEFAULT_START_DATE, QUICK_START_LOADOUT } from '../engine/mission.js';
 import { randomMissionCode } from '../engine/rng.js';
 import { sitesForBody } from '../data/sites.js';
 import { modulesForBody } from '../data/modules.js';
@@ -15,10 +15,8 @@ import { escapeHtml } from './text.js';
 const STORAGE_KEY = 'sol-survivor:v1';
 const MAX_HISTORY = 400;
 
-export const DEFAULT_LOADOUT = {
-  modules: { solar: 3, fission: 1, battery: 2, recycler: 1, oxygen: 2, shelter: 1, spares: 2 },
-  supplies: { o2: 8, water: 10, food: 8 },
-};
+/** Quick-start loadout for a body, balanced by the engine so resources really run low (see docs/balance.md). */
+export const defaultLoadout = (body = 'mars') => cloneLoadout(QUICK_START_LOADOUT?.[body] ?? QUICK_START_LOADOUT?.mars ?? { modules: {}, supplies: {} });
 const DEFAULT_CREW = [
   { name: 'Ada', role: 'commander' },
   { name: 'Kai', role: 'engineer' },
@@ -37,7 +35,7 @@ function defaultSetup(body = 'mars') {
     lengthSols: 30,
     crew: DEFAULT_CREW.map((c) => ({ ...c })),
     code: randomMissionCode(),
-    loadout: cloneLoadout(DEFAULT_LOADOUT),
+    loadout: defaultLoadout(body),
   };
 }
 
@@ -172,7 +170,7 @@ const actions = {
     store.setup.crew.splice(Number(el.dataset.index), 1);
   },
   'new-code': () => { store.setup.code = randomMissionCode(); },
-  quickstart: () => { store.setup.loadout = cloneLoadout(DEFAULT_LOADOUT); sanitizeLoadout(store.setup.body); startMission(store.setup.loadout); },
+  quickstart: () => { store.setup.loadout = defaultLoadout(store.setup.body); sanitizeLoadout(store.setup.body); startMission(store.setup.loadout); },
   'go-pack': () => { sanitizeLoadout(store.setup.body); store.screen = 'pack'; },
   'go-start': () => { store.screen = 'start'; },
   continue: () => {
@@ -181,7 +179,7 @@ const actions = {
     store.mission = saved.mission;
     store.history = Array.isArray(saved.history) ? saved.history : [];
     store.stats = saved.stats ?? { maxDose: 0, minO2: null, cardsAnswered: [], shortfallSols: 0 };
-    if (saved.setup) store.setup = { ...defaultSetup(saved.setup.body), ...saved.setup, loadout: cloneLoadout(saved.setup.loadout ?? DEFAULT_LOADOUT) };
+    if (saved.setup) store.setup = { ...defaultSetup(saved.setup.body), ...saved.setup, loadout: saved.setup.loadout ? cloneLoadout(saved.setup.loadout) : defaultLoadout(saved.setup.body) };
     store.screen = saved.mission.status?.over ? 'debrief' : 'mission';
     store.tab = 'mission';
   },
@@ -394,7 +392,7 @@ export async function boot(root) {
   await loadData();
   if (store.saved?.setup) {
     const s = store.saved.setup;
-    store.setup = { ...defaultSetup(s.body ?? 'mars'), ...s, loadout: cloneLoadout(s.loadout ?? DEFAULT_LOADOUT), code: randomMissionCode() };
+    store.setup = { ...defaultSetup(s.body ?? 'mars'), ...s, loadout: s.loadout ? cloneLoadout(s.loadout) : defaultLoadout(s.body ?? 'mars'), code: randomMissionCode() };
     if (!Array.isArray(store.setup.crew) || store.setup.crew.length < 2) store.setup.crew = DEFAULT_CREW.map((c) => ({ ...c }));
   }
   store.loading = false;
