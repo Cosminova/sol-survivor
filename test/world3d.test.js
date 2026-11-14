@@ -26,7 +26,8 @@ describe('world3d layout', () => {
     expect(kinds).toContain('solar');
     expect(kinds).toContain('moxie');
     expect(kinds).not.toContain('greenhouse');
-    expect(kinds).not.toContain('fission');
+    expect(kinds).not.toContain('rover');
+    expect(kinds).toContain('fission'); // Red Dust now recommends a fission backup for storm nights
     expect(layout.stations.find((s) => s.kind === 'solar').panels).toHaveLength(5);
     expect(kinds.filter((k) => k === 'outcrop')).toHaveLength(4);
   });

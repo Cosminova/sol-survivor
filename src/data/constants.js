@@ -56,7 +56,9 @@ export const SHIELDING = {
   sepFactor: [1, 0.4, 0.15, 0.05],
   shelterSepFactor: 0.05,
   maxLevel: 3,
-  bermWorkPerLevel: 8, // crew-sols of regolith moving per level
+  // Gameplay knob (untagged): crew-sols of regolith moving per level.
+  bermWorkPerLevel: 6,
+  bermHeatSavingPerLevel: 0.15, // regolith insulates as well as shields: each level trims the heat leak 15%
   waterWallKg: 1500, // stored water this large acts as one extra level
 };
 
@@ -65,8 +67,16 @@ export const POWER = {
   dustPerSol: 0.002, // fraction of panel covered per sol [mer-dust]
   stormDustPerSol: 0.01,
   maxDust: 0.9,
-  habitatBaseKw: 3,
-  heatKwPerDegree: 0.012, // heat leak per °C below 21 °C
+  // Gameplay knobs (untagged). The power budget runs dawn → dusk → dawn: panels work only by day and the
+  // battery carries the night. habitatBaseKw covers lights, pumps, CO₂ scrubbing, thermal control, galley,
+  // comms and avionics for 4 crew (Mars DRA 5.0 and lunar surface studies put a crewed habitat at 8–15 kW).
+  habitatBaseKw: 8,
+  // Effective heat leak of a lightly insulated inflatable habitat per °C below target: ~10 kW on a −70 °C
+  // Gale night, ~17 kW in the −130 °C lunar night, which is why one 10 kW fission unit cannot carry a Moon
+  // base through the night alone. Regolith berms cut it (SHIELDING.bermHeatSavingPerLevel).
+  heatKwPerDegree: 0.11,
+  coldHealthPerSol: 10, // health lost per sol with NO habitat power; scales with the unmet fraction
+  coldMoralePerSol: 10, // same, for morale
   habitatTargetC: 21,
 };
 

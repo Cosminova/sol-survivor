@@ -6,7 +6,7 @@ import { siteById } from '../data/sites.js';
 import { DIFFICULTY } from '../data/missions.js';
 import { eventById } from '../data/eventCards.js';
 import { marsTime, solsToEarthDays } from './marsTime.js';
-import { marsSolarKwh, moonSolarKwh } from './solar.js';
+import { marsSolarKwh, moonSolarKwh, daylightHours } from './solar.js';
 import { marsWeather, baselineTau, dustStormChance, moonConditions } from './environment.js';
 import { sepBetween } from './spaceWeather.js';
 import { hashSeed, rngFromState } from './rng.js';
@@ -23,7 +23,7 @@ export const TASKS = {
   rest: { label: 'Rest', icon: '😴', desc: 'Recover health and morale.' },
   science: { label: 'Explore (EVA)', icon: '🔭', desc: 'Go outside to do science. Uses more oxygen and adds radiation dose.' },
   maintain: { label: 'Maintain', icon: '🔧', desc: 'Fix a broken machine, or clean dust off the solar panels outside.' },
-  shield: { label: 'Build Shielding (EVA)', icon: '⛏️', desc: 'Pile regolith on the habitat. Every 8 crew-sols adds a shielding level.' },
+  shield: { label: 'Build Shielding (EVA)', icon: '⛏️', desc: 'Pile regolith on the habitat. Every 6 crew-sols adds a shielding level, and each level also cuts the heating bill 15%.' },
   greenhouse: { label: 'Tend Greenhouse', icon: '🌱', desc: 'Plants grow faster and harvests are bigger.' },
 };
 
@@ -242,48 +242,77 @@ export function isOnEva(m, c) {
   return c.task === 'maintain' && !BREAKABLE.some((id) => (m.broken[id] ?? 0) > 0) && (m.modules.solar ?? 0) > 0 && m.env.dust > 0.01;
 }
 
+// Hours of sunlight in this sol: Mars from the site latitude and season, the Moon all day or not at all.
+export function daylightFor(m) {
+  if (m.config.body === 'mars') return daylightHours(m.site.lat, m.env.ls);
+  return m.env.lit ? dayHours('moon') : 0;
+}
+
+// The power budget runs dawn → dusk → dawn. Panels work only in daylight, fission runs all the time, and the
+// battery carries the night. Daytime surplus beyond a full battery is wasted. A deficit the battery cannot
+// cover switches machines off by priority (life support last); whatever is still unmet leaves the habitat cold.
 export function computePower(m) {
   const hours = dayHours(m.config.body);
+  const daylight = daylightFor(m);
+  const night = Math.max(0, hours - daylight);
   const solarArea = workingCount(m, 'solar') * moduleById('solar').areaM2;
-  const solarRaw = m.config.body === 'mars'
+  const solarKwh = m.config.body === 'mars'
     ? marsSolarKwh({ areaM2: solarArea, latDeg: m.site.lat, ls: m.env.ls, tau: m.env.tau, dust: m.env.dust })
     : moonSolarKwh({ areaM2: solarArea, site: m.site, dayIndex: m.sol, phaseOffsetDays: m.config.phaseOffsetDays ?? 0, dust: m.env.dust });
-  const fissionKwh = workingCount(m, 'fission') * moduleById('fission').outputKw * hours;
+  const fissionKw = workingCount(m, 'fission') * moduleById('fission').outputKw;
+  const fissionKwh = fissionKw * hours;
 
-  const diff = POWER.habitatTargetC - m.env.avgC;
-  const thermalKw = diff > 0 ? diff * POWER.heatKwPerDegree : -diff * POWER.heatKwPerDegree * 0.6;
-  const baseKwh = (POWER.habitatBaseKw + thermalKw) * hours;
+  const insulation = 1 - SHIELDING.bermHeatSavingPerLevel * Math.min(SHIELDING.maxLevel, m.shield.level);
+  const heatKwAt = (tempC) => POWER.heatKwPerDegree * Math.max(0, POWER.habitatTargetC - tempC) * insulation;
+  const dayTempC = m.config.body === 'mars' ? m.env.maxC : m.env.avgC;
+  const nightTempC = m.config.body === 'mars' ? m.env.minC : m.env.avgC;
+  const habitatDayKwh = (POWER.habitatBaseKw + heatKwAt(dayTempC)) * daylight;
+  const habitatNightKwh = (POWER.habitatBaseKw + heatKwAt(nightTempC)) * night;
+  const baseKwh = habitatDayKwh + habitatNightKwh;
+  const heatKwh = heatKwAt(dayTempC) * daylight + heatKwAt(nightTempC) * night;
 
-  const loads = MODULES
+  // One entry per working unit, most important first (lowest priority number).
+  const units = MODULES
     .filter((mod) => mod.kw > 0 && m.enabled[mod.id] !== false && workingCount(m, mod.id) > 0)
-    .map((mod) => ({ id: mod.id, kw: mod.kw + (mod.id === 'greenhouse' ? m.modifiers.greenhouseKw : 0), priority: mod.priority ?? 9, units: workingCount(m, mod.id) }))
+    .flatMap((mod) => Array.from({ length: workingCount(m, mod.id) }, () => ({
+      id: mod.id, kw: mod.kw + (mod.id === 'greenhouse' ? m.modifiers.greenhouseKw : 0), priority: mod.priority ?? 9,
+    })))
     .sort((a, b) => a.priority - b.priority);
-  const demandKwh = baseKwh + sum(loads, (l) => l.kw * l.units * hours);
 
-  // On Mars the Sun sets every sol: solar energy beyond daytime use only helps if a battery can hold it.
-  const solarKwh = m.config.body === 'mars' ? Math.min(solarRaw, 0.5 * demandKwh + m.capacity.batteryKwh) : solarRaw;
-  const generatedKwh = solarKwh + fissionKwh;
+  const budget = (list) => {
+    const kw = sum(list, (u) => u.kw);
+    const dayDemand = habitatDayKwh + kw * daylight;
+    const nightDemand = habitatNightKwh + kw * night;
+    let shortfall = 0;
+    let b = m.resources.batteryKwh + solarKwh + fissionKw * daylight - dayDemand;
+    if (b < 0) { shortfall -= b; b = 0; }
+    const afterDay = Math.min(b, m.capacity.batteryKwh);
+    const wasted = Math.max(0, b - m.capacity.batteryKwh);
+    b = afterDay + fissionKw * night - nightDemand;
+    if (b < 0) { shortfall -= b; b = 0; }
+    return { battery: Math.min(b, m.capacity.batteryKwh), afterDay, wasted, shortfall, demand: dayDemand + nightDemand, nightDemand };
+  };
 
-  let available = generatedKwh + m.resources.batteryKwh;
-  const thermalOk = available >= baseKwh;
-  available = thermalOk ? available - baseKwh : 0;
-  const running = {};
+  let online = units;
+  let plan = budget(online);
   const shed = [];
-  for (const load of loads) {
-    for (let u = 0; u < load.units; u += 1) {
-      const e = load.kw * hours;
-      if (available >= e) {
-        running[load.id] = (running[load.id] ?? 0) + 1;
-        available -= e;
-      } else if (!shed.includes(load.id)) {
-        shed.push(load.id);
-      }
-    }
+  while (plan.shortfall > 0 && online.length) {
+    const cut = online[online.length - 1];
+    online = online.slice(0, -1);
+    if (!shed.includes(cut.id)) shed.push(cut.id);
+    plan = budget(online);
   }
+  const running = {};
+  for (const u of online) running[u.id] = (running[u.id] ?? 0) + 1;
+  const coldFraction = baseKwh > 0 ? clamp(plan.shortfall / baseKwh, 0, 1) : 0;
+
   return {
-    solarKwh: round1(solarKwh), solarRawKwh: round1(solarRaw), fissionKwh: round1(fissionKwh),
-    generatedKwh: round1(generatedKwh), demandKwh: round1(demandKwh), baseKwh: round1(baseKwh),
-    thermalOk, running, shed, batteryAfter: Math.min(m.capacity.batteryKwh, available),
+    solarKwh: round1(solarKwh), solarRawKwh: round1(solarKwh), fissionKwh: round1(fissionKwh),
+    generatedKwh: round1(solarKwh + fissionKwh), demandKwh: round1(plan.demand), baseKwh: round1(baseKwh),
+    heatKwh: round1(heatKwh), nightKwh: round1(plan.nightDemand), batteryAtDuskKwh: round1(plan.afterDay),
+    wastedKwh: round1(plan.wasted), shortfallKwh: round1(plan.shortfall), daylightHours: round1(daylight),
+    coldFraction: Math.round(coldFraction * 100) / 100,
+    thermalOk: plan.shortfall <= 0, running, shed, batteryAfter: plan.battery,
   };
 }
 
@@ -403,7 +432,7 @@ function nextCrew(m, life, power, doses, evaFlags) {
     if (life.o2Deficit) health -= 25;
     if (life.waterDeficit) health -= 10;
     if (life.foodDeficit) health -= 6;
-    if (!power.thermalOk) health -= 8;
+    if (!power.thermalOk) health -= Math.ceil(POWER.coldHealthPerSol * power.coldFraction);
     const dose = c.doseMsv + doses[i];
     if (dose > RADIATION.careerLimitMsv) health -= 2;
     if (c.morale <= 0) health -= 2;
@@ -414,7 +443,7 @@ function nextCrew(m, life, power, doses, evaFlags) {
     if (life.freshFood) morale += 1;
     if (power.running.relay) morale += 1;
     if (m.modifiers.blackout > 0) morale -= 1;
-    if (!power.thermalOk) morale -= 10;
+    if (!power.thermalOk) morale -= Math.ceil(POWER.coldMoralePerSol * power.coldFraction);
     if (deficit) morale -= 5;
     if (commander) morale += 1;
 
@@ -533,7 +562,10 @@ function snapshot(m, power, doseToday) {
 function solNotes(m, power, life) {
   const notes = [];
   if (power.shed.length) notes.push({ sol: m.sol, type: 'warn', text: `⚡ Not enough power: ${power.shed.map((id) => moduleById(id).name).join(', ')} switched off automatically.` });
-  if (!power.thermalOk) notes.push({ sol: m.sol, type: 'danger', text: '🥶 Power ran out! The heaters could not keep the habitat warm.' });
+  if (!power.thermalOk) notes.push({ sol: m.sol, type: 'danger', text: `🥶 Power ran out! ${Math.round(power.coldFraction * 100)}% of the habitat's power was missing, so the heaters could not keep it warm.` });
+  else if (m.capacity.batteryKwh > 0 && power.nightKwh > 0 && power.batteryAfter <= 0.2 * m.capacity.batteryKwh) {
+    notes.push({ sol: m.sol, type: 'warn', text: `🌙 The night needed ${Math.round(power.nightKwh)} kWh. Battery at dawn: only ${Math.round((100 * power.batteryAfter) / m.capacity.batteryKwh)}%.` });
+  }
   if (life.o2Deficit) notes.push({ sol: m.sol, type: 'danger', text: '🫁 OXYGEN EMPTY! The crew is in danger.' });
   if (life.waterDeficit) notes.push({ sol: m.sol, type: 'danger', text: '💧 Out of water! The crew is getting dehydrated.' });
   if (life.foodDeficit) notes.push({ sol: m.sol, type: 'danger', text: '🥫 Out of food! The crew is going hungry.' });
