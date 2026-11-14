@@ -1,0 +1,130 @@
+// Assembles the outpost world (terrain, sky, stations, crew, effects) and drives lighting each frame.
+import * as THREE from 'three';
+import { buildLayout, padsFor, layoutSignature } from './layout.js';
+import { makeHeightfield } from './heightfield.js';
+import { createTerrain } from './terrain.js';
+import { createSky, skyLook } from './sky.js';
+import { createStations } from './stations.js';
+import { createCrew } from './npc.js';
+import { createCollectibles } from './collectibles.js';
+import { createParticles } from './particles.js';
+import { createHazardFx } from './hazardFx.js';
+import { buildLander } from './meshes/habitat.js';
+import { sunDirection, earthDirection } from './gameLogic.js';
+import { disposeTree, disposeKit } from './meshes/kit.js';
+import { STATION_INFO } from './facts.js';
+
+export const LANDER_POS = { x: 3, z: 21 };
+
+export function createWorld(stage, { high, reducedMotion, labels }) {
+  const root = new THREE.Group();
+  stage.scene.add(root);
+  let parts = null;
+  let signature = '';
+  let bakeTimer = 0;
+  const tmpFocus = new THREE.Vector3();
+
+  function teardown() {
+    if (!parts) return;
+    parts.crew.dispose();
+    parts.collectibles.dispose();
+    parts.stationLabels.forEach((l) => l.remove());
+    parts.terrain.dispose();
+    parts.particles.dispose();
+    parts.hazards.dispose();
+    root.remove(parts.group);
+    stage.scene.remove(parts.sky.group);
+    disposeTree(parts.group);
+    disposeTree(parts.sky.group);
+    parts = null;
+  }
+
+  function build(mission) {
+    teardown();
+    const body = mission.config?.body ?? 'mars';
+    const layout = buildLayout(mission);
+    const pads = [...padsFor(layout), { x: LANDER_POS.x, z: LANDER_POS.z, r: 4 }];
+    const heightfield = makeHeightfield({ seed: layout.seed, body, pads });
+    const heightAt = heightfield.heightAt;
+    const group = new THREE.Group();
+    root.add(group);
+    const terrain = createTerrain({ body, site: mission.site, heightfield, layout, high });
+    group.add(terrain.group);
+    const stations = createStations({ layout, body, site: mission.site, heightAt, high });
+    group.add(stations.group);
+    const lander = buildLander({ high });
+    lander.group.position.set(LANDER_POS.x, heightAt(LANDER_POS.x, LANDER_POS.z), LANDER_POS.z);
+    lander.group.rotation.y = 0.6;
+    group.add(lander.group);
+    const colliders = [...layout.colliders, ...terrain.rockColliders, { x: LANDER_POS.x, z: LANDER_POS.z, r: 2.3 }];
+    const crew = createCrew({ parent: group, layout, heightAt, colliders, high, labels });
+    crew.sync(mission);
+    const collectibles = createCollectibles({ parent: group, layout, heightAt, body });
+    const particles = createParticles({ body, high, reducedMotion });
+    group.add(particles.group);
+    const hazards = createHazardFx({ body, high, heightAt });
+    group.add(hazards.group);
+    const sky = createSky({ body, high });
+    stage.scene.add(sky.group);
+    if (body === 'moon') sky.setEarthDirection(earthDirection(mission.site));
+    const stationLabels = layout.stations.filter((s) => s.kind !== 'habitat').map((s) => {
+      const it = stations.find(s.id);
+      const lab = labels.add(it.built.group, { y: s.kind === 'fission' ? 5 : 3.2, className: 'w3d-st', text: `${STATION_INFO[s.kind]?.icon ?? ''} ${STATION_INFO[s.kind]?.name ?? s.kind}` });
+      return Object.assign(lab, { station: s });
+    });
+    parts = { body, layout, heightfield, heightAt, terrain, stations, lander, colliders, crew, collectibles, particles, hazards, sky, group, stationLabels };
+    signature = layoutSignature(mission);
+    bakeTimer = 0;
+    return parts;
+  }
+
+  function ensure(mission) {
+    if (!parts || layoutSignature(mission) !== signature) build(mission);
+    return parts;
+  }
+
+  // Applies sun, sky, fog and exposure for the current moment. Returns lighting facts for gameplay.
+  function updateEnvironment({ mission, t, stormActive, flash = 0, focus, dt }) {
+    const p = parts;
+    const sun = sunDirection(mission, t);
+    const look = skyLook({ body: p.body, sunElev: sun.elevationDeg, tau: mission.env?.tau ?? 0.5, lit: mission.env?.lit !== false, stormActive });
+    p.sky.apply(look, sun, flash);
+    p.sky.follow(stage.camera.position);
+    stage.sun.color.copy(look.sunColor);
+    stage.sun.intensity = look.sunIntensity;
+    stage.hemi.color.copy(look.hemiSky);
+    stage.hemi.groundColor.copy(look.hemiGround);
+    stage.hemi.intensity = look.hemiIntensity;
+    stage.fill.intensity = look.fill;
+    if (p.body === 'moon') {
+      const e = earthDirection(mission.site);
+      stage.fill.position.set(e.x * 100, e.y * 100, e.z * 100);
+    } else {
+      stage.fill.position.set(0, 100, 0);
+    }
+    stage.scene.fog.color.copy(look.fogColor);
+    stage.scene.fog.density = look.fogDensity;
+    stage.renderer.toneMappingExposure = look.exposure;
+    stage.aimSun(sun, tmpFocus.set(focus.x, 0, focus.z));
+    p.particles.setMoteDensity(stormActive ? 1 : Math.min(1, (mission.env?.tau ?? 0.5) / 3));
+    bakeTimer -= dt;
+    if (bakeTimer <= 0) {
+      p.sky.bakeInto(stage);
+      bakeTimer = high ? 4 : 10;
+    }
+    const night = sun.elevationDeg < 2 || look.sunIntensity < 0.4;
+    return { sun, look, night };
+  }
+
+  return {
+    ensure,
+    build,
+    updateEnvironment,
+    get parts() { return parts; },
+    dispose() {
+      teardown();
+      stage.scene.remove(root);
+      disposeKit();
+    },
+  };
+}

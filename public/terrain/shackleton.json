@@ -1,0 +1,29 @@
+{
+  "site": "shackleton",
+  "body": "moon",
+  "width": 256,
+  "height": 256,
+  "metersPerPixel": 172.549,
+  "halfExtentM": 22000,
+  "encoding": "int16le",
+  "heightStepM": 0.25,
+  "minM": -4575,
+  "maxM": 245,
+  "baseElevationM": 1710,
+  "rowOrder": "north-to-south",
+  "colOrder": "west-to-east",
+  "center": {
+    "lat": -89.67,
+    "lon": 129.78
+  },
+  "instrument": "LRO LOLA LDEM_85S_40M (polar stereographic, 40 m/px)",
+  "sourceResolutionM": 40,
+  "source": "https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/lola_gdr/polar/img/ldem_85s_40m.img",
+  "license": "Public domain (NASA / PDS Geosciences Node)",
+  "note": "Base placed on the highest point of the Shackleton crater rim, crater interior beside it.",
+  "craterFloorOffsetM": {
+    "x": 12600,
+    "z": -640
+  },
+  "rimDepthM": 4603
+}

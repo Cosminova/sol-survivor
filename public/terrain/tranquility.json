@@ -1,0 +1,24 @@
+{
+  "site": "tranquility",
+  "body": "moon",
+  "width": 256,
+  "height": 256,
+  "metersPerPixel": 94.118,
+  "halfExtentM": 12000,
+  "encoding": "int16le",
+  "heightStepM": 0.25,
+  "minM": -164,
+  "maxM": 217,
+  "baseElevationM": -1933,
+  "rowOrder": "north-to-south",
+  "colOrder": "west-to-east",
+  "center": {
+    "lat": 0.6741,
+    "lon": 23.473
+  },
+  "instrument": "LRO LOLA LDEM_512 (512 px/deg, 59 m/px)",
+  "sourceResolutionM": 59,
+  "source": "https://pds-geosciences.wustl.edu/lro/lro-l-lola-3-rdr-v1/lrolol_1xxx/data/lola_gdr/cylindrical/img/ldem_512_00n_45n_000_090.img",
+  "license": "Public domain (NASA / PDS Geosciences Node)",
+  "note": "Apollo 11 Tranquility Base, Mare Tranquillitatis."
+}

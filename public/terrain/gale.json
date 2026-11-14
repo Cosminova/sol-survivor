@@ -1,0 +1,24 @@
+{
+  "site": "gale",
+  "body": "mars",
+  "width": 256,
+  "height": 256,
+  "metersPerPixel": 235.294,
+  "halfExtentM": 30000,
+  "encoding": "int16le",
+  "heightStepM": 0.25,
+  "minM": -103,
+  "maxM": 4992,
+  "baseElevationM": -4504,
+  "rowOrder": "north-to-south",
+  "colOrder": "west-to-east",
+  "center": {
+    "lat": -4.5895,
+    "lon": 137.4417
+  },
+  "instrument": "MGS MOLA MEGDR (128 px/deg, 463 m/px)",
+  "sourceResolutionM": 463,
+  "source": "https://pds-geosciences.wustl.edu/mgs/mgs-m-mola-5-megdr-l3-v1/mgsl_300x/meg128/megt00n090hb.img",
+  "license": "Public domain (NASA / PDS Geosciences Node)",
+  "note": "Curiosity landing site, Gale crater; Mount Sharp (Aeolis Mons) to the south."
+}

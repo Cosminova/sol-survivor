@@ -1,0 +1,24 @@
+{
+  "site": "jezero",
+  "body": "mars",
+  "width": 256,
+  "height": 256,
+  "metersPerPixel": 235.294,
+  "halfExtentM": 30000,
+  "encoding": "int16le",
+  "heightStepM": 0.25,
+  "minM": -329,
+  "maxM": 1152,
+  "baseElevationM": -2573,
+  "rowOrder": "north-to-south",
+  "colOrder": "west-to-east",
+  "center": {
+    "lat": 18.4447,
+    "lon": 77.4508
+  },
+  "instrument": "MGS MOLA MEGDR (128 px/deg, 463 m/px)",
+  "sourceResolutionM": 463,
+  "source": "https://pds-geosciences.wustl.edu/mgs/mgs-m-mola-5-megdr-l3-v1/mgsl_300x/meg128/megt44n000hb.img",
+  "license": "Public domain (NASA / PDS Geosciences Node)",
+  "note": "Perseverance landing site, Jezero crater floor; rim and delta on the horizon."
+}
