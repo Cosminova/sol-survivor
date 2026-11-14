@@ -56,7 +56,7 @@ function roverRow(mission) {
     const local = localSolarHours(now, mission.lon);
     sol.textContent = fmt(missionSol(now, mission.landing, mission.lon));
     time.textContent = formatHours(local).slice(0, 5);
-    sky.textContent = local >= 6 && local < 18 ? '☀️' : '🌙';
+    sky.textContent = local >= 6 && local < 18 ? 'Day' : 'Night';
     node.title = local >= 6 && local < 18 ? 'Daytime at the rover' : 'Night-time at the rover';
   };
   return { node, update };

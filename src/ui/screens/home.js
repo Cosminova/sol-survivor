@@ -61,7 +61,7 @@ function editorial() {
 
 export function render(root) {
   root.classList.add('view-bleed');
-  root.append(
+  root.append(...[
     hero(),
     resume(getState().savedMission),
     section('Choose your world', h('div', { class: 'tile-grid two' }, CAMPAIGNS.map((t) => photoTile(t, 'tall')))),
@@ -72,6 +72,6 @@ export function render(root) {
       h('div', { class: 'row' },
         h('a', { class: 'btn btn-primary btn-lg', href: '#/campaign' }, 'Start mission'),
         h('a', { class: 'btn btn-lg', href: '#/educators' }, 'For educators'))),
-  );
+  ].filter(Boolean));
   return undefined;
 }
