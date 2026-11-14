@@ -1,0 +1,92 @@
+/* Sol Survivor design tokens: deep-space navy, Mars rust, Moon silver, cyan telemetry. */
+:root {
+  color-scheme: dark;
+
+  --bg-0: #040714;
+  --bg-1: #080e24;
+  --bg-2: #0e1736;
+  --bg-3: #16224a;
+  --panel: rgba(14, 23, 54, 0.78);
+  --panel-solid: #0e1736;
+  --panel-raised: rgba(24, 36, 78, 0.85);
+  --line: rgba(130, 170, 255, 0.18);
+  --line-strong: rgba(130, 190, 255, 0.38);
+
+  --text: #eef3ff;
+  --text-dim: #b3c0e0;
+  --text-faint: #8593ba;
+
+  --cyan: #4fe3ff;
+  --cyan-dim: #2ab3d6;
+  --mars: #ff7a3d;
+  --mars-deep: #d4521c;
+  --mars-sand: #e9b27a;
+  --moon: #cfd8ea;
+  --moon-deep: #8a96b0;
+  --gold: #ffd166;
+  --good: #4ade80;
+  --warn: #fbbf24;
+  --danger: #ff5d6c;
+  --violet: #b197fc;
+  --o2: #7dd3fc;
+  --water: #60a5fa;
+  --food: #a3e635;
+  --power: #fde047;
+  --spares: #c4b5fd;
+  --rad: #f472b6;
+
+  --font-ui: ui-rounded, 'SF Pro Rounded', 'Nunito', 'Segoe UI Variable Display', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Menlo, Consolas, monospace;
+
+  --fs-base: 1rem;
+  --fs-sm: 0.875rem;
+  --fs-xs: 0.78rem;
+  --fs-lg: 1.15rem;
+  --fs-xl: 1.5rem;
+  --fs-2xl: clamp(1.7rem, 1.2rem + 2vw, 2.4rem);
+  --fs-hero: clamp(2.6rem, 1.4rem + 6vw, 5.4rem);
+
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 22px;
+  --r-pill: 999px;
+  --gap: 1rem;
+  --tap: 44px;
+
+  --glow-cyan: 0 0 0 1px rgba(79, 227, 255, 0.35), 0 0 24px rgba(79, 227, 255, 0.18);
+  --glow-mars: 0 0 0 1px rgba(255, 122, 61, 0.45), 0 0 28px rgba(255, 122, 61, 0.25);
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  --focus: 0 0 0 3px #040714, 0 0 0 6px var(--gold);
+
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --t-fast: 140ms;
+  --t-med: 260ms;
+  --t-slow: 600ms;
+}
+
+:root[data-text='large'] { font-size: 112.5%; }
+:root[data-text='xl'] { font-size: 125%; }
+
+:root[data-contrast='high'] {
+  --panel: #0a1230;
+  --panel-raised: #111c44;
+  --line: rgba(220, 235, 255, 0.55);
+  --line-strong: #ffffff;
+  --text-dim: #e6ecff;
+  --text-faint: #c9d3f0;
+  --cyan: #7af0ff;
+}
+
+:root[data-motion='reduced'] {
+  --t-fast: 0ms;
+  --t-med: 0ms;
+  --t-slow: 0ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --t-fast: 0ms;
+    --t-med: 0ms;
+    --t-slow: 0ms;
+  }
+}
