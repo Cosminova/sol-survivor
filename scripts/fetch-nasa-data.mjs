@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Downloads archived NASA data once and writes compact files into public/.
 // The game reads only these static files, so it runs offline at the event.
+// Usage: node scripts/fetch-nasa-data.mjs [rems|donki|tiles|gallery|milestones ...]  (no args = all steps)
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -32,6 +33,12 @@ const GALLERY_QUERIES = [
   'MOXIE oxygen Perseverance',
 ];
 const GALLERY_PER_QUERY = 4;
+// Exact NASA Image Library ids for the exploration timeline and the RAD dose chart (src/data/timeline.js, doses.js).
+const MILESTONE_IDS = [
+  'as08-14-2383', 'as11-40-5903', 'PIA00563', 'PIA01122', 'PIA19808',
+  'PIA24430', 'PIA25969', 'art001e000672', 'PIA17601',
+];
+const ASSET_SIZES = ['~small.jpg', '~thumb.jpg', '~medium.jpg'];
 
 for (const dir of [CACHE, OUT_DATA, OUT_TILES, OUT_IMAGES]) fs.mkdirSync(dir, { recursive: true });
 
@@ -170,7 +177,47 @@ async function fetchGallery() {
   console.log(`Gallery: ${items.length} images`);
 }
 
-const steps = [fetchRems, fetchDonki, fetchTiles, fetchGallery];
+async function fetchMilestones() {
+  const items = [];
+  for (const id of MILESTONE_IDS) {
+    const search = JSON.parse(await cachedFetch(`https://images-api.nasa.gov/search?nasa_id=${id}`, `milestones/${id}.json`));
+    const meta = search.collection.items[0]?.data[0];
+    const assets = JSON.parse(await cachedFetch(`https://images-api.nasa.gov/asset/${id}`, `milestones/${id}-asset.json`));
+    const hrefs = assets.collection.items.map((it) => it.href);
+    const href = ASSET_SIZES.map((size) => hrefs.find((h) => h.endsWith(size))).find(Boolean);
+    if (!meta || !href) {
+      console.warn(`  skip ${id}: not found`);
+      continue;
+    }
+    const file = `${id}.jpg`;
+    const bytes = await cachedFetch(href.replace(/^http:/, 'https:'), `milestones/img/${file}`, { binary: true });
+    fs.writeFileSync(path.join(OUT_IMAGES, file), bytes);
+    items.push({
+      id,
+      title: meta.title,
+      date: (meta.date_created ?? '').slice(0, 10),
+      center: meta.center ?? 'NASA',
+      description: (meta.description ?? '').replace(/<[^>]+>/g, '').slice(0, 420),
+      file,
+    });
+  }
+  const out = {
+    source: 'NASA Image and Video Library (images.nasa.gov)',
+    fetched: new Date().toISOString().slice(0, 10),
+    items,
+  };
+  fs.writeFileSync(path.join(OUT_DATA, 'milestones.json'), JSON.stringify(out));
+  console.log(`Milestones: ${items.length} images`);
+}
+
+const ALL_STEPS = { rems: fetchRems, donki: fetchDonki, tiles: fetchTiles, gallery: fetchGallery, milestones: fetchMilestones };
+const requested = process.argv.slice(2);
+const unknown = requested.filter((name) => !ALL_STEPS[name]);
+if (unknown.length) {
+  console.error(`Unknown step(s): ${unknown.join(', ')}. Choose from: ${Object.keys(ALL_STEPS).join(', ')}`);
+  process.exit(1);
+}
+const steps = requested.length ? requested.map((name) => ALL_STEPS[name]) : Object.values(ALL_STEPS);
 let failed = 0;
 for (const step of steps) {
   try {
