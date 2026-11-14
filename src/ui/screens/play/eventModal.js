@@ -85,13 +85,15 @@ export function openEventModal(mission, { onChoose, onDone }) {
         canSpeak() ? h('button', { type: 'button', class: 'btn btn-sm', onclick: () => speak(`${title}. ${plainText(body)}`, true) }, '🔊 Read aloud') : null,
         sciencePanel(card, vars),
         h('h3', { class: 'event-q' }, 'What do you do, Commander?'),
-        h('div', { class: 'event-choices' }, card.choices.map((choice, i) => {
+        h('div', { class: 'event-choices' }, card.choices.map((choice, i, all) => {
           const ok = choiceAvailable(mission, choice);
+          // Focus the first choice the crew can actually take; a disabled button cannot hold focus.
+          const firstOk = all.findIndex((c) => choiceAvailable(mission, c));
           return h('button', {
             type: 'button',
             class: ['event-choice', !ok && 'locked'],
             disabled: !ok,
-            'data-autofocus': i === 0 ? true : null,
+            'data-autofocus': i === firstOk ? true : null,
             onclick: () => showOutcome(choice, onChoose(i)),
           },
           h('span', { class: 'event-choice-label' }, h('span', { class: 'event-choice-key', 'aria-hidden': 'true' }, String.fromCharCode(65 + i)), choice.label),
