@@ -4,7 +4,7 @@ import '../../styles/outpost3d.css';
 import { h, mount, announce, prefersReducedMotion } from '../dom.js';
 import { beginSol, resolveEvent, runSol, setTask, toggleModule, computePower, isOnEva } from '../../engine/sim.js';
 import { forecast, advise } from '../../engine/advisor.js';
-import { getState, setMission } from '../../state/store.js';
+import { getState, setMission, subscribe } from '../../state/store.js';
 import { loadSimContext } from '../../state/nasaData.js';
 import { createScene } from '../scene.js';
 import { createOutpostBackdrop } from '../outpost3d/host.js';
@@ -159,6 +159,12 @@ export function render(root) {
     nextSol();
   };
   document.addEventListener('keydown', onKey);
+  // Cadet view / Expert view: the panel renderers read settings.expertView; redraw when it flips.
+  let expertView = getState().settings.expertView;
+  const stopViewWatch = subscribe((st) => {
+    if (!els.hud.isConnected) { stopViewWatch(); return; }
+    if (st.settings.expertView !== expertView) { expertView = st.settings.expertView; draw(); }
+  });
 
   root.append(
     els.hud,
