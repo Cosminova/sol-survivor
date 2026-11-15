@@ -12,6 +12,14 @@
 // to world.analog so the existing body-specific UI keeps working. siteById() in src/data/sites.js resolves sites of
 // every world. Renderers and the engine look the world up with worldById(config.worldId ?? config.body).
 //
+// Optional extras the data adds (never required by readers): fact.note (a plain-words caveat such as "minimum mass"),
+// site.worldId/body/sunlit/tempDayC/tempNightC/source, and on exoplanets world.discovery, world.disputed (the archive
+// flags the planet as controversial) and world.tidallyLocked (a generated fact).
+//
+// Where the data lives: solWorlds.js (NASA fact sheets), exoWorlds.generated.js (NASA Exoplanet Archive snapshot,
+// refreshed by `npm run fetch-worlds`), exoWorlds.js (turns the snapshot into worlds), worldModel.js (the documented
+// game model behind every 'generated' fact) and worldPalette.js (colours from ground, ice, liquid and haze).
+//
 // analog says which existing code path a world borrows where the game has no general rule yet:
 // 'moon' = airless or near-airless, 'mars' = has an atmosphere. Engine numbers always come from facts.
 
@@ -48,69 +56,23 @@
  * }} World
  */
 
-export const real = (v, src) => ({ v, origin: 'real', src });
-export const derived = (v, src) => ({ v, origin: 'derived', src });
-export const generated = (v) => ({ v, origin: 'generated', src: 'game-model' });
+import { EXO_WORLDS } from './exoWorlds.js';
+import { SITES } from './sites.js';
+import { SOL_WORLDS } from './solWorlds.js';
 
-export const isMeasured = (fact) => fact?.origin === 'real' || fact?.origin === 'derived';
-export const factLabel = (fact) => (isMeasured(fact) ? 'Real · NASA' : 'Generated · game model');
+export { real, derived, generated, isMeasured, factLabel } from './worldFacts.js';
+export { EXO_RETRIEVED } from './exoWorlds.js';
 
-// Moon and Mars mirror src/data/constants.js and src/data/sites.js (the data agent wires them, not copies).
-export const WORLDS = [
-  {
-    id: 'moon', name: 'The Moon', kind: 'moon', parent: 'earth', system: 'sol', analog: 'moon', sky: null, star: null,
-    facts: {
-      radiusEarth: real(0.2727, 'moon-fact'), massEarth: real(0.0123, 'moon-fact'), densityGcc: real(3.344, 'moon-fact'),
-      gravityG: real(0.1654, 'moon-fact'), dayHours: real(708.7, 'moon-fact'), yearDays: real(365.25, 'moon-fact'),
-      orbitAu: real(1.0, 'moon-fact'), sunlightWm2: real(1361, 'moon-fact'),
-      tempDayC: real(120, 'moon-fact'), tempNightC: real(-130, 'moon-fact'), pressurePa: real(0, 'moon-fact'),
-      air: real([], 'moon-fact'), magneticField: real('none', 'moon-fact'), radiationMsvPerDay: real(1.37, 'lnd-2020'),
-      waterIce: real(0.5, 'moon-fact'), liquidWater: real('none', 'moon-fact'), ground: real('regolith', 'moon-fact'),
-      hazards: real(['flares', 'micrometeoroids', 'long-night'], 'moon-fact'),
-    },
-    palette: { ground: '#8d8a85', rock: '#5d5a56', ice: '#dfe8ef', sky: '#000000', haze: null, liquid: null },
-    sites: [], // filled from src/data/sites.js
-    blurb: 'Our closest neighbour. No air, two-week days and two-week nights.',
-  },
-  {
-    id: 'mars', name: 'Mars', kind: 'planet', parent: null, system: 'sol', analog: 'mars', sky: null, star: null,
-    facts: {
-      radiusEarth: real(0.532, 'mars-fact'), massEarth: real(0.107, 'mars-fact'), densityGcc: real(3.933, 'mars-fact'),
-      gravityG: real(0.379, 'mars-fact'), dayHours: real(24.6597, 'mars-fact'), yearDays: real(687, 'mars-fact'),
-      orbitAu: real(1.52371, 'mars-fact'), sunlightWm2: real(586.2, 'mars-fact'),
-      tempDayC: real(-5, 'rems'), tempNightC: real(-75, 'rems'), pressurePa: real(610, 'mars-fact'),
-      air: real([{ gas: 'CO2', pct: 95 }, { gas: 'N2', pct: 2.8 }, { gas: 'Ar', pct: 2 }], 'mars-fact'),
-      magneticField: real('none', 'mars-fact'), radiationMsvPerDay: real(0.64, 'rad-2014'),
-      waterIce: real(0.6, 'mars-fact'), liquidWater: real('none', 'mars-fact'), ground: real('iron-oxide', 'mars-fact'),
-      hazards: real(['dust-storms', 'flares'], 'mars-fact'),
-    },
-    palette: { ground: '#b5603a', rock: '#7a3b22', ice: '#f1ece6', sky: '#c9a27e', haze: '#d9b48f', liquid: null },
-    sites: [],
-    blurb: 'The red planet. Thin carbon dioxide air, dust storms and buried ice.',
-  },
-  // Example exoplanet showing the provenance mix. Values from the NASA Exoplanet Archive (pscomppars); the data
-  // agent re-fetches and verifies them, and the generated facts come from the game model.
-  {
-    id: 'proxima-cen-b', name: 'Proxima Centauri b', kind: 'exoplanet', parent: 'Proxima Cen', system: 'Proxima Cen', analog: 'moon',
-    sky: { ra: 217.3934657, dec: -62.6761821 },
-    star: {
-      name: 'Proxima Centauri', teffK: real(2900, 'exo-archive'), radiusSol: real(0.141, 'exo-archive'), massSol: real(0.1221, 'exo-archive'),
-      luminositySol: derived(0.0014, 'radius+teff'), spectralType: real('M5.5 V', 'exo-archive'), distanceLy: derived(4.24, 'exo-archive'),
-    },
-    facts: {
-      radiusEarth: real(1.02, 'exo-archive'), massEarth: real(1.055, 'exo-archive'), densityGcc: real(5.46, 'exo-archive'),
-      gravityG: derived(1.01, 'mass+radius'), dayHours: derived(268.4, 'tidal-lock'), yearDays: real(11.18465, 'exo-archive'),
-      orbitAu: real(0.04848, 'exo-archive'), sunlightWm2: derived(889, 'luminosity+orbit'),
-      tempDayC: generated(30), tempNightC: generated(-150), pressurePa: generated(0),
-      air: generated([]), magneticField: generated('weak'), radiationMsvPerDay: generated(5),
-      waterIce: generated(0.4), liquidWater: generated('none'), ground: generated('basalt'),
-      hazards: generated(['flares', 'tidal-lock']),
-    },
-    palette: { ground: '#6b5a4e', rock: '#3f3530', ice: '#d8e4ee', sky: '#1a0d08', haze: null, liquid: null },
-    sites: [],
-    blurb: 'The closest exoplanet to Earth, circling a small red star that flares often.',
-  },
-];
+// Moon and Mars keep their sites in sites.js; here they are only tagged with the world they belong to.
+const withBodySites = (world) => {
+  const bodySites = SITES.filter((site) => site.body === world.id);
+  return bodySites.length ? { ...world, sites: bodySites.map((site) => ({ ...site, worldId: world.id, origin: 'real' })) } : world;
+};
 
-export const worldById = (id) => WORLDS.find((w) => w.id === id) ?? null;
+/** @type {World[]} */
+export const WORLDS = [...SOL_WORLDS.map(withBodySites), ...EXO_WORLDS];
+
+const WORLD_INDEX = new Map(WORLDS.map((world) => [world.id, world]));
+
+export const worldById = (id) => WORLD_INDEX.get(id) ?? null;
 export const worldsInSystem = (system) => WORLDS.filter((w) => w.system === system);

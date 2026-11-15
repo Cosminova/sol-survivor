@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "fetch-data": "node scripts/fetch-nasa-data.mjs",
-    "fetch-osdr": "node scripts/fetch-osdr.mjs"
+    "fetch-osdr": "node scripts/fetch-osdr.mjs",
+    "fetch-worlds": "node scripts/fetch-worlds.mjs"
   },
   "devDependencies": {
     "axe-core": "4.14.0",
