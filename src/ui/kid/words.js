@@ -152,6 +152,8 @@ export function lossMessage(mission) {
       return `Your crew ran low on food. Try packing more food${has('greenhouse') ? '' : ' or a greenhouse'} next time.`;
     case 'cold':
       return `The power ran out and the base got too cold. Try packing ${has('battery') ? 'one more battery or a nuclear power unit' : 'a battery bank'} next time.`;
+    case 'heat':
+      return `The power ran out and the base got too hot. Try packing ${has('fission') ? 'one more nuclear power unit' : 'a nuclear power unit'} so the coolers never stop.`;
     default:
       return 'Your crew got too worn out. Next time, give tired astronauts a Rest day and build your shield early.';
   }

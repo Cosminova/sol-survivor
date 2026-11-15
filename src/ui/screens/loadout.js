@@ -2,7 +2,11 @@
 import '../../styles/loadout.css';
 import { h, mount, richText } from '../dom.js';
 import { CAMPAIGN, missionById, freePlayConfig } from '../../data/missions.js';
-import { modulesForBody, SUPPLIES } from '../../data/modules.js';
+import { modulesForBody, modulesForWorld, SUPPLIES } from '../../data/modules.js';
+import { worldById } from '../../data/worlds.js';
+import { siteById } from '../../data/sites.js';
+import { isLegacyWorldId } from '../../engine/worldModel.js';
+import { worldChallenge, worldEffects } from '../../engine/worldGuide.js';
 import { LIFE_SUPPORT } from '../../data/constants.js';
 import { validateLoadout, createMission, DEFAULT_CREW } from '../../engine/sim.js';
 import { randomMissionCode } from '../../engine/rng.js';
@@ -38,9 +42,28 @@ const configFor = (missionId, draft) => (missionId === 'free-play'
   ? { ...freePlayConfig({ ...draft.free, difficulty: draft.difficulty }), worldId: draft.free.worldId ?? draft.free.body }
   : missionById(missionId));
 
-// TODO(world-picker): once src/engine exports worldChallenge(world) / worldEffects(world), import them here and pass
-// { challenge: worldChallenge, effects: worldEffects } so the sky picker's world cards fill their effects slot.
-const WORLD_CARD_HOOKS = {};
+// The sky picker's world cards show the engine's difficulty rating and what the world does to the crew.
+// Moon and Mars keep their own tabs and long-tested rules, so they get no rating line here.
+const LEVEL_WORD = { easy: 'Easy', medium: 'Medium', hard: 'Hard', extreme: 'Extreme' };
+const WORLD_CARD_HOOKS = {
+  challenge: (world) => {
+    if (isLegacyWorldId(world.id)) return null;
+    const { level, reasons, maxSols } = worldChallenge(world);
+    const cap = maxSols ? ` Longest safe stay: ${maxSols} days.` : '';
+    return `${LEVEL_WORD[level] ?? level}. ${reasons.join(' ')}${cap}`;
+  },
+  effects: (world) => {
+    if (isLegacyWorldId(world.id)) return null;
+    const lines = worldEffects(world);
+    if (!lines.length) return null;
+    return [h('h4', { class: 'wp-effects-title' }, 'What this world does to your crew'), h('ul', null, lines.map((line) => h('li', null, line)))];
+  },
+};
+// The pack list follows the world: no oxygen-from-air machine where the air has no CO2, no solar on a night site.
+const modulesFor = (config) => {
+  const world = isLegacyWorldId(config.worldId ?? config.body) ? null : worldById(config.worldId);
+  return world ? modulesForWorld(world, siteById(config.siteId)) : modulesForBody(config.body);
+};
 
 export function render(root, { params, query }) {
   const missionId = params[0] ?? 'artemis-dawn';
@@ -96,7 +119,7 @@ export function render(root, { params, query }) {
   function draw() {
     const config = configFor(missionId, draft);
     const result = validateLoadout(config, draft.loadout, draft.difficulty);
-    const modules = modulesForBody(config.body);
+    const modules = modulesFor(config);
     const scrollY = window.scrollY;
     const focusedId = document.activeElement?.id;
 

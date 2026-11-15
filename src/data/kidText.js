@@ -139,6 +139,62 @@ export const KID_EVENTS = {
     line: '{crewName} hurt a wrist while moving heavy gear in low gravity.',
     choices: ['Treat it with the medical kit', 'Tape it and keep working'],
   },
+  // Cards for worlds beyond the Moon and Mars (WORLD_EVENT_CARDS in eventCards.js). Same choice order as each card.
+  stellar_flare: {
+    title: 'Your star flared!',
+    line: 'Your star just flashed bright, and a burst of radiation is heading for your base.',
+    choices: ['Hide in the storm shelter', 'Hide behind the water tanks', 'Keep working'],
+  },
+  long_night: {
+    title: 'A long night begins',
+    line: 'The Sun is setting and will stay down for many days, so the solar panels will make nothing.',
+    choices: ['Switch off the extra machines', 'Keep everything running'],
+  },
+  world_dust_storm: {
+    title: 'Dust storm coming',
+    line: 'A wall of dust is rolling in, and it will block sunlight from the solar panels.',
+    choices: ['Fill the batteries now', 'Turn off the greenhouse lights'],
+  },
+  volcano_plume: {
+    title: 'A volcano erupts!',
+    line: 'A volcano nearby is shooting gas and dust high into the sky.',
+    choices: ['Cover the machines and wait', 'Point every science tool at it'],
+  },
+  tidal_quake: {
+    title: 'The ground shakes!',
+    line: 'The pull of a giant planet squeezes this world, and the ground just shook.',
+    choices: ['Check every machine (takes a day of work)', 'Looks fine, keep going'],
+  },
+  heat_wave: {
+    title: 'Too hot outside',
+    line: 'It is so hot outside that the coolers can barely keep the base cool.',
+    choices: ['Fit a spare pump', 'Turn off extra machines', 'Run the coolers harder (uses lots of power)'],
+  },
+  acid_haze: {
+    title: 'Acid in the air',
+    line: 'The air here has acid in it, and it is eating at the base’s rubber seals.',
+    choices: ['Fix the seals with spare parts', 'Leave it and keep watching'],
+  },
+  methane_rain: {
+    title: 'Methane rain',
+    line: 'It is raining outside, but the rain is freezing cold liquid methane, not water.',
+    choices: ['Catch some in a jar', 'Watch through the window'],
+  },
+  ice_plume: {
+    title: 'An ice geyser!',
+    line: 'A crack in the ground is spraying ice high into the sky, and fresh snow is falling nearby.',
+    choices: ['Scoop up the snow (80 kg of water)', 'Test the snow for signs of life'],
+  },
+  belt_surge: {
+    title: 'Radiation surge',
+    line: 'The giant planet’s radiation belts just got stronger, so the crew should get to the safest spot.',
+    choices: ['Everyone to the middle of the base', 'Keep working'],
+  },
+  far_from_home: {
+    title: 'Far from home',
+    line: 'Earth is so far away that the crew is starting to miss home.',
+    choices: ['Record video letters for Earth', 'Give everyone an extra rest day'],
+  },
 };
 
 export const kidEvent = (cardId) => KID_EVENTS[cardId] ?? null;
@@ -149,4 +205,6 @@ export const KID_EVENT_ICONS = {
   meteorite: 'mountain', micrometeoroid: 'alert', moonquake: 'alert', conjunction: 'antenna', birthday: 'star', homesick: 'user',
   blue_sunset: 'sun', earthrise: 'orbit', frost: 'snowflake', rover_stuck: 'rover', filter_clog: 'recycle', harvest: 'sprout',
   lava_tube: 'mountain', aurora: 'star', phobos: 'moon', lunar_night: 'moon', supply_drop: 'package', medical: 'user',
+  stellar_flare: 'sun', long_night: 'moon', world_dust_storm: 'wind', volcano_plume: 'mountain', tidal_quake: 'alert', heat_wave: 'thermometer',
+  acid_haze: 'flask', methane_rain: 'droplet', ice_plume: 'snowflake', belt_surge: 'atom', far_from_home: 'orbit',
 };
