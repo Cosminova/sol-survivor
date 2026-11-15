@@ -19,7 +19,7 @@ const visible = (el) => Boolean(el) && (el.checkVisibility ? el.checkVisibility(
 export const DEMO_STEPS = [
   {
     id: 'home', caption: 'Sol Survivor trains young astronauts with real NASA data. This card is today’s real Sun, read live from NASA’s DONKI space weather service.',
-    async run(t) { navigate('home'); t.spot(await t.waitFor('.hero-sun')); await t.hold(8000); },
+    async run(t) { navigate('home'); t.spot(await t.waitFor('.hero-sun')); await t.hold(10000); },
   },
   {
     id: 'sky', caption: 'Pick any world from a real night sky, inspired by our partner project Cosminova. Rings mark stars with rocky planets from NASA’s Exoplanet Archive.',
@@ -27,7 +27,7 @@ export const DEMO_STEPS = [
       navigate('loadout/free-play');
       await t.click('button', 'Cosminova sky');
       t.spot(await t.waitFor('.wp-panel'));
-      await t.hold(8000);
+      await t.hold(11000);
     },
   },
   {
@@ -35,7 +35,7 @@ export const DEMO_STEPS = [
     async run(t) {
       await t.click('.wp-target[data-target="star:TRAPPIST-1"]');
       t.spot(await t.waitFor('.wp-system-portrait', { timeout: 10000 }));
-      await t.hold(9000);
+      await t.hold(11000);
     },
   },
   {
@@ -43,7 +43,7 @@ export const DEMO_STEPS = [
     async run(t) {
       await t.click('button', 'Visit TRAPPIST-1 e');
       t.spot(await t.waitFor('.wp-planet-grid'));
-      await t.hold(8000);
+      await t.hold(11000);
     },
   },
   {
@@ -54,7 +54,7 @@ export const DEMO_STEPS = [
       await t.click('.wp-target[data-target="saturn"]');
       await t.click('button', 'Visit Titan', { timeout: 10000 });
       t.spot(await t.waitFor('.wp-planet-side'));
-      await t.hold(9000);
+      await t.hold(11000);
     },
   },
   {
@@ -62,21 +62,21 @@ export const DEMO_STEPS = [
     async run(t) {
       await t.click('button', 'Use recommended');
       t.spot(await t.waitFor('.lo-launch'));
-      await t.hold(5000);
+      await t.hold(6000);
       await t.click('.lo-launch');
       await t.waitFor('#next-sol', { timeout: 20000 });
     },
   },
   {
     id: 'meters', caption: 'Air, Power and Shield. Kids keep all three out of the danger zone, one day at a time.',
-    async run(t) { t.spot(await t.waitFor('.kid-meters')); await t.hold(6000); },
+    async run(t) { t.spot(await t.waitFor('.kid-meters')); await t.hold(8000); },
   },
   {
     id: 'plan', caption: 'Each day the crew follows one plan. The preview shows the trade-off before you commit: exploring finds science but uses more air.',
     async run(t) {
       await t.click('#plan-explore');
       t.spot(await t.waitFor('#plan-preview'));
-      await t.hold(6000);
+      await t.hold(8000);
       await t.nextDay();
       await t.hold(3000);
       await t.nextDay();
@@ -88,7 +88,7 @@ export const DEMO_STEPS = [
     async run(t) {
       await t.click('.view-toggle [data-view="walk"]');
       t.spot(await t.waitFor('.walk-world canvas', { timeout: 15000 }));
-      await t.hold(12000);
+      await t.hold(16000);
       await t.click('.walk-back');
     },
   },
@@ -97,7 +97,7 @@ export const DEMO_STEPS = [
     async run(t) {
       await t.click('[aria-label="Zoom out to see the whole camp"]');
       t.spot(await t.waitFor('.play-stage'));
-      await t.hold(7000);
+      await t.hold(9000);
     },
   },
 ];
