@@ -7,9 +7,9 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { createAnimator } from './suitAnimator.js';
 import { addStripes } from './stripes.js';
-import { M, textTexture, box } from './meshes/kit.js';
+import { M, mat, textTexture, box } from './meshes/kit.js';
 import { headlampMaterial } from './astronaut.js';
-import { segmentOf, JOINTS } from './suitSegments.js';
+import { segmentOf, JOINTS, PELVIS } from './suitSegments.js';
 
 export const SUIT_HEIGHT = 1.85;
 
@@ -147,12 +147,31 @@ function attach(parent, child, template, parentSeg) {
   parent.add(child);
 }
 
+const PELVIS_SEGMENTS = { width: 12, height: 8 };
+let pelvisGeometry = null;
+
+// Low-poly solid seat shared by every astronaut; it sits in `body` so it stays put while the legs swing.
+function buildPelvis() {
+  if (!pelvisGeometry) {
+    pelvisGeometry = new THREE.SphereGeometry(1, PELVIS_SEGMENTS.width, PELVIS_SEGMENTS.height);
+    pelvisGeometry.userData.shared = true; // survives disposeTree() of a single astronaut
+  }
+  const pelvis = new THREE.Mesh(pelvisGeometry, mat('suit-pelvis', { color: '#e9e6df', roughness: 0.62 }));
+  pelvis.name = 'pelvis';
+  pelvis.position.set(PELVIS.centre.x * H, PELVIS.centre.y * H, PELVIS.centre.z * H);
+  pelvis.scale.set(PELVIS.radii.x * H, PELVIS.radii.y * H, PELVIS.radii.z * H);
+  pelvis.castShadow = true;
+  pelvis.receiveShadow = true;
+  return pelvis;
+}
+
 export function buildSuitAstronaut(template, { name = 'Crew', role = 'commander', high = true }) {
   const root = new THREE.Group();
   const body = new THREE.Group();
   root.add(body);
   const torso = segmentGroup(template, 'torso');
   body.add(torso);
+  body.add(buildPelvis());
   const head = segmentGroup(template, 'head');
   attach(torso, head, template, 'torso');
   const limb = (upper, lower, toTorso) => {
@@ -199,6 +218,8 @@ export function buildSuitAstronaut(template, { name = 'Crew', role = 'commander'
 }
 
 export function disposeSuitTemplate(template) {
+  pelvisGeometry?.dispose();
+  pelvisGeometry = null;
   if (!template) return;
   for (const list of Object.values(template.buckets)) {
     for (const { geometry, material } of list) {
