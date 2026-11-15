@@ -22,6 +22,8 @@ const EXPLORE = [
 
 const QUICK = '#/loadout/artemis-dawn?quick=1';
 const TRAINING = `#/${TUTORIAL_ROUTE}`;
+const CHOOSE_WORLD = '#/loadout/free-play'; // Free Play: pick Mars or the Moon and a landing site on the globe
+const worldButton = () => h('a', { class: 'btn btn-outline-light btn-lg', id: 'choose-world', href: CHOOSE_WORLD }, icon('orbit', { size: 20 }), 'Choose your world');
 
 // First visit: the big button starts the training walkthrough. After that it is simply "Play".
 function cta(saved) {
@@ -29,11 +31,13 @@ function cta(saved) {
     return [
       h('a', { class: 'btn btn-light btn-lg btn-caps kid-play-now', id: 'play-now', href: TRAINING }, icon('play', { size: 22 }), 'Start training'),
       h('a', { class: 'btn btn-outline-light btn-lg', id: 'skip-training', href: QUICK }, 'Skip to a mission'),
+      worldButton(),
     ];
   }
   const going = saved?.status === 'active';
   return [
     h('a', { class: 'btn btn-light btn-lg btn-caps kid-play-now', id: 'play-now', href: going ? '#/play' : QUICK }, icon('play', { size: 22 }), 'Play'),
+    worldButton(),
     h('a', { class: 'btn btn-outline-light btn-lg', id: 'replay-training', href: TRAINING }, icon('lightbulb', { size: 20 }), 'Tutorial'),
     h('a', { class: 'btn btn-ghost btn-lg', href: '#/campaign' }, 'All missions'),
   ];
