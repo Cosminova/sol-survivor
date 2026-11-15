@@ -1,0 +1,92 @@
+{
+ "source": "NASA Open Science Data Repository (OSDR), Ames Research Center",
+ "url": "https://osdr.nasa.gov/bio/repo/",
+ "fetched": "2026-11-14",
+ "note": "Saved study records. \"summary\" is copied word for word from each study description; \"kid\" is a plain-language line written from that summary.",
+ "findings": [
+  {
+   "id": "OSD-267",
+   "title": "Microbiological and nutritional analysis of lettuce crops grown on the International Space Station-VEG01A",
+   "organism": "Microbiota",
+   "released": "21-Feb-2020",
+   "topic": "plants",
+   "gameLink": "greenhouse",
+   "setting": "On the International Space Station",
+   "kid": "Astronauts grew red romaine lettuce in the Veggie garden on the space station. Tests found no harmful germs on it, so it was safe to eat.",
+   "summary": "To study the effects of space conditions, red romaine lettuce, Lactuca sativa cv ‘Outredgeous,’ plants were grown in Veggie plant growth chambers on the International Space Station (ISS) and compared with ground-grown plants. Comparison of flight and ground tissues showed some differences in total counts for bacteria and yeast/molds (2.14 – 4.86 log10 CFU/g), while screening for select human pathogens yielded negative results. This study indicated that leafy vegetable crops can produce safe, edible, fresh food to supplement to the astronauts’ diet, and provide baseline data for continual operation of the Veggie plant growth units on ISS.",
+   "url": "https://osdr.nasa.gov/bio/repo/data/studies/OSD-267"
+  },
+  {
+   "id": "OSD-476",
+   "title": "Plants grown in Apollo lunar regolith present stress-associated transcriptomes that inform prospects for lunar exploration",
+   "organism": "Arabidopsis thaliana",
+   "released": "16-May-2022",
+   "topic": "plants",
+   "gameLink": "greenhouse",
+   "setting": "In a lab on Earth, using real Apollo Moon soil",
+   "kid": "Seeds sprouted and grew in real Moon soil brought back by Apollo 11, 12 and 17. But the plants grew slowly and showed signs of stress.",
+   "summary": "Using samples from Apollo 11, 12 and 17, we show that the terrestrial plant Arabidopsis thaliana germinates and grows in diverse lunar regoliths. However, our results show that growth is challenging; the lunar regolith plants were slow to develop, expressed genes indicative of ionic stresses, and many showed severe stress morphologies.",
+   "url": "https://osdr.nasa.gov/bio/repo/data/studies/OSD-476"
+  },
+  {
+   "id": "OSD-342",
+   "title": "Targeting myostatin/activin A protects against skeletal muscle and bone loss during spaceflight [plasma proteomics]",
+   "organism": "Mus musculus",
+   "released": "16-Sep-2020",
+   "topic": "muscle and bone",
+   "gameLink": "low-gravity",
+   "setting": "Mice on the International Space Station",
+   "kid": "Mice lost muscle and bone during 33 days in space. Mice given a treatment that blocks two body signals built muscle and bone instead.",
+   "summary": "Wild type mice lost significant muscle and bone mass during the 33 d spent in microgravity. Systemic inhibition of MSTN/activin A signaling using a soluble form of the activin type IIB receptor (ACVR2B), which can bind each of these ligands, led to dramatic increases in both muscle and bone mass, with effects being comparable in ground and flight mice.",
+   "url": "https://osdr.nasa.gov/bio/repo/data/studies/OSD-342"
+  },
+  {
+   "id": "OSD-396",
+   "title": "Gene-metabolite networks associated with impediment of bone fracture repair in spaceflight",
+   "organism": "Mus musculus",
+   "released": "08-Jul-2021",
+   "topic": "bone",
+   "gameLink": "bone-loss",
+   "setting": "Mice on the International Space Station",
+   "kid": "After about four weeks on the space station, mice had lost more bone than mice on Earth, and a broken bone did not heal properly.",
+   "summary": "µCT confirmed escalated bone loss in FLT-Sham compared to G-Sham mice. Concluding, spaceflight suppressed a unique biomolecular mechanism in callus tissue to facilitate a failed regeneration, which merits a customized intervention strategy.",
+   "url": "https://osdr.nasa.gov/bio/repo/data/studies/OSD-396"
+  },
+  {
+   "id": "OSD-317",
+   "title": "Galactic cosmic radiation induces stable epigenome alterations relevant to human lung cancer",
+   "organism": "Homo sapiens",
+   "released": "19-Dec-2017",
+   "topic": "radiation",
+   "gameLink": "radiation-shielding",
+   "setting": "In a lab on Earth, with particle beams that copy cosmic rays",
+   "kid": "Heavy particles like the ones in cosmic rays left lasting marks on the DNA of human lung cells. The scientists think marks like these could help track cancer risk for deep-space crews.",
+   "summary": "Here we assessed the impact of two high-LET ions 56Fe and 28Si, and low-LET X rays on genome-wide methylation patterns in human bronchial epithelial cells. Thus, high LET radiation exposure leaves a lasting imprint on the epigenome, and affects sites relevant to human lung cancer.",
+   "url": "https://osdr.nasa.gov/bio/repo/data/studies/OSD-317"
+  },
+  {
+   "id": "OSD-689",
+   "title": "Single-cell analysis identifies conserved features of immune dysfunction in simulated microgravity and spaceflight",
+   "organism": "Homo sapiens",
+   "released": "18-Nov-2024",
+   "topic": "immune system",
+   "gameLink": "crew-health",
+   "setting": "In a lab on Earth, with simulated weightlessness",
+   "kid": "After 25 hours of simulated weightlessness, human immune cells worked differently. The T cells and NK cells that fight germs did their jobs less well.",
+   "summary": "Here, using single-cell analysis of human peripheral blood mononuclear cells (PBMCs) exposed to short term (25 hours) simulated microgravity, we characterize altered genes and pathways at basal and stimulated states with a Toll-like Receptor-7/8 agonist. Microgravity directs monocyte inflammatory parameters, and impairs T cell and NK cell functionality.",
+   "url": "https://osdr.nasa.gov/bio/repo/data/studies/OSD-689"
+  },
+  {
+   "id": "OSD-174",
+   "title": "Effects of a Closed Space Environment on Gene Expression in Hair Follicles of Astronauts in the International Space Station",
+   "organism": "Homo sapiens",
+   "released": "31-Mar-2016",
+   "topic": "health checks",
+   "gameLink": "crew-health",
+   "setting": "Astronauts on the International Space Station",
+   "kid": "Scientists collected hair roots from 10 space station astronauts, 6 times each (2 of them in orbit), to see how living in space changes the way genes work.",
+   "summary": "In order to investigate the genetic changes in human hair during space flight, the hair follicles of 10 astronauts were analyzed by DNA microarray and real time q-PCR analyses. Space environment induced gene expression of hair follicles of astronaut was measured 6 differnent times included 2 in flight on orbit.",
+   "url": "https://osdr.nasa.gov/bio/repo/data/studies/OSD-174"
+  }
+ ]
+}

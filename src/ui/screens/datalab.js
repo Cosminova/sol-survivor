@@ -1,6 +1,7 @@
 // Data Lab: explore the real NASA data behind Sol Survivor. Tabs persist in #/datalab?tab=…
 import '../../styles/datalab.css';
 import { h, mount, announce } from '../dom.js';
+import { renderLive } from './datalab/live.js';
 import { renderWeather } from './datalab/weather.js';
 import { renderStorms } from './datalab/storms.js';
 import { renderRadiation } from './datalab/radiation.js';
@@ -11,6 +12,7 @@ import { renderCompare } from './datalab/compare.js';
 import { renderMethodology } from './datalab/methodology.js';
 
 const TABS = [
+  { id: 'live', icon: '📡', label: 'Live from NASA', render: renderLive },
   { id: 'weather', icon: '🌡️', label: 'Mars Weather', render: renderWeather },
   { id: 'storms', icon: '☀️', label: 'Space Weather', render: renderStorms },
   { id: 'radiation', icon: '☢️', label: 'Radiation', render: renderRadiation },
@@ -63,7 +65,7 @@ export function render(root, route) {
         h('div', null,
           h('span', { class: 'kicker' }, '📊 Real NASA data'),
           h('h1', null, 'Data Lab'),
-          h('p', null, 'Everything in Sol Survivor comes from real missions. Dig into the same weather, solar storms, maps and photos that NASA scientists use.')),
+          h('p', null, 'Everything in Sol Survivor comes from real missions. See what the Sun is doing right now, live from NASA, then dig into the same weather, solar storms, maps and photos that NASA scientists use.')),
         h('div', { class: 'dl-hero-chips', 'aria-hidden': 'true' },
           h('span', null, '🛰️ REMS'), h('span', null, '☀️ DONKI'), h('span', null, '☢️ RAD'), h('span', null, '🗺️ Trek'), h('span', null, '📷 Images'))),
       tabs,

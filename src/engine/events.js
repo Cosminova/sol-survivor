@@ -53,10 +53,12 @@ export function rollEvent(mission, rng, { sep, difficulty, nightfall }) {
     if (card) return { ...makeEventInstance(mission, card, rng), scriptKey: `script-${scripted.sol}` };
   }
   if (sep) {
-    return makeEventInstance(mission, eventById('sep_alert'), rng, {
+    // Live missions (src/live/liveMission.js) may name their own card and add template vars; the default is unchanged.
+    return makeEventInstance(mission, eventById(sep.cardId ?? 'sep_alert') ?? eventById('sep_alert'), rng, {
       flareClass: sep.flareClass ? `${sep.flareClass}-class` : 'strong',
       eventDate: new Date(sep.time).toISOString().slice(0, 10),
       severity: sep.severity,
+      ...(sep.vars ?? {}),
     });
   }
   if (nightfall) return makeEventInstance(mission, eventById('lunar_night'), rng);
