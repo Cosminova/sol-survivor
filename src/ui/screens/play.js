@@ -27,6 +27,7 @@ import { viewToggle } from './play/view3d.js';
 import { telemetryItems } from './play/status.js';
 import { metersPanel } from './play/meters.js';
 import { todayPanel, nextButton } from './play/today.js';
+import { walkCues, walkCueCard, NEW_DAY_REMINDER_DAYS } from '../kid/walkCues.js';
 import { sideHead, sideTools } from './play/sidebar.js';
 import { createDrawer, drawerContent } from './play/drawer.js';
 import { setTickerItems } from '../components/ticker.js';
@@ -80,7 +81,10 @@ export function render(root, route) {
   const canvas = h('canvas', { class: 'scene-canvas', hidden: true });
   let scene = null;
   const outpost = createOutpostBackdrop({ reducedMotion: prefersReducedMotion, onUnavailable: () => view3d.outpostUnavailable() });
+  let walkedSol = -1; // the last day the player opened Walk 3D, for the "jobs outside" cues
+  const walkedToday = () => walkedSol === m.sol || view3d.mode() === 'walk';
   const onMode = (mode) => {
+    if (mode === 'walk' && walkedSol !== m.sol) { walkedSol = m.sol; if (els.hud.isConnected) draw(); }
     outpost.setActive(mode === 'outpost');
     canvas.hidden = mode !== 'map';
     if (mode === 'map' && !scene) {
@@ -91,7 +95,7 @@ export function render(root, route) {
       scene = null;
     }
   };
-  const els = Object.fromEntries(['hud', 'overlay', 'res', 'power', 'rad', 'crew', 'capcom', 'mods', 'log', 'head', 'meters', 'today', 'next', 'tools'].map((k) => [k, h('div', { class: `slot-${k}` })]));
+  const els = Object.fromEntries(['hud', 'overlay', 'res', 'power', 'rad', 'crew', 'capcom', 'mods', 'log', 'head', 'meters', 'today', 'walk', 'next', 'tools'].map((k) => [k, h('div', { class: `slot-${k}` })]));
   const commit = (next) => { m = next; if (!tutorialMode) setMission(m); draw(); };
   const onTask = (crewId, task) => { play('click'); commit(setTask(m, crewId, task)); document.getElementById(`task-${crewId}-${task}`)?.focus(); };
   const onToggle = (id) => {
@@ -191,6 +195,12 @@ export function render(root, route) {
     });
   }
 
+  // First few days only: a nudge that today's jobs can be done by hand in Walk 3D.
+  function remindWalk() {
+    if (tutorialMode || m.status !== 'active' || m.sol > NEW_DAY_REMINDER_DAYS || view3d.mode() === 'walk') return;
+    toast('New day! Jobs are waiting outside. Open Walk 3D to do them yourself.', { icon: 'rover' });
+  }
+
   async function nextSol() {
     if (busy || m.status !== 'active') return false;
     busy = true;
@@ -204,6 +214,7 @@ export function render(root, route) {
       if (started.phase === 'event') return await showEvent(started, before);
       commit(runSol(started));
       afterRun(before);
+      remindWalk();
       return false;
     } finally {
       busy = false;
@@ -244,6 +255,7 @@ export function render(root, route) {
     mount(els.head, sideHead(m, { live, sheetOpen, onSheet }));
     mount(els.meters, metersPanel(m, meterStates(m, sim), { sim, open: openMeter, onToggle: onMeter }));
     mount(els.today, todayPanel(m, { sims, sim, selected: currentPlan(m), busy, onPlan, onToggle }));
+    mount(els.walk, tutorialMode ? null : walkCueCard(walkCues(m, { visitedToday: walkedToday() }), { onGo: () => view3d.show('walk') }));
     mount(els.next, nextButton(m, { busy, onNext: nextSol }));
     mount(els.tools, sideTools({ tutorial: tutorialMode, onCrew, onDetails: () => { drawer.open(); draw(); }, onTutorial: restartTutorial }));
     if (drawer.isOpen()) drawer.render(drawerContent(m, { power, onToggle }));
@@ -259,6 +271,8 @@ export function render(root, route) {
     outpost.update(m, describe(m));
     scene?.update(m, describe(m));
     view3d.update(m);
+    const cues = walkCues(m, { visitedToday: walkedToday() });
+    view3d.cueWalk(!tutorialMode && cues.show && view3d.mode() !== 'walk', cues.urgent[0] ?? cues.bonus);
     setTickerItems(telemetryItems(m, fc));
   }
 
@@ -280,7 +294,7 @@ export function render(root, route) {
     h('div', { class: ['play-stage', m.config.body] }, outpost.layer, canvas, view3d.mount, outpost.overlay, els.overlay, view3d.toggle),
     h('aside', { class: 'kid-side', 'aria-label': 'Mission controls' },
       h('div', { class: 'kid-side-scroll' }, els.head, els.meters, els.today),
-      h('div', { class: 'kid-side-foot' }, els.next, els.tools)),
+      h('div', { class: 'kid-side-foot' }, els.walk, els.next, els.tools)),
     h('div', { class: 'play-side' }, els.capcom, els.power),
     h('div', { class: 'play-left' }, els.res, els.rad),
     h('div', { class: 'play-mid' }, els.crew),

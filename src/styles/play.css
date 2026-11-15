@@ -686,3 +686,15 @@ body > .play-3d-mount[hidden] { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .kid-meter, .plan-card { transition: none; }
 }
+
+/* "Jobs outside" cue (src/ui/kid/walkCues.js): a small card above Next day, and a pulsing Walk 3D chip. */
+.walk-cue { display: grid; gap: 4px; margin-bottom: var(--s-2); padding: var(--s-2) var(--s-3); border: 1px solid var(--line); border-left: 4px solid var(--cyan-bright); background: rgba(3, 7, 14, 0.6); }
+.walk-cue.urgent { border-left-color: var(--warn); }
+.walk-cue-title { display: flex; align-items: center; gap: 6px; margin: 0; font-weight: 700; }
+.walk-cue-text, .walk-cue-list { margin: 0; font-size: var(--fs-sm); color: var(--text-dim); overflow-wrap: anywhere; }
+.walk-cue-list { padding-left: 1.1rem; }
+.walk-cue-go { justify-self: start; }
+.view-toggle .chip.has-cue { position: relative; animation: walk-cue-pulse 1.6s ease-in-out infinite; }
+.view-toggle .chip.has-cue::after { content: ''; position: absolute; top: 4px; right: 4px; width: 8px; height: 8px; border-radius: 50%; background: var(--warn); }
+@keyframes walk-cue-pulse { 50% { box-shadow: 0 0 0 3px rgba(255, 224, 102, 0.55); } }
+@media (prefers-reduced-motion: reduce) { .view-toggle .chip.has-cue { animation: none; } }

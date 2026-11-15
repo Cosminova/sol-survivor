@@ -18,3 +18,24 @@ describe('loss messages', () => {
     expect(lossMessage({ lostReason: 'heat', modules: {} })).toMatch(/too hot/);
   });
 });
+
+import { walkCues } from '../src/ui/kid/walkCues.js';
+
+describe('Walk 3D cues', () => {
+  const base = { status: 'active', broken: {} };
+
+  it('invites the player outside until they have been there today', () => {
+    expect(walkCues(base, { visitedToday: false }).show).toBe(true);
+    expect(walkCues(base, { visitedToday: true }).show).toBe(false);
+  });
+
+  it('keeps showing an urgent repair even after a visit, naming the machine', () => {
+    const cues = walkCues({ ...base, broken: { recycler: 1 } }, { visitedToday: true });
+    expect(cues.show).toBe(true);
+    expect(cues.urgent[0]).toMatch(/broken.*hold E/);
+  });
+
+  it('stays quiet once the mission is over', () => {
+    expect(walkCues({ ...base, status: 'won' }, { visitedToday: false }).show).toBe(false);
+  });
+});

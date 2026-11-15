@@ -168,6 +168,12 @@ export function viewToggle({ onMode, getMission, commit, onTask, onToggle, onEnd
     mount: mountEl,
     toggle,
     mode: () => mode,
+    show: (next) => setMode(next),
+    // Walk 3D chip pulses (with a dot) while jobs wait outside; the play screen decides when.
+    cueWalk: (on, label = '') => {
+      buttons.walk.classList.toggle('has-cue', Boolean(on));
+      buttons.walk.title = on && label ? `${label} Walk 3D to do it.` : 'Walk around your outpost in 3D';
+    },
     // No WebGL (or three.js failed to load): the orbit view is off and the 2D map takes over as the backdrop.
     outpostUnavailable: () => {
       buttons.outpost.disabled = true;
