@@ -1,4 +1,6 @@
 // Event deck. Text may contain [[term-id]] or [[term-id|label]] glossary links.
+// A card may also carry `worlds` (true, or a test on the world profile) or `hazard` (a world hazard id):
+// those let it appear on worlds other than the Moon and Mars (src/engine/events.js). `bodies` is unchanged.
 // effects are declarative so the engine stays pure and the UI can preview them.
 export const EVENT_CARDS = [
   {
@@ -54,7 +56,7 @@ export const EVENT_CARDS = [
     ],
   },
   {
-    id: 'ice_found', icon: '🧊', title: 'Buried Ice Discovered', bodies: ['mars', 'moon'], weight: 2, once: true,
+    id: 'ice_found', worlds: (p) => p.iceAccess > 0 && p.liquidWater !== 'surface', icon: '🧊', title: 'Buried Ice Discovered', bodies: ['mars', 'moon'], weight: 2, once: true,
     body: 'Ground-penetrating radar finds a thick layer of [[water-ice|water ice]] close to the surface near the base!',
     science: 'Radar on NASA’s Mars Reconnaissance Orbiter (SHARAD) and HiRISE images of icy cliffs show huge buried ice sheets on Mars. On the Moon, LCROSS found ice in a shadowed crater in 2009.',
     source: 'ice', terms: ['water-ice', 'isru', 'radar'],
@@ -74,7 +76,7 @@ export const EVENT_CARDS = [
     ],
   },
   {
-    id: 'micrometeoroid', icon: '💥', title: 'Micrometeoroid Strike!', bodies: ['moon'], weight: 2,
+    id: 'micrometeoroid', hazard: 'micrometeoroids', icon: '💥', title: 'Micrometeoroid Strike!', bodies: ['moon'], weight: 2,
     body: 'A [[micrometeoroid]] smaller than a grain of sand hit the habitat at 20 km per second. Alarm! There is a slow air leak.',
     science: 'With no air to slow them down, tiny space rocks hit the Moon constantly. NASA designs habitats and spacesuits with layered “Whipple shields” to stop them.',
     source: 'moon-fact', terms: ['micrometeoroid', 'whipple-shield'],
@@ -104,7 +106,7 @@ export const EVENT_CARDS = [
     ],
   },
   {
-    id: 'birthday', icon: '🎂', title: 'Birthday on {bodyName}!', bodies: ['mars', 'moon'], weight: 2, once: true,
+    id: 'birthday', worlds: (p) => p.system === 'sol', icon: '🎂', title: 'Birthday on {bodyName}!', bodies: ['mars', 'moon'], weight: 2, once: true,
     body: '{crewName} has a birthday today. The crew wants to celebrate.',
     science: 'Food and celebrations matter for mental health on long missions. Astronauts on the ISS celebrate holidays and birthdays together, sometimes with fresh food from the [[veggie|Veggie]] garden.',
     source: 'veggie', terms: ['veggie', 'behavioral-health'],
@@ -147,7 +149,7 @@ export const EVENT_CARDS = [
     choices: [{ label: 'Sample it', effects: { science: 6 }, outcome: 'Frost samples stored for the lab.' }],
   },
   {
-    id: 'rover_stuck', icon: '🚙', title: 'Rover Stuck in Sand', bodies: ['mars', 'moon'], weight: 2, once: true,
+    id: 'rover_stuck', worlds: true, icon: '🚙', title: 'Rover Stuck in Sand', bodies: ['mars', 'moon'], weight: 2, once: true,
     condition: (m) => (m.modules.rover ?? 0) > 0,
     body: 'The rover sank up to its wheel hubs in a soft sand trap!',
     science: 'Spirit got stuck in soft soil in 2009 and never escaped. It became a stationary science station. Rover drivers now study orbital images (like HiRISE) to avoid sand traps.',
@@ -158,7 +160,7 @@ export const EVENT_CARDS = [
     ],
   },
   {
-    id: 'filter_clog', icon: '🧽', title: 'Water Recycler Clogged', bodies: ['mars', 'moon'], weight: 2,
+    id: 'filter_clog', worlds: true, icon: '🧽', title: 'Water Recycler Clogged', bodies: ['mars', 'moon'], weight: 2,
     condition: (m) => (m.modules.recycler ?? 0) > 0,
     body: 'The [[eclss|water recycler]] filter is clogged with minerals. Water recovery is dropping fast.',
     science: 'On the ISS, astronauts regularly swap filters and fix the Urine Processor Assembly. Even 98%-efficient recyclers need maintenance.',
@@ -176,7 +178,7 @@ export const EVENT_CARDS = [
     choices: [{ label: 'Salad party!', effects: { morale: 10, science: 5 }, outcome: 'The crew agrees: the best salad of their lives.' }],
   },
   {
-    id: 'lava_tube', icon: '🕳️', title: 'Skylight into a Lava Tube', bodies: ['mars', 'moon'], weight: 1, once: true,
+    id: 'lava_tube', worlds: (p) => ['basalt', 'regolith', 'lava', 'iron-oxide'].includes(p.ground), icon: '🕳️', title: 'Skylight into a Lava Tube', bodies: ['mars', 'moon'], weight: 1, once: true,
     body: 'Scouts find a deep pit, a skylight into an underground [[lava-tube|lava tube]]. Its thick rock roof could shield a future base from radiation.',
     science: 'NASA’s Lunar Reconnaissance Orbiter and Mars orbiters have photographed hundreds of pits. Meters of rock overhead would block most cosmic radiation.',
     source: 'images', terms: ['lava-tube', 'galactic-cosmic-rays'],
@@ -220,7 +222,7 @@ export const EVENT_CARDS = [
     ],
   },
   {
-    id: 'medical', icon: '🩺', title: 'Sprained Wrist', bodies: ['mars', 'moon'], weight: 1, once: true,
+    id: 'medical', worlds: (p) => p.gravityG < 0.9, icon: '🩺', title: 'Sprained Wrist', bodies: ['mars', 'moon'], weight: 1, once: true,
     body: '{crewName} sprained a wrist moving heavy equipment in low gravity.',
     science: 'Low gravity changes how bodies move and slowly weakens bones and muscles. Astronauts exercise about 2 hours a day on the ISS to stay strong.',
     source: 'bvad', terms: ['bone-loss', 'low-gravity'],
@@ -269,4 +271,125 @@ function avgMorale(m) {
   return m.crew.reduce((s, c) => s + c.morale, 0) / m.crew.length;
 }
 
-export const eventById = (id) => EVENT_CARDS.find((e) => e.id === id) ?? null;
+// ---- Cards for worlds other than the Moon and Mars. Kept out of EVENT_CARDS so the Moon/Mars deck is unchanged. ----
+// Each card is drawn only on a world whose facts list its `hazard` (or on any world when `worlds` is true).
+// The science line always says which part is measured and which part is the game's guess.
+const SHELTER_CHOICES = [
+  { label: 'Everyone into the storm shelter', requires: { module: 'shelter' }, effects: { shelter: true, morale: -2 }, outcome: 'The crew squeezes into the shelter and waits while particles slam into the walls outside.' },
+  { label: 'Huddle behind the water tanks and supplies', effects: { shelter: 'partial', morale: -1 }, outcome: 'Water is great shielding. The crew camps out in the middle of the habitat, surrounded by tanks.' },
+  { label: 'Keep working, the schedule matters', effects: { science: 4 }, outcome: 'Work continues… but every crew member soaks up the full dose.' },
+];
+
+export const WORLD_EVENT_CARDS = [
+  {
+    id: 'stellar_flare', icon: '🌟', title: 'Flare from {starName}!', bodies: [], hazard: 'flares', weight: 0,
+    body: '{starName} just brightened in a sudden [[solar-flare|flare]]. A burst of fast particles is on its way to {bodyName}. Do you take cover?',
+    science: 'Real: small red stars flare far more often than our Sun, and NASA telescopes have watched them do it. Game guess: when a flare happens in your mission and how strong it is. Nobody has measured the radiation on the ground of a planet around another star.',
+    source: 'planet-fact', terms: ['solar-flare', 'sep', 'storm-shelter', 'radiation-shielding'],
+    choices: SHELTER_CHOICES,
+  },
+  {
+    id: 'long_night', icon: '🌑', title: 'Night Falls on {bodyName}', bodies: [], hazard: 'long-night', weight: 0,
+    body: 'The Sun is setting. Here it stays down for about {nightDays} Earth days. Solar panels will make nothing until it rises again.',
+    science: 'Real: how long a day lasts depends on how fast a world spins. A slow spin means a long night, so a base needs batteries or [[fission-surface-power|nuclear power]] to get through it.',
+    source: 'planet-fact', terms: ['fission-surface-power', 'battery', 'solar-array'],
+    choices: [
+      { label: 'Switch off the extras (greenhouse, rover, relay)', effects: { disable: ['greenhouse', 'rover', 'relay'] }, outcome: 'The base enters night mode. Life support keeps running.' },
+      { label: 'Keep everything running', effects: {}, outcome: 'Keep an eye on that battery…' },
+    ],
+  },
+  {
+    id: 'world_dust_storm', icon: '🌪️', title: 'Dust Storm Rolling In', bodies: [], hazard: 'dust-storms', weight: 0,
+    body: 'A wall of dust is heading for the base. The sky will darken and the [[tau|dust opacity]] will climb. Solar panels will make much less power.',
+    science: 'Real: any world with air and loose dust can raise [[dust-storm|dust storms]]. On Mars they have been measured for decades. Game guess: how big and how long a storm is on {bodyName}.',
+    source: 'planet-fact', terms: ['dust-storm', 'tau', 'solar-array'],
+    choices: [
+      { label: 'Fill the batteries now and ride it out', effects: { storm: { tau: 3, sols: 6 }, battery: 40 }, outcome: 'The crew tops off the batteries while the light lasts.' },
+      { label: 'Switch off the greenhouse lights to save power', effects: { storm: { tau: 3, sols: 6 }, disable: 'greenhouse' }, outcome: 'The plants will be dark for a while, but life support is safe.' },
+    ],
+  },
+  {
+    id: 'volcano_plume', icon: '🌋', title: 'A Volcano Erupts!', bodies: [], hazard: 'volcanism', weight: 3,
+    body: 'A volcano beyond the horizon is throwing a plume high into the sky. Fine ash and sulfur frost will rain down on the base.',
+    science: 'Real: Jupiter’s moon Io is the most volcanic world we know. Voyager 1 saw its plumes in 1979, and some rise more than 300 km. Game guess: how much ash lands on your base.',
+    source: 'planet-fact', terms: ['solar-array', 'spectrometer'],
+    choices: [
+      { label: 'Cover the machines and wait', effects: { dust: 0.05, morale: -1 }, outcome: 'Covers on. A thin yellow frost settles over everything.' },
+      { label: 'Point every instrument at the plume', effects: { science: 14, dust: 0.2, breakChance: 0.3 }, outcome: 'Amazing data, but ash got into everything.' },
+    ],
+  },
+  {
+    id: 'tidal_quake', icon: '📳', title: 'The Ground Shakes!', bodies: [], hazard: 'tidal-quakes', weight: 3, once: true,
+    body: 'The habitat shakes. The pull of the giant world nearby stretches and squeezes the ground here, and it just cracked.',
+    science: 'Real: tides from a giant planet flex its moons, which heats their insides and cracks their crust. Game guess: nobody has put a [[seismometer]] here yet, so how strong the quakes are is not known.',
+    source: 'planet-fact', terms: ['seismometer', 'redundancy'],
+    choices: [
+      { label: 'Inspect every system (one crew-sol of work)', effects: { repairAll: true, science: 4 }, outcome: 'All clear, and the shaking data is gold for scientists.' },
+      { label: 'Seems fine, keep going', effects: { breakChance: 0.5 }, outcome: 'Hopefully nothing was damaged…' },
+    ],
+  },
+  {
+    id: 'heat_wave', icon: '🥵', title: 'Chillers Working Overtime', bodies: [], hazard: 'extreme-heat', weight: 3,
+    body: 'The ground outside is hot enough to bake bread. The chillers that keep the [[habitat]] cool are running flat out and one is starting to struggle.',
+    science: 'Real: getting rid of heat is one of the hardest jobs for a spacecraft on a hot world. The Soviet Venera landers lasted about two hours on Venus before the heat stopped them. Game guess: how a crewed base would cope.',
+    source: 'planet-fact', terms: ['habitat', 'kwh', 'redundancy'],
+    choices: [
+      { label: 'Swap in a spare pump', requires: { spares: 1 }, effects: { spares: -1 }, outcome: 'Cool air flows again.' },
+      { label: 'Switch off extras to ease the load', effects: { disable: ['greenhouse', 'rover', 'relay'], morale: -1 }, outcome: 'Less heat inside means less heat to pump out.' },
+      { label: 'Push the chillers harder (drains 40 kWh)', effects: { battery: -40, breakChance: 0.3 }, outcome: 'It works, for now.' },
+    ],
+  },
+  {
+    id: 'acid_haze', icon: '🧪', title: 'Acid Haze', bodies: [], hazard: 'acid-clouds', weight: 3,
+    body: 'Sensors on the hull show acid eating at the seals and joints outside.',
+    science: 'Real: the clouds of Venus are made of sulfuric acid, 48 to 70 km above the ground. The acid rain there boils away long before it lands. Game guess: acid mist reaching machines on the ground.',
+    source: 'planet-fact', terms: ['atmospheric-pressure', 'redundancy'],
+    choices: [
+      { label: 'Replace the worn seals with spare parts', requires: { spares: 1 }, effects: { spares: -1 }, outcome: 'Fresh seals, good as new.' },
+      { label: 'Leave it and watch closely', effects: { breakChance: 0.6, science: 3 }, outcome: 'You learn how fast acid works. Maybe too fast.' },
+    ],
+  },
+  {
+    id: 'methane_rain', icon: '🌧️', title: 'Methane Rain', bodies: [], hazard: 'methane-rain', weight: 3, once: true,
+    body: 'Big, slow drops are falling outside. It is not water. It is liquid methane, the same stuff as cooking gas, and it is far colder than any freezer.',
+    science: 'Real: on Saturn’s moon Titan methane rains from the sky and fills lakes and seas. NASA’s Cassini saw the ground darken after rainstorms, and the Huygens probe landed on damp ground in 2005. Methane is not water, so the crew cannot drink it.',
+    source: 'planet-fact', terms: ['atmospheric-pressure', 'spectrometer'],
+    choices: [
+      { label: 'Catch some in a sample jar', effects: { science: 14, morale: 3 }, outcome: 'A jar of alien rain. The lab is thrilled.' },
+      { label: 'Stay in and watch through the window', effects: { morale: 5, science: 3 }, outcome: 'Rain on another world. Nobody says a word.' },
+    ],
+  },
+  {
+    id: 'ice_plume', icon: '⛲', title: 'An Ice Geyser Erupts', bodies: [], hazard: 'cryovolcanism', weight: 3, once: true,
+    body: 'A crack in the ground is spraying a fountain of [[water-ice|ice grains]] far up into the black sky. Fresh snow is drifting down near the base.',
+    science: 'Real: in 2005 NASA’s Cassini found geysers of water ice shooting from Saturn’s moon Enceladus, fed by a salty ocean under the ice. Game guess: one erupting close enough to your base to collect.',
+    source: 'planet-fact', terms: ['water-ice', 'isru'],
+    choices: [
+      { label: 'Scoop up the fresh snow (+80 kg water)', effects: { water: 80, science: 4 }, outcome: 'Free water, straight from a hidden ocean.' },
+      { label: 'Test the snow for signs of life', effects: { science: 18, morale: 3 }, outcome: 'Salt and carbon molecules. The whole science team on Earth wants this data.' },
+    ],
+  },
+  {
+    id: 'belt_surge', icon: '☢️', title: 'Radiation Belt Surge', bodies: [], hazard: 'radiation-belts', weight: 3,
+    body: 'The [[radiation]] counters are climbing. The giant planet’s [[magnetosphere|magnetic field]] is sweeping an extra-thick cloud of trapped particles over the base.',
+    science: 'Real: giant planets trap fast particles in belts around them, and NASA’s Galileo and Juno probes measured how fierce Jupiter’s are. Game guess: when a surge passes over your base.',
+    source: 'planet-fact', terms: ['radiation', 'magnetosphere', 'radiation-shielding'],
+    choices: [
+      { label: 'Everyone to the middle of the habitat', effects: { dose: 1, morale: -1 }, outcome: 'The walls and water tanks soak up most of it.' },
+      { label: 'Keep working, the schedule matters', effects: { dose: 12, science: 4 }, outcome: 'Work continues… and every badge ticks upward.' },
+    ],
+  },
+  {
+    id: 'far_from_home', icon: '📡', title: 'A Long Way from Home', bodies: [], worlds: true, weight: 2, once: true,
+    body: 'The crew is thinking about home. A radio message from {bodyName} takes {homeDelay} to reach Earth, so nobody can chat live.',
+    science: 'Real: radio travels at the speed of light and nothing goes faster. The [[light-delay|light delay]] comes straight from how far away {bodyName} is.',
+    source: 'planet-fact', terms: ['light-delay', 'behavioral-health'],
+    choices: [
+      { label: 'Record video letters for Earth', effects: { morale: 8 }, outcome: 'Everyone has something to say to the people back home.' },
+      { label: 'Give everyone an extra rest sol', effects: { morale: 6, health: 3, science: -3 }, outcome: 'A lazy sol with books and music.' },
+    ],
+  },
+];
+
+export const eventById = (id) => EVENT_CARDS.find((e) => e.id === id) ?? WORLD_EVENT_CARDS.find((e) => e.id === id) ?? null;
+

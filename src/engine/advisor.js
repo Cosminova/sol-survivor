@@ -21,6 +21,24 @@ export function forecast(m) {
   };
 }
 
+const REMOTE_TIPS = {
+  pressure: 'The air outside would crush a spacesuit. The crew drives robots from inside, so outdoor jobs go at half speed.',
+  radiation: 'Radiation outside is deadly. The crew drives robots from inside, so outdoor jobs go at half speed.',
+  heat: 'It is oven-hot outside. The crew drives robots from inside, so outdoor jobs go at half speed.',
+};
+
+function worldTips(m) {
+  const tips = [];
+  const { profile, env } = m;
+  if (env.remote) tips.push(['info', REMOTE_TIPS[env.remote], 'eva']);
+  if (profile.light === 'cycle' && !env.lit && (m.modules.solar ?? 0) > 0) tips.push(['info', `Night on ${profile.name}: no solar power until the Sun comes back.`, 'solar-array']);
+  if (profile.light === 'night') tips.push(['info', `This side of ${profile.name} never sees its star. Only nuclear power works here.`, 'tidal-locking']);
+  const report = m.lastReport;
+  if (report && report.doseToday >= 20) tips.push(['danger', `The crew took ${report.doseToday} mSv today. That much radiation makes people sick. Keep everyone inside and pile on shielding.`, 'radiation-shielding']);
+  if (report?.power.hot && report.power.heatKwh > 0.4 * report.power.demandKwh) tips.push(['info', 'Most of your power is going into chillers to keep the heat out.', 'kwh']);
+  return tips;
+}
+
 export function advise(m) {
   const tips = [];
   const f = forecast(m);
@@ -41,7 +59,8 @@ export function advise(m) {
   if (broken.length && !m.crew.some((c) => c.task === 'maintain')) push('warn', 'A machine is broken and nobody is assigned to Maintain.', 'redundancy');
   if (m.env.dust > 0.25 && (m.modules.solar ?? 0) > 0) push('warn', `Panels are ${Math.round(m.env.dust * 100)}% covered in dust. Send someone to Maintain (clean them).`, 'solar-array');
   if (m.env.storm) push('info', `Dust storm: tau ${m.env.tau}, ${m.env.storm.solsLeft} sols left. Solar power is way down.`, 'tau');
-  if (m.config.body === 'moon' && !m.env.lit) push('info', 'Lunar night: no solar power and bitter cold.', 'lunar-night');
+  if (m.profile) worldTips(m).forEach(([level, text, term]) => push(level, text, term));
+  if (!m.profile && m.config.body === 'moon' && !m.env.lit) push('info', 'Lunar night: no solar power and bitter cold.', 'lunar-night');
   const tired = m.crew.filter((c) => c.morale < 35);
   if (tired.length) push('warn', `${tired.map((c) => c.name.split(' ')[0]).join(' & ')} ${tired.length > 1 ? 'are' : 'is'} exhausted. Give them a Rest sol.`, 'behavioral-health');
   const highDose = m.crew.filter((c) => c.doseMsv > RADIATION.careerLimitMsv * 0.85);

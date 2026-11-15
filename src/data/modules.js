@@ -1,3 +1,5 @@
+import { RULES, lightMode, groundTraits, isLegacyWorldId } from '../engine/worldModel.js';
+
 // Equipment the player can pack into the lander. Mass is the main trade-off.
 // kw = continuous electrical draw while switched on; output is per sol/day.
 export const MODULES = [
@@ -91,3 +93,22 @@ export const SUPPLIES = [
 export const moduleById = (id) => MODULES.find((m) => m.id === id) ?? null;
 
 export const modulesForBody = (body) => MODULES.filter((m) => !m.body || m.body === body);
+
+// Machines that make sense on a world. It starts from the list of the world's analog (Moon-like or Mars-like)
+// and removes what the facts say cannot work there:
+//   MOXIE needs air that is mostly carbon dioxide; a regolith oxygen plant needs oxide rock, not ice or sand
+//   made of organics; solar arrays make nothing on the permanent night side of a tidally locked world.
+const MOXIE_MIN_CO2_PCT = 50;
+
+export function modulesForWorld(world, site = null) {
+  if (!world || isLegacyWorldId(world.id)) return modulesForBody(world?.analog ?? 'mars');
+  const facts = world.facts ?? {};
+  const air = Array.isArray(facts.air?.v) ? facts.air.v : [];
+  const co2Pct = air.find((part) => part.gas === 'CO2')?.pct ?? 0;
+  const works = {
+    moxie: (facts.pressurePa?.v ?? 0) >= RULES.thinAirPa && co2Pct >= MOXIE_MIN_CO2_PCT,
+    regolithO2: groundTraits(facts.ground?.v).oxygenRock,
+    solar: !site || lightMode(world, site) !== 'night',
+  };
+  return modulesForBody(world.analog).filter((mod) => works[mod.id] !== false);
+}

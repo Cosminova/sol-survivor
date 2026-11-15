@@ -1,4 +1,4 @@
-import { EVENT_CARDS, eventById } from '../data/eventCards.js';
+import { EVENT_CARDS, WORLD_EVENT_CARDS, eventById } from '../data/eventCards.js';
 import { MODULES } from '../data/modules.js';
 import { SHIELDING, POWER } from '../data/constants.js';
 
@@ -23,6 +23,20 @@ function eligibleCards(mission) {
     && (!card.condition || card.condition(mission)));
 }
 
+// World missions draw from the body-neutral cards of the old deck plus one card per hazard the world really has.
+const WORLD_EVENT_RATE_PER_HAZARD = 0.04;
+const WORLD_EVENT_RATE_MAX = 0.35;
+
+const fitsWorld = (card, profile) => (typeof card.worlds === 'function' ? card.worlds(profile) : card.worlds === true)
+  || (card.hazard != null && profile.hazards.includes(card.hazard));
+
+function eligibleWorldCards(mission) {
+  return [...EVENT_CARDS, ...WORLD_EVENT_CARDS].filter((card) => card.weight > 0
+    && fitsWorld(card, mission.profile)
+    && !(card.once && mission.flags[card.id])
+    && (!card.condition || card.condition(mission)));
+}
+
 function weightedPick(cards, rng) {
   const total = cards.reduce((s, c) => s + c.weight, 0);
   let roll = rng.next() * total;
@@ -39,7 +53,8 @@ export function makeEventInstance(mission, card, rng, extraVars = {}) {
     id: card.id,
     vars: {
       crewName: crewMember.name,
-      bodyName: mission.config.body === 'mars' ? 'Mars' : 'the Moon',
+      bodyName: mission.profile ? mission.profile.name : mission.config.body === 'mars' ? 'Mars' : 'the Moon',
+      ...(mission.profile ? { starName: mission.profile.starName, homeDelay: mission.profile.homeDelay, nightDays: Math.round((mission.profile.nightTurns * mission.profile.turnHours) / 24) } : {}),
       ...extraVars,
     },
   };
@@ -52,6 +67,7 @@ export function rollEvent(mission, rng, { sep, difficulty, nightfall }) {
     const card = eventById(scripted.eventId);
     if (card) return { ...makeEventInstance(mission, card, rng), scriptKey: `script-${scripted.sol}` };
   }
+  if (mission.profile) return rollWorldEvent(mission, rng, { sep, difficulty, nightfall });
   if (sep) {
     // Live missions (src/live/liveMission.js) may name their own card and add template vars; the default is unchanged.
     return makeEventInstance(mission, eventById(sep.cardId ?? 'sep_alert') ?? eventById('sep_alert'), rng, {
@@ -68,6 +84,25 @@ export function rollEvent(mission, rng, { sep, difficulty, nightfall }) {
   }
   if (!rng.chance(difficulty.eventRate)) return null;
   const cards = eligibleCards(mission);
+  return cards.length ? makeEventInstance(mission, weightedPick(cards, rng), rng) : null;
+}
+
+// Same priority as rollEvent, for a mission on any world other than the Moon or Mars.
+function rollWorldEvent(mission, rng, { sep, difficulty, nightfall }) {
+  if (sep) {
+    return makeEventInstance(mission, eventById(sep.cardId ?? 'sep_alert') ?? eventById('sep_alert'), rng, {
+      flareClass: sep.flareClass ? `${sep.flareClass}-class` : 'strong',
+      eventDate: new Date(sep.time).toISOString().slice(0, 10),
+      severity: sep.severity,
+      ...(sep.vars ?? {}),
+    });
+  }
+  if (nightfall) return makeEventInstance(mission, eventById('long_night'), rng);
+  if (!mission.env.storm && rng.chance(mission.env.stormChance ?? 0)) return makeEventInstance(mission, eventById('world_dust_storm'), rng);
+  const cards = eligibleWorldCards(mission);
+  const hazardCards = cards.filter((card) => card.hazard != null).length;
+  const rate = Math.min(WORLD_EVENT_RATE_MAX, difficulty.eventRate + WORLD_EVENT_RATE_PER_HAZARD * hazardCards);
+  if (!rng.chance(rate)) return null;
   return cards.length ? makeEventInstance(mission, weightedPick(cards, rng), rng) : null;
 }
 
