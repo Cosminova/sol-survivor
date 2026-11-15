@@ -98,12 +98,13 @@ export const DEMO_STEPS = [
     id: 'play', caption: 'Each day: keep Air, Power and Shield safe, pick one plan, and see the trade-off before you commit.',
     async run(t) {
       t.spot(await t.waitFor('.kid-meters'));
-      await t.hold(3500);
+      await t.hold(4500);
       await t.click('#plan-explore');
       t.spot(await t.waitFor('#plan-preview'));
-      await t.hold(3500);
+      await t.hold(4500);
       await t.nextDay();
-      await t.hold(2000);
+      t.spot(await t.waitFor('.kid-meters'));
+      await t.hold(3500);
     },
   },
   {
@@ -111,7 +112,7 @@ export const DEMO_STEPS = [
     async run(t) {
       await t.click('.view-toggle [data-view="walk"]');
       t.spot(await t.waitFor('.walk-world canvas', { timeout: 15000 }));
-      await t.hold(8000);
+      await t.hold(14000);
       await t.click('.walk-back');
     },
   },
@@ -120,10 +121,10 @@ export const DEMO_STEPS = [
     async run(t) {
       await t.click('.view-toggle [data-view="map"]');
       t.spot(await t.waitFor('.play-stage'));
-      await t.hold(3000);
+      await t.hold(5000);
       await t.click('.view-toggle [data-view="outpost"]');
       await t.click('[aria-label="Zoom out to see the whole camp"]');
-      await t.hold(4000);
+      await t.hold(6000);
     },
   },
   {
