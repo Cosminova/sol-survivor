@@ -15,6 +15,8 @@ import { play } from '../audio.js';
 import { massBar, moduleCard, supplySlider, validationList, needsPanel } from './loadout/parts.js';
 import { freePlayPanel, difficultyPicker, codeField, crewFields } from './loadout/setup.js';
 import { isUnlocked } from './campaign.js';
+import { onLive } from '../../live/liveData.js';
+import { liveSunCard } from '../live/liveSun.js';
 
 const drafts = new Map();
 const EMPTY = { modules: {}, supplies: { o2: 0, water: 0, food: 0 } };
@@ -65,6 +67,13 @@ export function render(root, { params, query }) {
   const head = h('header', { class: 'screen-head' });
   const left = h('div', { class: 'lo-main' });
   const side = h('aside', { class: 'lo-side', 'aria-label': 'Flight check' });
+  // Pre-launch briefing: the real Sun today, from the live NASA data layer.
+  const sunSlot = h('div', { class: 'lo-sun' }, liveSunCard(null, { compact: true }));
+  const briefing = h('section', { class: 'panel lo-briefing', 'aria-labelledby': 'lo-briefing-title' },
+    h('h2', { id: 'lo-briefing-title', class: 'panel-title' }, 'Before you launch: the real Sun today'),
+    h('p', { class: 'kid-lead' }, 'Mission planners check the Sun before every launch. A stormy Sun means more radiation.'),
+    sunSlot);
+  const stopLive = onLive((live) => { if (sunSlot.isConnected) sunSlot.replaceChildren(liveSunCard(live, { compact: true })); });
 
   async function launch(config) {
     try {
@@ -123,6 +132,6 @@ export function render(root, { params, query }) {
   }
 
   draw();
-  root.append(head, h('div', { class: 'lo-layout' }, left, side));
-  return undefined;
+  root.append(head, briefing, h('div', { class: 'lo-layout' }, left, side));
+  return () => stopLive?.();
 }

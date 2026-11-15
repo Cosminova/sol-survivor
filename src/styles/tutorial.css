@@ -1,0 +1,56 @@
+/* Tutorial coach marks: four dim panels leave a hole over ONE thing, a ring lights it up, and a bright
+   speech bubble with an arrow says one sentence. Sits above dialogs so it can coach an event card too. */
+.coach { position: fixed; inset: 0; z-index: 600; pointer-events: none; }
+.coach-dim { position: fixed; background: rgba(2, 5, 10, 0.74); pointer-events: auto; }
+.coach-cover { position: fixed; pointer-events: auto; }
+.coach-cover[hidden], .coach-ring[hidden] { display: none; }
+.coach-ring {
+  position: fixed;
+  pointer-events: none;
+  border: 3px solid #ffe066;
+  box-shadow: 0 0 0 3px rgba(2, 5, 10, 0.85), 0 0 22px 4px rgba(255, 224, 102, 0.55);
+  animation: coach-pulse 1.4s ease-in-out infinite;
+}
+@keyframes coach-pulse { 50% { box-shadow: 0 0 0 3px rgba(2, 5, 10, 0.85), 0 0 34px 10px rgba(255, 224, 102, 0.8); } }
+
+.coach-bubble {
+  position: fixed;
+  width: min(380px, calc(100vw - 16px));
+  padding: var(--s-4);
+  display: grid;
+  gap: var(--s-2);
+  background: #f4fbff;
+  color: #06131d;
+  border: 3px solid #ffe066;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+  pointer-events: auto;
+  font-family: var(--font-body);
+}
+.coach-arrow { position: absolute; width: 18px; height: 18px; margin-left: -9px; background: #f4fbff; border: 3px solid #ffe066; border-right: 0; border-bottom: 0; }
+.coach-bubble[data-side='below'] .coach-arrow { top: -12px; transform: rotate(45deg); }
+.coach-bubble[data-side='above'] .coach-arrow { bottom: -12px; transform: rotate(225deg); }
+.coach-bubble[data-side='over'] .coach-arrow { display: none; }
+.coach-count { margin: 0; font-family: var(--font-mono); font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #36566b; }
+.coach-text { margin: 0; font-size: 1.25rem; font-weight: 700; line-height: 1.4; color: #06131d; }
+.coach-extra:empty { display: none; }
+.coach-sun { padding: var(--s-2) var(--s-3); background: #06131d; color: var(--text); border-left: 4px solid var(--warn); }
+.coach-sun p { margin: 0; }
+.coach-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-2); margin-top: var(--s-1); }
+.coach-bubble .coach-next { min-height: 48px; background-color: #06131d; color: #fff; }
+.coach-bubble .coach-next:hover:not(:disabled) { background-color: #12344a; color: #fff; }
+.coach-bubble .coach-next[hidden] { display: none; }
+.coach-bubble .coach-skip { margin-left: auto; color: #06131d; text-decoration: underline; background: none; }
+.coach-bubble .coach-skip:hover:not(:disabled) { color: #06131d; background: rgba(6, 19, 29, 0.1); }
+.coach-bubble .btn:focus-visible { outline: 3px solid #0b62a8; outline-offset: 2px; box-shadow: none; }
+
+.coach.still .coach-ring { animation: none; }
+:root[data-motion='reduced'] .coach-ring { animation: none; }
+@media (prefers-reduced-motion: reduce) { .coach-ring { animation: none; } }
+
+/* End-of-training card */
+.tutorial-recap .recap { display: grid; gap: var(--s-4); }
+.recap-lead { margin: 0; font-size: 1.1875rem; }
+.recap-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-3); }
+.recap-list li { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: var(--s-3); padding: var(--s-3) var(--s-4); border: 1px solid var(--line-soft); border-left: 4px solid var(--good); background: rgba(3, 7, 14, 0.5); font-size: 1.1875rem; font-weight: 700; line-height: 1.35; }
+.recap-icon { display: inline-flex; color: var(--cyan-bright); }
+.recap-actions { gap: var(--s-3); }

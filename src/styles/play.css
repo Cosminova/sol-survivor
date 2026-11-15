@@ -349,3 +349,293 @@ body[data-route='play']:has(.play-stage) .hud-backdrop { display: none; }
   .crew-card { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-2); }
   .task-btn { min-height: 52px; }
 }
+
+/* ==================================================================================================
+   CADET VIEW (default, ages 7 to 12): the 3D outpost is the hero and ONE sidebar holds everything that
+   is always needed: day count, three picture meters, today's plan, Next day and a few small tools.
+   Nothing sits below the outpost. Expert view (.is-expert) keeps the full HUD above.
+   ================================================================================================== */
+.slot-hud:empty { display: none; }
+.play-grid.is-expert > .kid-side { display: none; }
+.play-grid.is-cadet > :is(.play-side, .play-left, .play-mid, .play-right) { display: none; }
+.play-grid.is-cadet {
+  --play-h: max(480px, calc(100dvh - var(--strip-h) - var(--header-h) - var(--ticker-h) - var(--s-4) - var(--s-4)));
+  grid-template-columns: minmax(0, 1fr) minmax(380px, 440px);
+  grid-template-areas: 'stage side';
+  grid-template-rows: var(--play-h);
+  align-items: stretch;
+}
+.play-grid.is-cadet .play-stage { min-height: 0; }
+/* Walk 3D in Cadet view: same two columns, the walkable outpost fills the hero window. */
+.play-grid.is-cadet:has(.play-3d-mount:not([hidden])) { grid-template-areas: 'stage side'; grid-template-rows: var(--play-h); }
+.play-grid.is-cadet:has(.play-3d-mount:not([hidden])) .play-stage { height: auto; }
+/* The scene's own label plate would cover the base: Cadet view keeps only the map credit, tucked in a corner. */
+.play-grid.is-cadet .outpost3d-hud { top: auto; right: auto; left: 10px; bottom: 10px; padding: 2px var(--s-2); border: 0; clip-path: none; background: rgba(3, 7, 14, 0.6); -webkit-backdrop-filter: none; backdrop-filter: none; }
+.play-grid.is-cadet :is(.o3d-sol, .o3d-time, .o3d-tags) { display: none; }
+.play-grid.is-cadet .o3d-credit { margin: 0; padding: 0; border: 0; }
+.play-grid.is-cadet .play-stage::after { display: none; }
+
+.kid-side {
+  grid-area: side;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  min-height: 0;
+  padding: var(--s-3) var(--s-4);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  font-family: var(--font-body);
+}
+.kid-side > div:empty { display: none; }
+
+/* Head: mission name, day count, sky, science */
+.kid-side-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px var(--s-2); }
+.kid-side-day, .kid-day-meter { grid-column: 1 / -1; }
+.kid-side-head .real-sun-chip { min-height: 36px; }
+.kid-side-title { margin: 0; font-size: 0.8125rem; letter-spacing: var(--track); text-transform: uppercase; color: var(--text-faint); }
+.kid-side-day { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px var(--s-4); }
+.kid-day-text { font-size: 1.25rem; font-weight: 700; color: #fff; }
+.kid-day-text strong { font-family: var(--font-mono); font-size: 1.6rem; font-weight: 800; color: var(--cyan-bright); }
+.kid-sky, .kid-sci { display: inline-flex; align-items: center; gap: 6px; font-size: 1rem; color: var(--text-dim); }
+.kid-sky .icon, .kid-sci .icon { color: var(--cyan); }
+.kid-sky.warn, .kid-sky.warn .icon { color: var(--warn); }
+.kid-day-meter { height: 6px; }
+.kid-sheet-toggle { display: none; }
+
+/* Three picture meters */
+.kid-meters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-2); }
+.kid-meter-wrap { display: contents; }
+.kid-meter {
+  --lv: var(--good);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  justify-items: start;
+  column-gap: var(--s-2);
+  min-width: 0;
+  padding: 6px var(--s-2);
+  text-align: left;
+  border: 2px solid var(--line);
+  border-bottom: 5px solid var(--lv);
+  background: rgba(3, 7, 14, 0.55);
+  color: var(--text);
+  transition: background var(--t-fast), border-color var(--t-fast);
+}
+.kid-meter.low { --lv: var(--warn); }
+.kid-meter.danger { --lv: var(--danger); background: var(--danger-bg); }
+.kid-meter:hover { background: var(--surface-2); border-color: var(--cyan-bright); border-bottom-color: var(--lv); }
+.kid-meter:focus-visible { outline: 3px solid var(--focus-color); outline-offset: 2px; }
+.kid-meter[aria-expanded='true'] { border-color: var(--cyan-bright); border-bottom-color: var(--lv); background: var(--surface-2); }
+.kid-meter-art { grid-row: 1 / 3; width: 40px; height: 50px; }
+.kid-meter-art .art-line { fill: none; stroke: #e8f3fb; stroke-width: 3; stroke-linejoin: round; }
+.kid-meter-art .art-part { fill: #b7c9d9; }
+.kid-meter-art .art-fill { fill: var(--lv); }
+.kid-meter-art .art-empty { fill: rgba(148, 197, 233, 0.16); }
+.kid-meter-art .art-bubble { fill: none; stroke: rgba(3, 7, 14, 0.6); stroke-width: 1.5; }
+.kid-meter-name { align-self: end; font-family: var(--font-display); font-size: 0.9375rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.kid-meter-state { align-self: start; display: inline-flex; align-items: center; gap: 4px; font-size: 1rem; font-weight: 700; color: var(--lv); line-height: 1.15; }
+.kid-meter-detail { grid-column: 1 / -1; order: 9; padding: var(--s-2) var(--s-3); border: 1px solid var(--line-strong); border-left: 4px solid var(--cyan-bright); background: rgba(3, 7, 14, 0.7); }
+.kid-meter-detail[hidden] { display: none; }
+.kid-meter-facts { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; font-size: 1rem; }
+.kid-meter-facts .low { color: var(--warn); }
+.kid-meter-facts .danger { color: var(--danger); }
+
+/* Today: one plan */
+.kid-today { display: grid; gap: var(--s-2); }
+.kid-today-title { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px var(--s-3); margin: 0; font-size: 1.125rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--cyan-bright); }
+.kid-today-title span { font-family: var(--font-body); font-size: 1rem; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--text); }
+.plan-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-2); }
+.plan-cards.n3 .plan-card:last-child { grid-column: 1 / -1; }
+.plan-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-areas: 'art title' 'chips chips';
+  align-items: center;
+  gap: 6px var(--s-2);
+  align-content: start;
+  padding: var(--s-2);
+  text-align: left;
+  border: 2px solid var(--line);
+  background: rgba(56, 189, 248, 0.06);
+  color: var(--text);
+  transition: background var(--t-fast), border-color var(--t-fast), transform var(--t-fast);
+}
+.plan-card:hover:not(:disabled) { border-color: var(--cyan-bright); background: rgba(56, 189, 248, 0.16); }
+.plan-card:active:not(:disabled) { transform: translateY(1px); }
+.plan-card:focus-visible { outline: 3px solid var(--focus-color); outline-offset: 2px; }
+.plan-card:disabled { opacity: 0.55; }
+.plan-card.selected { border-color: #fff; background: rgba(56, 189, 248, 0.24); box-shadow: inset 0 0 0 2px var(--cyan-bright); }
+.plan-card-art { grid-area: art; display: grid; place-items: center; width: 42px; height: 42px; background: rgba(3, 7, 14, 0.6); border: 1px solid var(--line); color: var(--cyan-bright); }
+.plan-card.selected .plan-card-art { background: var(--cyan); color: var(--on-accent); border-color: #fff; }
+.plan-card-art .icon { width: 28px; height: 28px; }
+.plan-card-title { grid-area: title; font-size: 1.0625rem; font-weight: 700; line-height: 1.2; color: #fff; }
+.plan-card-tick { position: absolute; bottom: -2px; right: -2px; display: inline-flex; align-items: center; gap: 4px; padding: 1px 6px; background: #fff; color: #03121c; font-size: 0.8125rem; font-weight: 700; }
+.plan-card-flag { position: absolute; top: -2px; right: -2px; display: inline-flex; align-items: center; gap: 4px; padding: 1px 6px; background: var(--warn); color: #201400; font-size: 0.8125rem; font-weight: 700; }
+.plan-card-chips { grid-area: chips; display: flex; flex-wrap: wrap; gap: 3px 10px; }
+.plan-chips { display: flex; flex-wrap: wrap; gap: 3px 10px; }
+.plan-chips:empty { display: none; }
+.plan-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 0.9375rem; line-height: 1.25; }
+.plan-chip-sign { display: grid; place-items: center; width: 18px; height: 18px; flex: none; font-family: var(--font-mono); font-size: 0.875rem; font-weight: 800; line-height: 1; }
+.plan-chip.get { color: #b9f5e4; }
+.plan-chip.get .plan-chip-sign { background: var(--good); color: #02130d; }
+.plan-chip.cost { color: #fde9a8; }
+.plan-chip.cost .plan-chip-sign { background: var(--warn); color: #201400; }
+.plan-chip .icon { flex: none; }
+
+/* Preview of the chosen plan on the three meters */
+.plan-preview { display: grid; gap: 4px; padding: var(--s-2) var(--s-3); border: 1px solid var(--line-strong); border-left: 4px solid var(--cyan-bright); background: rgba(3, 7, 14, 0.6); }
+.plan-preview-title { margin: 0; font-weight: 700; color: #fff; }
+.plan-effects { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px var(--s-3); }
+.plan-effect { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; font-size: 0.9375rem; line-height: 1.25; }
+.plan-effect .icon { color: var(--cyan); }
+.plan-effect-name { font-weight: 700; }
+.plan-effect-num { color: var(--text-dim); }
+.plan-effect.good .plan-effect-num { color: #b9f5e4; }
+.plan-effect.bad .plan-effect-num { color: #fde9a8; }
+.plan-arrow { width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; }
+.plan-arrow.up { border-bottom: 11px solid currentColor; }
+.plan-arrow.down { border-top: 11px solid currentColor; }
+.plan-arrow.same { width: 14px; height: 4px; border: 0; background: currentColor; }
+.plan-effect.good .plan-arrow { color: var(--good); }
+.plan-effect.bad .plan-arrow { color: var(--warn); }
+.plan-effect.same .plan-arrow { color: var(--text-faint); }
+.plan-preview-note { margin: 0; font-size: 0.875rem; color: var(--text-faint); }
+
+/* Power switchboard: appears only when power is short (or something is switched off) */
+.kid-switchboard { display: grid; gap: var(--s-2); padding: var(--s-2) var(--s-3); border: 2px solid var(--warn); background: var(--warn-bg); }
+.kid-switchboard.ok { border-color: var(--good); background: var(--good-bg); }
+.kid-switchboard-title { display: flex; align-items: flex-start; gap: var(--s-2); margin: 0; font-weight: 700; color: #fff; line-height: 1.3; }
+.kid-switchboard-title .icon { flex: none; margin-top: 2px; color: var(--warn); }
+.kid-switchboard.ok .kid-switchboard-title .icon { color: var(--good); }
+.kid-switches { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: var(--s-2); }
+.kid-switch { display: grid; justify-items: center; gap: 2px; min-height: 92px; padding: var(--s-2) 4px; border: 2px solid var(--good); background: rgba(3, 7, 14, 0.7); color: var(--text); text-align: center; line-height: 1.2; }
+.kid-switch:hover:not(:disabled) { background: var(--surface-2); }
+.kid-switch:focus-visible { outline: 3px solid var(--focus-color); outline-offset: 2px; }
+.kid-switch .icon { color: var(--good); }
+.kid-switch-name { font-weight: 700; font-size: 0.9375rem; }
+.kid-switch-gives { font-size: 0.875rem; color: var(--text-dim); }
+.kid-switch-state { padding: 0 8px; background: var(--good); color: #02130d; font-family: var(--font-mono); font-size: 0.8125rem; font-weight: 800; text-transform: uppercase; }
+.kid-switch.off { border-color: var(--text-faint); border-style: dashed; }
+.kid-switch.off .icon { color: var(--text-faint); }
+.kid-switch.off .kid-switch-name { text-decoration: line-through; color: var(--text-dim); }
+.kid-switch.off .kid-switch-state { background: var(--text-faint); color: #03121c; }
+
+.btn.kid-next { width: 100%; min-height: 58px; font-size: 1.25rem; position: sticky; bottom: 0; z-index: 2; box-shadow: 0 0 0 6px var(--surface-solid); }
+
+/* Small tools at the foot of the sidebar */
+.kid-side-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.slot-tools { margin-top: auto; padding-top: var(--s-2); border-top: 1px solid var(--line-soft); }
+.kid-tool { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 var(--s-2); border: 1px solid var(--line-soft); background: rgba(3, 7, 14, 0.5); color: var(--text); font-family: var(--font-body); font-size: 0.9375rem; text-decoration: none; }
+.kid-tool:hover { border-color: var(--cyan-bright); color: #fff; background: var(--surface-2); }
+.kid-tool:focus-visible { outline: 3px solid var(--focus-color); outline-offset: 2px; }
+.kid-tool .icon { color: var(--cyan); }
+.real-sun-chip .icon { color: var(--power); }
+.real-sun-level { padding: 0 6px; background: var(--good); color: #02130d; font-size: 0.8125rem; }
+.real-sun-chip.busy .real-sun-level { background: var(--warn); color: #201400; }
+.real-sun-chip.stormy .real-sun-level { background: var(--danger); color: #2a0000; }
+.kid-side-tools .view-switch { min-height: 44px; padding: 0 var(--s-2); }
+
+/* Mission details drawer */
+.kid-drawer-backdrop { position: fixed; inset: 0; z-index: 150; display: flex; justify-content: flex-end; background: rgba(2, 5, 10, 0.6); }
+.kid-drawer-backdrop[hidden] { display: none; }
+.kid-drawer { width: min(520px, 100%); height: 100%; overflow-y: auto; padding: var(--s-4); background: var(--surface-solid); border-left: 2px solid var(--line-strong); font-family: var(--font-body); }
+.kid-drawer-head { position: sticky; top: calc(-1 * var(--s-4)); z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); margin: calc(-1 * var(--s-4)) calc(-1 * var(--s-4)) var(--s-3); padding: var(--s-3) var(--s-4); background: var(--surface-solid); border-bottom: 1px solid var(--line); }
+.kid-drawer-head h2 { margin: 0; font-size: 1.25rem; color: var(--cyan-bright); }
+.kid-drawer-body { display: grid; gap: var(--s-3); }
+.kid-drawer-body > * { min-width: 0; }
+.kid-drawer-body .panel { padding: var(--s-3); }
+.kid-drawer-body .hud-env { border-top: 0; padding-top: 0; }
+.kid-drawer-body .hud-chip { white-space: normal; }
+.kid-drawer-src { margin: var(--s-2) 0 0; }
+.kid-drawer-part:empty { display: none; }
+
+/* Event cards in Cadet view: a picture, one sentence, big choices with "you get / it costs" */
+.kid-event .kid-event-story { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: var(--s-4); }
+.kid-event-art { display: grid; place-items: center; width: 88px; height: 88px; border: 2px solid var(--frame-line); background: rgba(3, 7, 14, 0.6); color: var(--warn); }
+.event-sep_alert .kid-event-art { color: var(--rad); }
+.kid-event .event-text { font-size: 1.3125rem; line-height: 1.45; font-weight: 700; color: #fff; }
+.kid-event-real { margin: 0; }
+.kid-event .event-q { font-size: 1.125rem; }
+.kid-event .event-choices { grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: var(--s-3); }
+.kid-event .kid-choice { align-content: start; gap: var(--s-3); padding: var(--s-4); border-width: 2px; }
+.kid-event .event-choice-label { font-size: 1.1875rem; line-height: 1.3; }
+.event-rows { display: grid; gap: 6px; }
+.event-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+.event-row-label { min-width: 4.6em; font-family: var(--font-mono); font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-dim); }
+.event-row.get .event-row-label { color: var(--good); }
+.event-row.cost .event-row-label { color: var(--warn); }
+.event-full { margin: 0; }
+
+/* ---- Tablets: outpost on top, sidebar underneath it at full width ---- */
+@media (max-width: 980px) {
+  .play-grid.is-cadet, .play-grid.is-cadet:has(.play-3d-mount:not([hidden])) { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'stage' 'side'; grid-template-rows: clamp(240px, 38dvh, 420px) auto; }
+  .play-grid.is-cadet:has(.play-3d-mount:not([hidden])) { grid-template-rows: clamp(360px, 60dvh, 640px) auto; }
+  .kid-side { overflow: visible; }
+}
+/* ---- Phones: the page is one screen. Outpost on top, the sidebar becomes a bottom sheet that folds away. ---- */
+@media (max-width: 640px) {
+  #view.view-wide:has(.play-grid.is-cadet) { padding: var(--s-2) var(--s-2) 0; }
+  .play-grid.is-cadet, .play-grid.is-cadet:has(.play-3d-mount:not([hidden])) {
+    --play-h: calc(100dvh - var(--strip-h) - var(--header-h) - var(--ticker-h) - var(--s-2));
+    height: var(--play-h);
+    gap: var(--s-2);
+    grid-template-rows: minmax(150px, 1fr) auto;
+  }
+  .kid-side { max-height: max(50dvh, calc(var(--play-h) - 280px)); overflow-y: auto; gap: var(--s-2); padding: var(--s-2) var(--s-3); }
+  /* Cards shrink to a picture and a name; what a plan gets and costs shows in the preview once it is tapped. */
+  .plan-card-chips { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .plan-card { grid-template-areas: 'art title'; }
+  .kid-side-title { display: none; }
+  .kid-side-head { grid-template-columns: minmax(0, 1fr) auto auto; }
+  .kid-side-day { grid-column: 1; }
+  .kid-side-head .real-sun-chip { grid-column: 2; grid-row: 1; min-height: 44px; }
+  .kid-sheet-toggle { grid-column: 3; grid-row: 1; }
+  .real-sun-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .plan-card-tick { bottom: auto; top: -2px; }
+  .plan-card-tick span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .kid-sky:not(.warn) { display: none; }
+  .kid-side-day { gap: 2px var(--s-3); }
+  .kid-day-meter { grid-column: 1 / -1; grid-row: 2; height: 5px; }
+  .kid-day-text { font-size: 1.0625rem; }
+  .kid-day-text strong { font-size: 1.25rem; }
+  .kid-sheet-toggle { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 var(--s-2); border: 1px solid var(--line); background: rgba(3, 7, 14, 0.5); color: var(--text); font-family: var(--font-body); font-size: 0.9375rem; }
+  .kid-meter { column-gap: 6px; padding: 4px 6px; }
+  .kid-meter-art { width: 32px; height: 40px; }
+  .kid-meter-name { font-size: 0.8125rem; }
+  .kid-meter-state { font-size: 0.9375rem; }
+  .kid-meter-state .icon { display: none; }
+  .kid-today-title { display: none; }
+  .plan-card { min-height: 0; padding: 6px var(--s-2); gap: 4px 6px; }
+  .plan-card-art { width: 36px; height: 36px; }
+  .plan-card-art .icon { width: 24px; height: 24px; }
+  .plan-card-title { font-size: 1rem; }
+  .plan-chip { font-size: 0.875rem; }
+  .plan-chip .icon { display: none; }
+  .plan-effect { font-size: 0.875rem; gap: 2px 4px; }
+  .plan-effect > .icon { display: none; }
+  .plan-preview-note { display: none; }
+  .plan-preview { padding: 6px var(--s-2); }
+  .kid-today-title { font-size: 0.9375rem; }
+  .btn.kid-next { min-height: 54px; }
+  .kid-side-tools { flex-wrap: nowrap; overflow-x: auto; }
+  .kid-tool { flex: none; }
+  .play-grid.is-cadet.sheet-closed :is(.plan-cards, .plan-preview, .kid-today-title, .kid-side-tools) { display: none; }
+  .play-grid.is-cadet .view-toggle { left: auto; right: 6px; bottom: 6px; }
+  .play-grid.is-cadet .view-toggle .chip { flex: none; min-height: 36px; font-size: 0.75rem; }
+  .play-grid.is-cadet .outpost3d-hud { display: none; }
+  .kid-event .kid-event-story { grid-template-columns: 1fr; }
+  .kid-event-art { width: 64px; height: 64px; }
+  .kid-event-art .icon { width: 40px; height: 40px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kid-meter, .plan-card { transition: none; }
+}

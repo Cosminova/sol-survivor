@@ -65,7 +65,17 @@ export const KID_MODULES = {
   shelter: 'A safe room for solar storms.',
 };
 
-export const dayWord = (body, { plural = false, cap = false } = {}) => {
+// Short names and "what you lose if it is off" for the power switchboard, keyed by module id.
+export const KID_MODULE_NAMES = {
+  recycler: 'Water recycler', oxygen: 'Air maker', moxie: 'Mars air maker', regolithO2: 'Moon-dirt air maker',
+  iceDrill: 'Ice drill', greenhouse: 'Greenhouse', rover: 'Rover', relay: 'Radio dish',
+};
+export const KID_MODULE_GIVES = {
+  recycler: 'Saves water', oxygen: 'Makes air', moxie: 'Makes air', regolithO2: 'Makes air',
+  iceDrill: 'Makes water', greenhouse: 'Grows food', rover: 'More science', relay: 'Happier crew',
+};
+
+export const dayWord =(body, { plural = false, cap = false } = {}) => {
   const w = body === 'mars' ? (plural ? 'sols' : 'sol') : (plural ? 'days' : 'day');
   return cap ? w[0].toUpperCase() + w.slice(1) : w;
 };
@@ -114,7 +124,15 @@ export function plainify(text, body = 'mars') {
     .replace(/the 600 mSv career limit/g, 'the safe limit of 600 mSv')
     .replace(/\bMaintain\b/g, 'Fix and clean')
     .replace(/Lunar night:/g, 'Moon night:')
-    .replace(/\bregolith\b/g, 'space dirt');
+    .replace(/\bregolith\b/g, 'space dirt')
+    .replace(/That is ISRU and life support working together!/g, 'Making what you need where you are is a real NASA idea!')
+    .replace(/solar particle dose/g, 'solar storm radiation')
+    .replace(/ \(electrolysis, MOXIE\)/g, '')
+    .replace(/\bradiation dose\b/g, 'radiation')
+    .replace(/\bfission unit\b/g, 'nuclear power unit')
+    .replace(/\bhabitat\b/g, 'base')
+    .replace(/\bHabitat\b/g, 'Base')
+    .replace(/crew-days’ worth/g, 'days of water for one astronaut');
   if (body !== 'mars') {
     out = out.replace(/\bsols\b/g, 'days').replace(/\bsol\b/g, 'day').replace(/\bSols\b/g, 'Days').replace(/\bSol\b/g, 'Day');
   }

@@ -88,3 +88,20 @@ export function freePlayConfig({ body, siteId, targetSols, difficulty, startDate
     recommended: null,
   };
 }
+
+// Training mission for the step-by-step tutorial. Not a campaign chapter: it is never scored or saved.
+// Three days at Mare Tranquillitatis. Nothing is faked: the start date and Moon phase are chosen so that the
+// real solar storm of 9 October 2024 (NASA DONKI) arrives on day 2, the same day the Sun sets. With no sunlight
+// the base cannot power every machine, so the player has to switch one off. Supplies are generous and the
+// mission is too short for anything to run out. The fixed code keeps the dice the same for every player.
+export const TUTORIAL = {
+  id: 'tutorial', chapter: 0, tutorial: true, title: 'Training Mission', body: 'moon', siteId: 'tranquility',
+  targetSols: 3, budgetKg: 12000, scienceGoal: 20, startDate: '2024-10-07', phaseOffsetDays: 13,
+  lesson: 'Learn to play: air, power and shielding.',
+  teaser: 'A short practice mission with a coach.',
+  intro: 'Welcome to training, Cadet. Keep four astronauts safe on the Moon for three days.',
+  win: 'Training complete. Your crew is safe and you are ready for a real mission.',
+  scripted: [],
+  code: 'TRAIN1',
+  loadout: { modules: { solar: 1, fission: 3, battery: 1, recycler: 1, regolithO2: 2, rover: 1, relay: 1, shelter: 1, spares: 2 }, supplies: { o2: 100, water: 300, food: 200 } },
+};

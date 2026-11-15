@@ -243,18 +243,6 @@ body .play-stage::after { content: 'Outpost view'; }
 .kid-gauge.watch .kid-dose .kid-bar-fill, .kid-gauge.danger .kid-dose .kid-bar-fill { background-color: var(--lv); }
 .kid-dose-total { color: var(--text-dim); }
 
-/* Cadet layout on narrower screens: gauges come right after the outpost window. */
-@media (max-width: 1100px) {
-  :root[data-view='cadet'] body .play-grid:not(:has(.play-3d-mount:not([hidden]))) { grid-template-areas: 'stage stage' 'left left' 'mid mid' 'side right'; }
-  :root[data-view='cadet'] .kid-gauges { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
-}
-@media (max-width: 820px) {
-  :root[data-view='cadet'] .kid-gauges { grid-template-columns: minmax(0, 1fr); }
-}
-@media (max-width: 640px) {
-  :root[data-view='cadet'] body .play-grid:not(:has(.play-3d-mount:not([hidden]))) { grid-template-areas: 'stage' 'left' 'side' 'mid' 'right'; }
-}
-
 /* ---- Cadet crew, machines, news ------------------------------------------------------------------- */
 body .kid-crew .crew-grid { grid-template-columns: repeat(auto-fill, minmax(min(360px, 100%), 1fr)); }
 body .kid-crew-card { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3) var(--s-4); padding: var(--s-4); }
@@ -317,15 +305,6 @@ body .set-label .faint { font-size: var(--fs-base); color: var(--text-dim); line
 body .set-size { gap: 6px; }
 .set-size-name { font-family: var(--font-body); font-size: 0.9375rem; font-weight: 600; letter-spacing: 0; text-transform: none; }
 
-/* ---- Cadet layout: the three gauges lead, in one row under the mission bar ---------------------- */
-@media (min-width: 1101px) {
-  :root[data-view='cadet'] body .play-grid:not(:has(.play-3d-mount:not([hidden]))) {
-    grid-template-areas: 'left left left' 'stage stage side' 'mid mid right';
-    grid-template-rows: auto auto 1fr;
-  }
-  :root[data-view='cadet'] .kid-gauges { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
-  :root[data-view='cadet'] body .play-stage { min-height: clamp(260px, 38vh, 460px); }
-}
 .kid-gauge { padding: var(--s-3) var(--s-4); }
 .kid-gauge-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-2) var(--s-3); }
 .kid-gauge-foot .kid-more { margin: 0; border: 0; background: none; }
@@ -367,11 +346,7 @@ body .event-choice-label { line-height: 1.5; }
 .kid-main-bar.watch { --lv: var(--level-watch); }
 .kid-main-bar.danger { --lv: var(--level-danger); }
 /* Phones and tablets: gauges first, then the outpost window. The ticker tag keeps its words. */
-@media (max-width: 1100px) {
-  :root[data-view='cadet'] body .play-grid:not(:has(.play-3d-mount:not([hidden]))) { grid-template-areas: 'left left' 'stage stage' 'mid mid' 'side right'; }
-}
 @media (max-width: 640px) {
-  :root[data-view='cadet'] body .play-grid:not(:has(.play-3d-mount:not([hidden]))) { grid-template-areas: 'left' 'stage' 'side' 'mid' 'right'; }
   body .ticker-tag .ticker-tag-text { display: inline; font-size: 0.6875rem; letter-spacing: 0.06em; }
   body .play-hud.is-cadet .hud-chip { min-height: 44px; padding: 0 var(--s-2); }
   .hud-tools .howto-btn { padding: 0 var(--s-2); }
@@ -385,3 +360,73 @@ body .kid-mod-row .mod-name .badge { grid-column: 2; justify-self: start; white-
 .kid-mod-title { overflow-wrap: anywhere; }
 .kid-quick { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3) var(--s-5); }
 .kid-quick p { margin: 0; flex: 1 1 280px; }
+
+/* ---- Where the live "real Sun today" card is mounted (the card itself is styled by the live-data layer) ---- */
+.hero-sun { margin-top: var(--s-3); max-width: 46ch; }
+.hero-sun p, .lo-sun p { margin: 0; }
+.lo-briefing { margin-bottom: var(--gap); }
+.lo-briefing .kid-lead { margin-bottom: var(--s-2); }
+.real-sun-modal p { margin: 0; }
+
+/* ---- Crew popup: one astronaut's stats, only when asked for ------------------------------------- */
+.crew-pop {
+  position: fixed;
+  z-index: 300;
+  width: min(360px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  display: grid;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  border: 2px solid var(--cyan-bright);
+  background: var(--surface-solid);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.6);
+  color: var(--text);
+  font-family: var(--font-body);
+  animation: modal-in var(--t-fast) var(--ease);
+}
+.crew-pop-close { justify-self: end; margin: -6px -6px -10px 0; }
+.crew-pop-head { display: flex; align-items: center; gap: var(--s-3); }
+.crew-pop-name { margin: 0; font-size: 1.25rem; letter-spacing: 0.04em; color: #fff; }
+.crew-pop .crew-role { margin: 0; }
+.crew-pop-status { margin: 0; padding: var(--s-2) var(--s-3); border-left: 4px solid var(--cyan); background: var(--surface-2); font-size: 1.125rem; font-weight: 700; }
+.crew-pop-stats { display: grid; grid-template-columns: auto 1fr; gap: var(--s-2) var(--s-3); margin: 0; align-items: start; }
+.crew-pop-stats dt { font-weight: 700; color: var(--text-dim); }
+.crew-pop-stats dd { margin: 0; display: grid; gap: 3px; }
+.crew-pop-stats .meter { height: 10px; }
+.crew-pop-job { display: flex !important; align-items: center; gap: var(--s-2); font-weight: 700; }
+.crew-pop-job .icon { color: var(--cyan); }
+.crew-pop-note { margin: 0; font-size: 0.9375rem; color: var(--text-dim); }
+.crew-pop-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-2); }
+.crew-pop-pick { width: 100%; justify-content: flex-start; gap: var(--s-3); min-height: 52px; }
+.crew-pop-pick-name { font-weight: 700; }
+.crew-pop-pick .crew-role { margin-left: auto; }
+
+/* ---- "What just happened" popup: only the big results of a day, one at a time -------------------- */
+.effect-pop-holder { position: fixed; z-index: 120; left: calc(var(--page-pad) + var(--s-3)); bottom: calc(var(--ticker-h) + var(--s-5) + 52px); width: min(440px, calc(100vw - 2 * var(--page-pad))); pointer-events: none; }
+.effect-pop {
+  pointer-events: auto;
+  display: grid;
+  gap: var(--s-2);
+  padding: var(--s-3) var(--s-4);
+  border: 2px solid #fff;
+  background: rgba(6, 11, 20, 0.96);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.6);
+  font-family: var(--font-body);
+  animation: fade-up var(--t-med) var(--ease);
+}
+.effect-pop.still { animation: none; }
+.effect-pop-title { margin: 0; font-size: 1.0625rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--cyan-bright); }
+.effect-pop-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.effect-pop-list li { display: grid; grid-template-columns: auto 1fr; align-items: start; gap: var(--s-2); font-size: 1.0625rem; font-weight: 700; line-height: 1.35; color: #fff; }
+.effect-pop-list .icon { margin-top: 2px; color: var(--cyan); }
+.effect-pop-list .good .icon { color: var(--good); }
+.effect-pop-list .bad .icon { color: var(--warn); }
+.effect-pop-close { justify-self: end; }
+@media (max-width: 640px) {
+  .effect-pop-holder { left: var(--s-2); right: var(--s-2); width: auto; bottom: auto; top: calc(var(--header-h) + var(--s-2)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .effect-pop, .crew-pop { animation: none; }
+}
+:root[data-motion='reduced'] :is(.effect-pop, .crew-pop) { animation: none; }

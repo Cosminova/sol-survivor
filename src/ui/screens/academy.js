@@ -37,10 +37,10 @@ function ringsPanel() {
   const { avg, el } = masteryRings(currentProfile());
   return h('section', { class: 'panel acad-mastery', 'aria-labelledby': 'acad-mastery-title' },
     h('div', { class: 'row between' },
-      h('h2', { id: 'acad-mastery-title', class: 'panel-title' }, 'Mission readiness by topic'),
+      h('h2', { id: 'acad-mastery-title', class: 'panel-title' }, 'How ready are you?'),
       h('span', { class: 'acad-avg' }, h('strong', { class: 'mono' }, `${avg}%`), ' overall')),
     el,
-    h('p', { class: 'faint acad-mastery-note' }, 'Rings fill as you answer questions, study flashcards and open words in the Dictionary.'));
+    h('p', { class: 'faint acad-mastery-note' }, 'Each ring is one topic. A ring fills up when you answer questions, flip flashcards or look up words.'));
 }
 
 function lessonCard(lesson) {
@@ -58,7 +58,7 @@ function lessonCard(lesson) {
 
 function lessonsPanel() {
   return h('section', { class: 'panel', 'aria-labelledby': 'acad-lessons-title' },
-    h('h2', { id: 'acad-lessons-title', class: 'panel-title mars' }, 'Classroom lessons'),
+    h('h2', { id: 'acad-lessons-title', class: 'panel-title mars' }, 'Lessons to do with your class'),
     LESSONS.length
       ? h('ul', { class: 'grid acad-lessons', role: 'list' }, LESSONS.map(lessonCard))
       : h('div', { class: 'empty' },
@@ -72,7 +72,7 @@ function pickerPanel(state, { onChange, onStart }) {
   const count = availableCount(state);
   const glossaryMode = usingGlossaryQuestions();
   return h('section', { class: 'panel acad-picker', 'aria-labelledby': 'acad-picker-title' },
-    h('h2', { id: 'acad-picker-title', class: 'panel-title' }, 'Choose your training'),
+    h('h2', { id: 'acad-picker-title', class: 'panel-title' }, 'Pick a quiz'),
     glossaryMode ? h('p', { class: 'muted' }, '🛰️ The full question bank is warming up, so today’s questions come from the Astronaut Dictionary.') : null,
     h('div', { class: 'acad-filter', role: 'group', 'aria-label': 'Topic' },
       h('span', { class: 'field-label' }, 'Topic'),
