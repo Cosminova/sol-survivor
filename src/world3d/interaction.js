@@ -192,6 +192,7 @@ export function endSolFlow(rt, { auto }) {
   rt.modals.open({
     title: `${rt.world.parts.body === 'moon' ? 'Day' : 'Sol'} ${rt.gs.sol} complete`,
     body: summaryBody(summary, { auto }),
+    className: 'w3d-summary',
     buttons,
     dismiss: auto ? null : () => { rt.gs = before; rt.ending = false; rt.player.setHidden(false); },
   });

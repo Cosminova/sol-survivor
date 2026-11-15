@@ -73,19 +73,32 @@ export function helpBody(body) {
   ];
 }
 
+// End-of-sol report: a short intro line, XP, the day's numbers as stat tiles, then the objectives checklist.
+// Styled by the .w3d-summary rules in hudStyles.js, so only this dialog changes.
 export function summaryBody(summary, { auto = false } = {}) {
-  return [
-    auto ? el('p', null, '🌙 Night has fallen. Everyone is back inside the habitat.') : el('p', null, 'You cycle through the airlock and pop off your helmet. Great work out there!'),
-    el('table', null, el('tbody', null,
-      el('tr', null, el('td', null, 'Jobs done'), el('td', null, String(summary.tasks))),
-      el('tr', null, el('td', null, 'Average quality'), el('td', null, `${summary.avgQuality}%`)),
-      el('tr', null, el('td', null, 'Rock samples'), el('td', null, String(summary.samples))),
-      el('tr', null, el('td', null, 'Artifacts found'), el('td', null, String(summary.collected))),
-      el('tr', null, el('td', null, 'Suit oxygen used'), el('td', null, `${summary.o2UsedPct}%`)),
-      el('tr', null, el('td', null, 'Your radiation dose today'), el('td', null, `${summary.doseMsv} mSv`)),
-      el('tr', null, el('td', null, 'XP earned'), el('td', null, `+${summary.xp}`)))),
-    el('ul', { style: 'margin:10px 0 0;padding-left:18px' }, ...summary.objectives.map((o) => el('li', null, `${o.done ? '✅' : '⬜'} ${o.label}`))),
+  const intro = auto
+    ? '🌙 Night has fallen. Everyone is back inside the habitat.'
+    : 'You cycle through the airlock and pop off your helmet. Great work out there!';
+  const stats = [
+    ['Jobs done', String(summary.tasks)],
+    ['Average quality', `${summary.avgQuality}%`],
+    ['Rock samples', String(summary.samples)],
+    ['Artifacts found', String(summary.collected)],
+    ['Suit oxygen used', `${summary.o2UsedPct}%`],
+    ['Your radiation dose today', `${summary.doseMsv} mSv`],
   ];
+  const objectives = summary.objectives;
+  const doneCount = objectives.filter((o) => o.done).length;
+  return [
+    el('p', { class: 'w3d-sum-intro' }, intro),
+    el('div', { class: 'w3d-sum-xp' }, el('span', null, 'XP earned'), el('b', null, `+${summary.xp}`)),
+    el('dl', { class: 'w3d-sum-stats' }, ...stats.map(([label, value]) => el('div', null, el('dt', null, label), el('dd', null, value)))),
+    objectives.length ? el('h3', { class: 'w3d-sum-head' }, `Objectives ${doneCount}/${objectives.length}`) : null,
+    objectives.length ? el('ul', { class: 'w3d-sum-obj' }, ...objectives.map((o) => el('li', { 'data-done': String(o.done) },
+      el('span', { class: 'w3d-sum-ck', 'aria-hidden': 'true' }, o.done ? '✓' : ''),
+      el('span', { class: 'sr-only' }, o.done ? 'Done: ' : 'Not done: '),
+      el('span', null, o.label)))) : null,
+  ].filter(Boolean);
 }
 
 export function factCard({ icon, title, text }) {
