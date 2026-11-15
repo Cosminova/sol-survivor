@@ -2,6 +2,8 @@
 // Moon: black sky, stars and a phase-correct Earth lit by the same Sun direction.
 import * as THREE from 'three';
 import { makeRng } from './rng.js';
+import { skyModel, starDiscGain, isBigStar } from '../render/skyModel.js';
+import { createParentBody } from '../render/threeLook.js';
 
 const SKY_VERT = /* glsl */ `
   varying vec3 vDir;
@@ -14,7 +16,7 @@ const SKY_VERT = /* glsl */ `
 
 const SKY_FRAG = /* glsl */ `
   uniform vec3 uSunDir, uZenith, uHorizon, uGround, uHalo, uSunColor, uFlash;
-  uniform float uHaloStrength, uSunCos, uSunGlow, uDust;
+  uniform float uHaloStrength, uSunCos, uSunGlow, uDust, uDiskGain, uDiskSolid;
   varying vec3 vDir;
   void main() {
     vec3 d = normalize(vDir);
@@ -27,7 +29,11 @@ const SKY_FRAG = /* glsl */ `
     col += uHalo * pow(s, 4.0) * uHaloStrength * 0.12;
     col += uSunColor * (pow(s, 260.0) * 0.8 + pow(s, 2400.0) * 2.0) * uSunGlow;
     float disk = smoothstep(uSunCos - 0.000015, uSunCos + 0.000015, dot(d, uSunDir));
-    col += uSunColor * disk * 18.0 * (1.0 - uDust * 0.85);
+    vec3 discCol = uSunColor * uDiskGain * (1.0 - uDust * 0.85);
+    // The Sun adds a white-hot point; a wide cool star is painted as a solid disc so its colour survives the sky glow.
+    float limb = 0.62 + 0.38 * smoothstep(uSunCos, 1.0, dot(d, uSunDir)); // darker towards the edge, like a real star
+    float above = smoothstep(-0.03, 0.0, h); // the ground hides the part of a wide star below the horizon
+    col = mix(col + discCol * disk, mix(col, discCol * limb, disk * above), uDiskSolid);
     col += uFlash;
     gl_FragColor = vec4(col, 1.0);
     #include <tonemapping_fragment>
@@ -98,7 +104,11 @@ function starField(count, seed) {
   return pts;
 }
 
-export function createSky({ body, high }) {
+const SUN_DISC_GAIN = 18;
+const LEGACY_SUN_DEG = { moon: 0.8, mars: 0.64 }; // drawn a little larger than life so the Sun reads on screen
+
+// look: world look for worlds other than the Moon and Mars (null keeps their sky exactly as it was).
+export function createSky({ body, high, look = null }) {
   const group = new THREE.Group();
   const uniforms = {
     uSunDir: { value: new THREE.Vector3(0, 1, 0) },
@@ -106,10 +116,12 @@ export function createSky({ body, high }) {
     uHorizon: { value: new THREE.Color() },
     uGround: { value: new THREE.Color() },
     uHalo: { value: new THREE.Color('#7fa3d6') },
-    uSunColor: { value: new THREE.Color('#fff1dc') },
+    uSunColor: { value: new THREE.Color(look ? look.starColor : '#fff1dc') },
     uFlash: { value: new THREE.Color(0, 0, 0) },
     uHaloStrength: { value: 0 },
-    uSunCos: { value: Math.cos((body === 'moon' ? 0.4 : 0.32) * (Math.PI / 180)) },
+    uSunCos: { value: Math.cos(((look ? Math.max(0.5, look.starAngularSizeDeg) : LEGACY_SUN_DEG[body] ?? LEGACY_SUN_DEG.mars) / 2) * (Math.PI / 180)) },
+    uDiskGain: { value: look ? starDiscGain(look) : SUN_DISC_GAIN },
+    uDiskSolid: { value: look && isBigStar(look) ? 1 : 0 },
     uSunGlow: { value: 1 },
     uDust: { value: 0 },
   };
@@ -125,7 +137,10 @@ export function createSky({ body, high }) {
   group.add(stars);
 
   let earth = null;
-  if (body === 'moon') {
+  // Jupiter or Saturn for their moons; Earth only belongs in the Moon's sky.
+  const parent = look?.parent?.visible ? createParentBody(look.parent, { distance: SKY_R, sunDir: uniforms.uSunDir.value, detail: high ? 48 : 24 }) : null;
+  if (parent) group.add(parent.group);
+  if (!look && body === 'moon') {
     earth = new THREE.Mesh(
       new THREE.SphereGeometry(SKY_R * 0.0175, 48, 32), // about 2 degrees across, as seen from the Moon
       new THREE.ShaderMaterial({ vertexShader: EARTH_VERT, fragmentShader: EARTH_FRAG, uniforms: { uSunDir: uniforms.uSunDir }, fog: false }),
@@ -136,6 +151,7 @@ export function createSky({ body, high }) {
 
   function setEarthDirection(dir) {
     if (earth) earth.position.set(dir.x * SKY_R, dir.y * SKY_R, dir.z * SKY_R);
+    parent?.setDirection(dir);
   }
 
   function apply(look, sunDir, flash = 0) {
@@ -158,12 +174,13 @@ export function createSky({ body, high }) {
     group.remove(dome);
     bake.add(dome);
     if (earth) bake.add(earth.clone());
+    if (parent) bake.add(parent.group.clone());
     stage.bakeEnvironment(bake);
     bake.remove(dome);
     group.add(dome);
   }
 
-  return { group, apply, setEarthDirection, bakeInto, follow: (p) => group.position.copy(p) };
+  return { group, apply, setEarthDirection, bakeInto, follow: (p) => group.position.copy(p), dispose: () => parent?.dispose() };
 }
 
 const C = (hex) => new THREE.Color(hex);
@@ -219,4 +236,12 @@ export function skyLook({ body, sunElev, tau = 0.5, lit = true, stormActive = fa
     fogDensity: (0.00004 + 0.000025 * tau) * (stormActive ? 22 : 1) + (1 - day) * 0.00002,
     exposure: 1 + (1 - day) * 0.3, fill: 0.15 + (1 - day) * 0.4, fillColor: C('#ffd9b4').lerp(C('#aebbe0'), 1 - day),
   };
+}
+
+const LOOK_COLOR_KEYS = ['zenith', 'horizon', 'ground', 'halo', 'sunColor', 'hemiSky', 'hemiGround', 'fogColor', 'fillColor'];
+
+// Same fields as skyLook, for a world look: the pure model picks the numbers, this wraps its colours for three.js.
+export function worldSkyLook(look, now) {
+  const model = skyModel(look, now);
+  return { ...model, ...Object.fromEntries(LOOK_COLOR_KEYS.map((key) => [key, C(model[key])])) };
 }

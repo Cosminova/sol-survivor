@@ -26,14 +26,14 @@ const WALL_FRAG = /* glsl */ `
   }
 `;
 
-function devilColumn(dot, high) {
+function devilColumn(dot, high, color = '#c99569') {
   const n = high ? 420 : 160;
   const pos = new Float32Array(n * 3);
   const seed = new Float32Array(n);
   for (let i = 0; i < n; i += 1) seed[i] = Math.random();
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-  const mat = new THREE.PointsMaterial({ map: dot, size: 0.8, color: '#c99569', transparent: true, opacity: 0.5, depthWrite: false });
+  const mat = new THREE.PointsMaterial({ map: dot, size: 0.8, color, transparent: true, opacity: 0.5, depthWrite: false });
   const pts = new THREE.Points(geo, mat);
   pts.frustumCulled = false;
   function animate(t) {
@@ -49,7 +49,9 @@ function devilColumn(dot, high) {
   return { pts, animate, geo, mat };
 }
 
-export function createHazardFx({ body, high, heightAt }) {
+// look: world look for worlds other than the Moon and Mars, so dust devils and storm walls carry that world's dust colour.
+export function createHazardFx({ body, high, heightAt, look = null }) {
+  const dustColor = look?.particles.dustColor;
   const group = new THREE.Group();
   const c = document.createElement('canvas');
   c.width = 32; c.height = 32;
@@ -67,7 +69,7 @@ export function createHazardFx({ body, high, heightAt }) {
     const rng = makeRng(hazard.seed ?? 1);
     const a = rng.range(-Math.PI, Math.PI);
     const start = { x: near.x + Math.sin(a) * 45, z: near.z + Math.cos(a) * 45 };
-    const col = devilColumn(dot, high);
+    const col = devilColumn(dot, high, dustColor);
     col.pts.position.set(start.x, heightAt(start.x, start.z), start.z);
     group.add(col.pts);
     devils.set(hazard.id, { col, x: start.x, z: start.z, heading: a + Math.PI + rng.range(-0.5, 0.5), rng, t: 0, fade: 0, ending: false });
@@ -81,7 +83,7 @@ export function createHazardFx({ body, high, heightAt }) {
   // Storm wall: a tall curved band on the horizon that rolls in towards the outpost.
   const wallMat = new THREE.ShaderMaterial({
     vertexShader: WALL_VERT, fragmentShader: WALL_FRAG, transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: false,
-    uniforms: { uTime: { value: 0 }, uOpacity: { value: 0 }, uColor: { value: new THREE.Color('#a8683a') } },
+    uniforms: { uTime: { value: 0 }, uOpacity: { value: 0 }, uColor: { value: new THREE.Color(dustColor ?? '#a8683a') } },
   });
   const wall = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 1, 48, 1, true, -0.9, 1.8), wallMat);
   wall.visible = false;

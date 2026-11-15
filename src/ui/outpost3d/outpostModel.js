@@ -1,12 +1,12 @@
 // The ONLY place the 3D outpost layer reads the mission. Everything outpostScene.js draws comes from the plain
 // object built here, so a change to src/engine/sim.js means touching one file. Tolerates a null mission.
-import { computePower, effectiveShieldLevel, isOnEva, workingCount, dayHours } from '../../engine/sim.js';
+import { computePower, effectiveShieldLevel, isOnEva, workingCount, dayHours, turnHoursFor } from '../../engine/sim.js';
 import { siteById, sitesForBody } from '../../data/sites.js';
 import { clamp } from './sceneUtil.js';
 
 export const SCENE_MODULE_IDS = ['solar', 'fission', 'battery', 'recycler', 'oxygen', 'moxie', 'regolithO2', 'iceDrill', 'greenhouse', 'shelter', 'rover', 'relay', 'spares'];
 
-const sitePlain = (s) => (s ? { id: s.id, lat: s.lat ?? 0, lon: s.lon ?? 0, name: s.name ?? '' } : { id: null, lat: 0, lon: 0, name: '' });
+const sitePlain = (s) => (s ? { id: s.id, lat: s.lat ?? 0, lon: s.lon ?? 0, name: s.name ?? '', iceAccess: s.iceAccess, tempDayC: s.tempDayC, tempNightC: s.tempNightC } : { id: null, lat: 0, lon: 0, name: '' });
 
 /** Why a module is dark, in the order the player can act on it. */
 function offReason(m, id, power) {
@@ -19,7 +19,7 @@ function offReason(m, id, power) {
 
 /**
  * @param {object|null} m sim.js mission
- * @param {{ turnSeconds?: number, body?: string, siteId?: string, reducedMotion?: boolean }} [opts]
+ * @param {{ turnSeconds?: number, body?: string, worldId?: string, siteId?: string, reducedMotion?: boolean }} [opts]
  *   turnSeconds: real seconds since this sol began; the sun drifts from mid-morning to late afternoon across the turn.
  *   body/siteId: fallbacks when there is no mission.
  */
@@ -28,9 +28,12 @@ export function outpostModelFrom(m, opts = {}) {
   const site = sitePlain(m?.site ?? siteById(m?.config?.siteId ?? opts.siteId) ?? sitesForBody(body)[0]);
   const env = m?.env ?? {};
   const power = m ? computePower(m) : null;
-  const lit = body === 'moon' ? env.lit !== false : true;
-  const hours = dayHours(body);
-  const daylightHours = Number.isFinite(power?.daylightHours) ? power.daylightHours : lit ? hours / (body === 'moon' ? 1 : 2) : 0;
+  // Worlds other than the Moon and Mars carry an engine profile: their turn length and daylight come from it.
+  const profiled = Boolean(m?.profile);
+  const lit = profiled || body === 'moon' ? env.lit !== false : true;
+  const hours = profiled ? turnHoursFor(m) : dayHours(body);
+  const fallbackDaylight = profiled && Number.isFinite(env.daylightHours) ? env.daylightHours : lit ? hours / (body === 'moon' ? 1 : 2) : 0;
+  const daylightHours = Number.isFinite(power?.daylightHours) ? power.daylightHours : fallbackDaylight;
   const daylightFraction = clamp(daylightHours / hours, 0, 1);
 
   // Whole-sol phase: 0 midnight, 0.25 sunrise, 0.5 noon, 0.75 sunset. Drifts from mid-morning (0.34) to late
@@ -58,6 +61,8 @@ export function outpostModelFrom(m, opts = {}) {
 
   return {
     body,
+    // Which world's look to paint (src/render/worldLook.js). The Moon and Mars keep their Trek terrain.
+    worldId: m?.config?.worldId ?? opts.worldId ?? body,
     site,
     sol: m?.sol ?? 0,
     lengthSols: m?.config?.targetSols ?? 0,
@@ -91,13 +96,13 @@ export function outpostModelFrom(m, opts = {}) {
 
 /** Dev-only presets, applied from `?scene=storm,night,sep,blackout,eva,moon`. Handy for screenshots and the demo video. */
 export const SCENE_PRESETS = {
-  storm: (m) => ({ ...m, body: 'mars', tau: 4.2, dust: 0.65, stormActive: true, stormSols: 3, lit: true, crewOutside: null }),
+  storm: (m) => ({ ...m, body: 'mars', worldId: 'mars', tau: 4.2, dust: 0.65, stormActive: true, stormSols: 3, lit: true, crewOutside: null }),
   night: (m) => ({ ...m, timeOfSol: 0.93, lockTime: true, lit: m.body === 'moon' ? false : m.lit }),
   sep: (m) => ({ ...m, sepActive: true }),
   blackout: (m) => ({ ...m, blackout: true }),
   eva: (m) => ({ ...m, crewOutside: m.crewOutside ?? 'Zuri' }),
-  moon: (m) => ({ ...m, body: 'moon', site: sitePlain(siteById('tranquility')), tau: 0, dust: 0, stormActive: false }),
-  shackleton: (m) => ({ ...m, body: 'moon', site: sitePlain(siteById('shackleton')), tau: 0, dust: 0, stormActive: false }),
+  moon: (m) => ({ ...m, body: 'moon', worldId: 'moon', site: sitePlain(siteById('tranquility')), tau: 0, dust: 0, stormActive: false }),
+  shackleton: (m) => ({ ...m, body: 'moon', worldId: 'moon', site: sitePlain(siteById('shackleton')), tau: 0, dust: 0, stormActive: false }),
   offline: (m) => ({ ...m, modules: Object.fromEntries(Object.entries(m.modules).map(([id, v]) => [id, id === 'solar' || id === 'relay' ? { ...v, online: false, reason: 'broken' } : v])) }),
   shield: (m) => ({ ...m, shieldLevel: 3 }),
   full: (m) => ({

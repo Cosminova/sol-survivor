@@ -1,5 +1,12 @@
 // Sky layer: Mars butterscotch day / blue sunset / night, Moon black sky with Earth, stars, Phobos, aurora.
 import { clamp, mix, smoothstep, seeded } from './util.js';
+import { lookFor } from '../../render/worldLook.js';
+import { darken, mixHex, rgbaCss } from '../../render/color.js';
+
+const SUN_DEG = 0.53;
+const FIXED_STAR_ELEV = { day: 0.55, twilight: 0.16, night: -0.4 }; // tidally locked: the star never moves
+const FIXED_STAR_X = 0.3;
+const RING_COLOR = 'rgba(226,208,168,0.8)';
 
 export function makeStars(seed, count = 160) {
   const rng = seeded(`stars-${seed}`);
@@ -109,8 +116,98 @@ function drawAurora(ctx, W, horizon, alpha, time) {
   ctx.restore();
 }
 
-// st: { body, t (0..1 day phase), time (s), tau, lit, aurora, stars, siteLat }
+function lookSkyState(look, t, lit) {
+  let sunElev;
+  let sunX = FIXED_STAR_X;
+  if (look.starFixed) sunElev = FIXED_STAR_ELEV[look.light] ?? FIXED_STAR_ELEV.day;
+  else if (!lit) sunElev = -0.4;
+  else {
+    sunElev = Math.sin(t * Math.PI * 2) * 0.85 + 0.12;
+    sunX = 0.5 - Math.cos(t * Math.PI * 2) * 0.48;
+  }
+  const day = look.airless ? (sunElev > -0.04 ? 1 : 0) : smoothstep(-0.04, 0.3, sunElev);
+  return { sunElev, sunX, day, dusk: look.airless ? 0 : clamp(1 - Math.abs(sunElev) / 0.22) };
+}
+
+function ringHalf(ctx, x, y, r, from, to) {
+  ctx.strokeStyle = RING_COLOR;
+  ctx.lineWidth = r * 0.28;
+  ctx.beginPath();
+  ctx.ellipse(x, y, r * 1.85, r * 0.42, -0.25, Math.PI * from, Math.PI * to);
+  ctx.stroke();
+}
+
+// Jupiter or Saturn in a moon's sky: our own banded disc, with rings for Saturn.
+function drawParent(ctx, x, y, r, parent) {
+  if (parent.rings) ringHalf(ctx, x, y, r, 1.03, 1.97); // far half, behind the planet
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.clip();
+  const bandH = (r * 2) / (parent.bands.length * 2);
+  for (let i = 0; i < parent.bands.length * 2; i += 1) {
+    ctx.fillStyle = parent.bands[i % parent.bands.length];
+    ctx.fillRect(x - r, y - r + i * bandH, r * 2, bandH + 1);
+  }
+  const shade = ctx.createRadialGradient(x - r * 0.4, y - r * 0.4, r * 0.2, x, y, r * 1.1);
+  shade.addColorStop(0, 'rgba(255,255,255,0.12)');
+  shade.addColorStop(1, 'rgba(0,0,10,0.6)');
+  ctx.fillStyle = shade;
+  ctx.fillRect(x - r, y - r, r * 2, r * 2);
+  ctx.restore();
+  if (parent.rings) ringHalf(ctx, x, y, r, 0.03, 0.97); // near half, in front
+}
+
+function drawLookStar(ctx, W, horizon, sky, look) {
+  const size = (horizon / 9) * 0.3 * clamp(look.starAngularSizeDeg / SUN_DEG, 0.75, 14) ** 0.6;
+  const x = sky.sunX * W;
+  const y = horizon - sky.sunElev * horizon * 0.95;
+  const dim = 1 - look.haze * 0.75;
+  const halo = ctx.createRadialGradient(x, y, 0, x, y, size * (look.airless ? 3 : 5));
+  halo.addColorStop(0, rgbaCss(look.starColor, 0.4 * dim));
+  halo.addColorStop(1, rgbaCss(look.starColor, 0));
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, 0, W, horizon + 2); // a star on the horizon is cut by the ground
+  ctx.clip();
+  ctx.fillStyle = halo;
+  ctx.fillRect(x - size * 6, y - size * 6, size * 12, size * 12);
+  ctx.globalAlpha = dim;
+  ctx.fillStyle = mixHex(look.starColor, '#ffffff', 0.25);
+  ctx.beginPath();
+  ctx.arc(x, y, size, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+// Sky of a world with a look: colours from its air, a star sized and coloured like its real star, the giant
+// planet it orbits, and haze that hides the stars.
+function drawLookSky(ctx, W, horizon, st, look) {
+  const sky = lookSkyState(look, st.t, st.lit);
+  const top = look.airless ? '#000003' : mix(mix('#06070f', darken(look.skyTop, 0.6), sky.dusk), look.skyTop, sky.day);
+  const low = look.airless ? (sky.day ? '#06070c' : '#020205') : mix(mix('#0d1022', mixHex(look.skyHorizon, look.starColor, 0.4), sky.dusk), look.skyHorizon, sky.day);
+  const g = ctx.createLinearGradient(0, 0, 0, horizon);
+  g.addColorStop(0, top);
+  g.addColorStop(1, low);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, horizon + 2);
+
+  const night = look.airless ? (sky.day ? 0.45 : 1) : 1 - sky.day;
+  drawStars(ctx, W, horizon, st.stars, night * (1 - look.haze), st.time);
+  if (look.parent?.visible) drawParent(ctx, W * 0.76, horizon * 0.3, (horizon / 9) * clamp(look.parent.angularSizeDeg / 9, 0.6, 2.4), look.parent);
+  drawAurora(ctx, W, horizon, (st.aurora ? 1 : 0) * night, st.time);
+  if (sky.sunElev > -0.08) drawLookStar(ctx, W, horizon, sky, look);
+  if (look.haze > 0.4) { // thick air: an even glow over the whole sky
+    ctx.fillStyle = rgbaCss(look.hazeColor, (look.haze - 0.4) * 0.5 * (0.3 + 0.7 * sky.day));
+    ctx.fillRect(0, 0, W, horizon + 2);
+  }
+  return { ...sky, night };
+}
+
+// st: { body, t (0..1 day phase), time (s), tau, lit, aurora, stars, siteLat, worldId?, site? }
 export function drawSky(ctx, W, horizon, st) {
+  const look = lookFor(st.worldId ?? st.body, st.site ?? null);
+  if (look) return drawLookSky(ctx, W, horizon, st, look);
   const sky = skyState(st.body, st.t, st.lit);
   let colors;
   if (st.body === 'moon') colors = { top: '#000003', horizon: st.lit ? '#06070c' : '#020205' };

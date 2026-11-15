@@ -14,6 +14,8 @@ export function sceneModel(m) {
   const cap = m.capacity?.batteryKwh ?? 0;
   return {
     body: m.config.body,
+    worldId: m.config.worldId ?? m.config.body, // picks the world look; the Moon and Mars keep their own painting
+    site: m.site ?? null,
     seed: m.site?.id ?? m.config.siteId,
     siteLat: m.site?.lat ?? 0,
     lit: m.env?.lit !== false,
@@ -55,9 +57,9 @@ export function createScene(canvas, { label } = {}) {
   }
 
   function ensureLayers() {
-    const key = `${vm.body}:${vm.seed}:${W}x${H}:${dpr}`;
+    const key = `${vm.worldId}:${vm.seed}:${W}x${H}:${dpr}`;
     if (key === terrainKey) return;
-    terrain = renderTerrain({ W, H, horizon, dpr, body: vm.body, seed: vm.seed });
+    terrain = renderTerrain({ W, H, horizon, dpr, body: vm.body, seed: vm.seed, worldId: vm.worldId, site: vm.site });
     stars = makeStars(vm.seed);
     motes = makeDust(vm.seed, 260);
     terrainKey = key;
@@ -69,7 +71,7 @@ export function createScene(canvas, { label } = {}) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const reduced = prefersReducedMotion();
     const t = reduced ? 0.25 : (0.08 + time / DAY_SECONDS) % 1;
-    const sky = drawSky(ctx, W, horizon, { body: vm.body, t, time, tau: vm.tau, lit: vm.lit, aurora: vm.aurora, stars, siteLat: vm.siteLat });
+    const sky = drawSky(ctx, W, horizon, { body: vm.body, t, time, tau: vm.tau, lit: vm.lit, aurora: vm.aurora, stars, siteLat: vm.siteLat, worldId: vm.worldId, site: vm.site });
     ctx.drawImage(terrain, 0, 0, W, H);
 
     const light = skyMood(vm.body, sky, vm.tau);
