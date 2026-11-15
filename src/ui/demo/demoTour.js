@@ -15,97 +15,139 @@ class StepSkipped extends Error {}
 
 const visible = (el) => Boolean(el) && (el.checkVisibility ? el.checkVisibility() : el.getClientRects().length > 0);
 
-/** The demo script. Each step drives the app, then holds while its caption is read. Exported for tests. */
+// Visit a screen and point at its main content for a few seconds.
+async function page(t, route, ms, focus = '#view .panel, #view h1') {
+  navigate(route);
+  const el = await t.waitFor(focus);
+  window.scrollTo({ top: 0 });
+  t.spot(el);
+  await t.hold(ms);
+}
+
+/**
+ * The demo script: every main screen, with time spent only on the key features. About two minutes.
+ * Each step drives the app, then holds while its caption is read. Exported for tests.
+ */
 export const DEMO_STEPS = [
   {
-    id: 'home', caption: 'Sol Survivor trains young astronauts with real NASA data. This card is today’s real Sun, read live from NASA’s DONKI space weather service.',
+    id: 'home', caption: 'Sol Survivor: a Moon and Mars outpost game for young astronauts, built on real NASA data. This is today’s real Sun, live from NASA DONKI.',
     async run(t) {
       navigate('home');
-      await t.waitFor('.hero-sun .live-sun:not(.is-loading)', { timeout: 8000 }).catch(() => null);
+      await t.waitFor('.hero-sun .live-sun:not(.is-loading)', { timeout: 6000 }).catch(() => null);
       const card = await t.waitFor('.hero-sun');
       card.scrollIntoView({ block: 'center' });
       t.spot(card);
-      await t.hold(10000);
+      await t.hold(6000);
     },
   },
   {
-    id: 'sky', caption: 'Pick any world from a real night sky, inspired by our partner project Cosminova. Rings mark stars with rocky planets from NASA’s Exoplanet Archive.',
+    id: 'campaign', caption: 'The campaign: chapters on the Moon and Mars, each one replaying real solar storms and real Mars weather.',
+    async run(t) { await page(t, 'campaign', 5000, '.camp-node-btn'); },
+  },
+  {
+    id: 'sky', caption: 'Choose your world from a real night sky (inspired by Cosminova). Rings mark stars with rocky planets from NASA’s Exoplanet Archive.',
     async run(t) {
       navigate('loadout/free-play');
       await t.click('button', 'Cosminova sky');
-      t.spot(await t.waitFor('.wp-panel'));
-      await t.hold(11000);
+      const sky = await t.waitFor('.wp-stage');
+      sky.scrollIntoView({ block: 'center' });
+      t.spot(sky);
+      await t.hold(5000);
     },
   },
   {
-    id: 'trappist', caption: 'Flying to TRAPPIST-1, about 40 light-years away. Seven rocky planets. Every fact is tagged Real (NASA) or Generated (a game guess where nobody has measured it).',
+    id: 'trappist', caption: 'Fly to TRAPPIST-1: seven rocky planets. Every fact says Real (NASA) or Generated (a game guess where nobody has measured it).',
     async run(t) {
       await t.click('.wp-target[data-target="star:TRAPPIST-1"]');
-      t.spot(await t.waitFor('.wp-system-portrait', { timeout: 10000 }));
-      await t.hold(11000);
-    },
-  },
-  {
-    id: 'planet', caption: 'Each world is a 3D globe you can turn. Our code paints it from its facts: rock, ice, seas and air. Glowing pins are landing sites.',
-    async run(t) {
+      const strip = await t.waitFor('.wp-system-portrait', { timeout: 10000 });
+      strip.scrollIntoView({ block: 'start' });
+      t.spot(strip);
+      await t.hold(5000);
       await t.click('button', 'Visit TRAPPIST-1 e');
-      t.spot(await t.waitFor('.wp-planet-grid'));
-      await t.hold(11000);
+      const globe = await t.waitFor('.wp-planet-grid');
+      globe.scrollIntoView({ block: 'start' });
+      t.spot(globe);
+      await t.hold(6000);
     },
   },
   {
-    id: 'titan', caption: 'Titan, Saturn’s moon: thick air, methane lakes, minus 179 °C. The engine changes power, heating, radiation and events on every world.',
+    id: 'titan', caption: 'Or Titan: thick air, methane lakes, −179 °C. The engine changes power, heat, radiation and events on every world.',
     async run(t) {
       await t.click('.wp-back');
       await t.click('.wp-back');
       await t.click('.wp-target[data-target="saturn"]');
       await t.click('button', 'Visit Titan', { timeout: 10000 });
-      t.spot(await t.waitFor('.wp-planet-side'));
-      await t.hold(11000);
+      const card = await t.waitFor('.wp-planet-grid');
+      card.scrollIntoView({ block: 'start' });
+      t.spot(card);
+      await t.hold(5000);
     },
   },
   {
-    id: 'pack', caption: 'Mission Control packs the lander with the engine’s own numbers: nuclear power and heaters for Titan’s cold and dark.',
+    id: 'pack', caption: 'Pack the lander under a weight limit. Mission Control’s pack uses the engine’s own numbers.',
     async run(t) {
       await t.click('button', 'Use recommended');
-      t.spot(await t.waitFor('.lo-launch'));
-      await t.hold(6000);
+      const launch = await t.waitFor('.lo-launch');
+      t.spot(launch);
+      await t.hold(3500);
       await t.click('.lo-launch');
       await t.waitFor('#next-sol', { timeout: 20000 });
     },
   },
   {
-    id: 'meters', caption: 'Air, Power and Shield. Kids keep all three out of the danger zone, one day at a time.',
-    async run(t) { t.spot(await t.waitFor('.kid-meters')); await t.hold(8000); },
-  },
-  {
-    id: 'plan', caption: 'Each day the crew follows one plan. The preview shows the trade-off before you commit: exploring finds science but uses more air.',
+    id: 'play', caption: 'Each day: keep Air, Power and Shield safe, pick one plan, and see the trade-off before you commit.',
     async run(t) {
+      t.spot(await t.waitFor('.kid-meters'));
+      await t.hold(3500);
       await t.click('#plan-explore');
       t.spot(await t.waitFor('#plan-preview'));
-      await t.hold(8000);
+      await t.hold(3500);
       await t.nextDay();
-      await t.hold(3000);
-      await t.nextDay();
-      await t.hold(3000);
+      await t.hold(2000);
     },
   },
   {
-    id: 'walk', caption: 'Walk 3D: go outside as an astronaut and do the jobs by hand. Every world gets its own ground and sky, generated by our code.',
+    id: 'walk', caption: 'Walk 3D: go outside as an astronaut and do jobs by hand. Every world gets its own generated ground and sky.',
     async run(t) {
       await t.click('.view-toggle [data-view="walk"]');
       t.spot(await t.waitFor('.walk-world canvas', { timeout: 15000 }));
-      await t.hold(16000);
+      await t.hold(8000);
       await t.click('.walk-back');
     },
   },
   {
-    id: 'camp', caption: 'Zoom out to see the whole camp. Every module you packed is here, and the scene follows the mission’s real day and night.',
+    id: 'views', caption: 'Three views of the same base: the flat Map 2D, and Outpost 3D zoomed out to the whole camp.',
     async run(t) {
-      await t.click('[aria-label="Zoom out to see the whole camp"]');
+      await t.click('.view-toggle [data-view="map"]');
       t.spot(await t.waitFor('.play-stage'));
-      await t.hold(9000);
+      await t.hold(3000);
+      await t.click('.view-toggle [data-view="outpost"]');
+      await t.click('[aria-label="Zoom out to see the whole camp"]');
+      await t.hold(4000);
     },
+  },
+  {
+    id: 'datalab', caption: 'Data Lab: the real NASA records behind the game. Solar flares, storms and Curiosity’s Mars weather, with sources.',
+    async run(t) { await page(t, 'datalab', 6000, '.dl-tabs, #view .panel'); },
+  },
+  {
+    id: 'dictionary', caption: 'Astronaut Dictionary: every space word in plain language, with flashcards.',
+    async run(t) { await page(t, 'dictionary', 4000); },
+  },
+  {
+    id: 'academy', caption: 'Academy: quizzes on survival and science, at three difficulty levels.',
+    async run(t) { await page(t, 'academy', 4000); },
+  },
+  {
+    id: 'badges', caption: 'Badges and a mission patch designer reward kids for what they learn.',
+    async run(t) {
+      await page(t, 'badges', 3000);
+      await page(t, 'patch', 3000);
+    },
+  },
+  {
+    id: 'educators', caption: 'For educators: lesson plans, classroom guides and standards links, so teachers can run it in class.',
+    async run(t) { await page(t, 'educators', 4500); },
   },
 ];
 
