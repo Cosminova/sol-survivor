@@ -434,7 +434,7 @@ body > .play-3d-mount[hidden] { display: none; }
 .kid-sheet-toggle { display: none; }
 
 /* Three picture meters */
-.kid-meters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-2); }
+.kid-meters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-2); container-type: inline-size; }
 .kid-meter-wrap { display: contents; }
 .kid-meter {
   --lv: var(--good);
@@ -465,6 +465,16 @@ body > .play-3d-mount[hidden] { display: none; }
 .kid-meter-art .art-bubble { fill: none; stroke: rgba(3, 7, 14, 0.6); stroke-width: 1.5; }
 .kid-meter-name { align-self: end; font-family: var(--font-display); font-size: 0.9375rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 .kid-meter-state { align-self: start; display: inline-flex; align-items: center; gap: 3px; font-size: 0.9375rem; font-weight: 700; color: var(--lv); line-height: 1.15; }
+/* Text never runs past a tile's edge: the words may shrink and wrap, never overflow. */
+.kid-meter-name, .kid-meter-state { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+/* A narrow sidebar (three tiles under ~170px each): picture on top, words centred underneath. */
+@container (max-width: 520px) {
+  .kid-meter { grid-template-columns: minmax(0, 1fr); justify-items: center; row-gap: 2px; padding: 6px 4px; text-align: center; }
+  .kid-meter-art { grid-row: auto; width: 30px; height: 38px; }
+  .kid-meter-name { align-self: auto; font-size: 0.8125rem; letter-spacing: 0.03em; }
+  .kid-meter-state { align-self: auto; justify-content: center; font-size: 0.875rem; }
+  .kid-meter-state .icon { display: none; }
+}
 .kid-meter-detail { grid-column: 1 / -1; order: 9; padding: var(--s-2) var(--s-3); border: 1px solid var(--line-strong); border-left: 4px solid var(--cyan-bright); background: rgba(3, 7, 14, 0.7); }
 .kid-meter-detail[hidden] { display: none; }
 .kid-meter-facts { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; font-size: 1rem; }
