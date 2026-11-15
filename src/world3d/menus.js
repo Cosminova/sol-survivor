@@ -1,5 +1,6 @@
 // Modal layer: pause menu, controls help, fact cards and the end-of-sol summary.
 import { el } from './hud.js';
+import { keyList } from '../ui/components/keycaps.js';
 
 export function createModals(layer, controls, { onOpen, onClose }) {
   let active = null;
@@ -43,23 +44,25 @@ export function createModals(layer, controls, { onOpen, onClose }) {
   return { open, close: () => close(true), isOpen: () => Boolean(active) };
 }
 
+// Each row: [keys, what it does], drawn as keycaps (see src/ui/components/keycaps.js for the keys spec).
 export const CONTROL_ROWS = [
-  ['W A S D / arrow keys', 'Walk (hold Shift to run)'],
-  ['Mouse drag / right-drag', 'Look around'],
-  ['Mouse wheel', 'Zoom camera'],
-  ['E · Enter · Space', 'Use / start a job'],
-  ['Q', 'Why this matters (dictionary)'],
-  ['C or 1–4', 'Switch astronaut'],
-  ['Tab, then Enter', 'Pick a name tag to see that astronaut’s stats'],
-  ['H', 'This help'],
-  ['M', 'Sound on/off'],
-  ['P', 'Pause menu'],
-  ['Esc', 'Back to base'],
-  ['Touch', 'Left stick to walk, drag to look, E button to use'],
+  [[['W', 'A', 'S', 'D'], ['↑', '←', '↓', '→']], 'Walk'],
+  [[['Shift']], 'Hold while walking to run'],
+  [['Drag mouse'], 'Look around'],
+  [['Mouse wheel'], 'Zoom camera'],
+  [[['E'], ['Enter'], ['Space']], 'Use / start a job'],
+  [[['Q']], 'Why this matters (dictionary)'],
+  [[['C'], ['1', '2', '3', '4']], 'Switch astronaut'],
+  [[['Tab'], 'then', ['Enter']], 'Pick a name tag to see that astronaut’s stats'],
+  [[['H']], 'This help'],
+  [[['M']], 'Sound on/off'],
+  [[['P']], 'Pause menu'],
+  [[['Esc']], 'Back to base'],
+  [['Touch'], 'Left stick to walk, drag to look, E button to use'],
 ];
 
 export function controlsTable() {
-  return el('table', { class: 'w3d-kbd' }, el('tbody', null, ...CONTROL_ROWS.map(([k, v]) => el('tr', null, el('td', null, k), el('td', null, v)))));
+  return keyList(CONTROL_ROWS, el, 'w3d-kbd');
 }
 
 export function helpBody(body) {

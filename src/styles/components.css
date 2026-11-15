@@ -343,3 +343,25 @@ input[type='checkbox'], input[type='radio'] { accent-color: var(--cyan); }
 .table th, .table td { padding: var(--s-3); border-bottom: 1px solid var(--line-soft); text-align: left; vertical-align: top; }
 .table th { color: var(--cyan); font-size: var(--fs-xs); font-weight: 700; letter-spacing: var(--track); text-transform: uppercase; border-bottom-color: var(--line); }
 .table-wrap { overflow-x: auto; }
+
+/* Keycaps: keyboard keys drawn as small raised keys (src/ui/components/keycaps.js) */
+.keycaps { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 3px; vertical-align: middle; }
+.keycap {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  border: 1px solid #c9d3db;
+  border-radius: 5px;
+  background: linear-gradient(#ffffff, #e3eaef);
+  color: #0b1620;
+  font: 700 0.75rem/1 var(--font-mono, ui-monospace, Menlo, monospace);
+  text-shadow: none;
+  box-shadow: 0 2px 0 #8b98a3;
+  white-space: nowrap;
+}
+.keycap-sep, .keycap-text { margin: 0 2px; font-size: 0.75rem; opacity: 0.8; }
+.keylist { border-collapse: collapse; width: 100%; }
+.keylist td { padding: 4px 6px; vertical-align: middle; }
+.keylist td:first-child { width: 48%; }

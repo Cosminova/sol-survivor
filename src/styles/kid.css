@@ -139,6 +139,9 @@ label.switch { min-height: 56px; cursor: pointer; }
 .howto-copy strong { font-size: 1.1875rem; line-height: 1.35; }
 .howto-copy span { color: var(--text-dim); }
 .howto-note { margin: 0; color: var(--text-dim); }
+.howto-keys { border: 1px solid var(--line-soft); padding: var(--s-2) var(--s-3); }
+.howto-keys summary { cursor: pointer; font-weight: 700; }
+.howto-keys .keylist { margin-top: var(--s-2); font-size: var(--fs-sm); }
 .howto-actions { gap: var(--s-3); }
 @media (max-width: 520px) {
   .howto-step { grid-template-columns: auto 1fr; }

@@ -94,7 +94,8 @@ const CSS = `
 .w3d-modal table{width:100%;border-collapse:collapse;font-size:14px}
 .w3d-modal td{padding:4px 0;border-bottom:1px solid rgba(255,255,255,.08)}
 .w3d-modal td:last-child{text-align:right;font-weight:700}
-.w3d-kbd td:first-child{width:45%;opacity:.8}
+.w3d-kbd td{padding:5px 6px;vertical-align:middle;text-align:left}
+.w3d-kbd td:first-child{width:48%}
 .w3d-mg canvas{display:block;width:100%;border-radius:10px;background:#111;touch-action:none}
 .w3d-mg .w3d-meter{position:relative;height:28px;border-radius:8px;background:rgba(255,255,255,.12);overflow:hidden;margin:8px 0}
 .w3d-mg .w3d-meter>.w3d-zone{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(45deg,#2fbf71,#2fbf71 6px,#27a862 6px,#27a862 12px)}

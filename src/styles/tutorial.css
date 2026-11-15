@@ -37,9 +37,22 @@
 .coach-text { margin: 0; font-size: 1.0625rem; font-weight: 700; line-height: 1.35; color: #06131d; }
 .coach-why-text { margin: 0; padding-left: 8px; border-left: 3px solid #ffe066; font-size: 0.9375rem; line-height: 1.35; color: #1c3442; }
 .coach-why-text[hidden], .coach-why[hidden], .coach-next[hidden] { display: none; }
-.coach-extra:empty { display: none; }
+.coach-inline:empty, .coach-extra:empty, .coach-extra[hidden], .coach-more[hidden] { display: none; }
+.coach-inline { font-size: 0.9375rem; line-height: 1.6; color: #1c3442; }
+.coach-more { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 6px; border: 0; background: none; color: #06131d; text-decoration: underline; }
+.coach-more:hover { background: rgba(6, 19, 29, 0.1); }
+.coach-more-hint { display: inline-block; color: #c78a00; font-size: 0.875rem; text-decoration: none; animation: coach-nudge 0.9s ease-in-out infinite; }
+.coach-more.seen .coach-more-hint { display: none; }
+.coach.still .coach-more-hint { animation: none; }
+@keyframes coach-nudge { 50% { transform: translateX(6px); } }
 .coach-sun { padding: 4px 8px; background: #06131d; color: var(--text); border-left: 3px solid var(--warn); font-size: 0.9375rem; line-height: 1.3; }
 .coach-sun p { margin: 0; }
+/* Opened "More details": a little wider, and the live Sun card stacks (icon + words, then the risk bar)
+   instead of squeezing its three columns into the bubble. */
+.coach-bubble:has(.coach-extra:not([hidden])) { width: min(380px, calc(100vw - 32px)); }
+.coach-extra { max-height: 50vh; overflow-y: auto; }
+.coach-sun .live-sun.compact { grid-template-columns: auto minmax(0, 1fr); gap: var(--s-2) var(--s-3); padding: var(--s-3); }
+.coach-sun .live-sun.compact .live-risk { grid-column: 1 / -1; }
 .coach-actions { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); }
 .coach-actions:not(:has(> :not([hidden]))) { display: none; }
 .coach-bubble button { font-family: var(--font-body); font-size: 0.9375rem; font-weight: 700; cursor: pointer; }

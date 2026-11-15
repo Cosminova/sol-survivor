@@ -4,8 +4,20 @@ import { h } from '../dom.js';
 import { icon } from '../icons.js';
 import { openModal } from '../components/modal.js';
 import { speak, canSpeak } from '../speech.js';
+import { keyList, keysText } from '../components/keycaps.js';
 
 const FLAG = 'sol-survivor:howto-seen';
+
+// The keys that work on the play screen, plus the main Walk 3D keys (press H there for the full list).
+export const KEY_ROWS = [
+  [[['N']], 'Next day'],
+  [[['Tab']], 'Move between buttons'],
+  [[['Enter'], ['Space']], 'Press the button you are on'],
+  [[['Esc']], 'Close a pop-up or leave Walk 3D'],
+  [[['W', 'A', 'S', 'D'], ['↑', '←', '↓', '→']], 'Walk (in Walk 3D)'],
+  [[['E']], 'Use a glowing station (in Walk 3D)'],
+  [[['H']], 'All the Walk 3D keys'],
+];
 
 export const STEPS = [
   { icon: 'package', title: 'Pack your lander.', text: 'Choose the machines and supplies your crew will need.' },
@@ -22,7 +34,8 @@ const markSeen = () => {
 
 export function openHowToPlay() {
   markSeen();
-  const spoken = `How to play. ${STEPS.map((s, i) => `Step ${i + 1}. ${s.title} ${s.text}`).join(' ')}`;
+  const keysSpoken = KEY_ROWS.map(([keys, action]) => `${keysText(keys)}: ${action}.`).join(' ');
+  const spoken = `How to play. ${STEPS.map((s, i) => `Step ${i + 1}. ${s.title} ${s.text}`).join(' ')} Keys. ${keysSpoken}`;
   return openModal({
     title: 'How to play',
     className: 'howto-modal',
@@ -31,6 +44,9 @@ export function openHowToPlay() {
         h('span', { class: 'howto-num', 'aria-hidden': 'true' }, String(i + 1)),
         h('span', { class: 'howto-icon', 'aria-hidden': 'true' }, icon(s.icon, { size: 30 })),
         h('span', { class: 'howto-copy' }, h('strong', null, s.title), h('span', null, s.text))))),
+      h('details', { class: 'howto-keys' },
+        h('summary', null, 'Keyboard keys'),
+        keyList(KEY_ROWS)),
       h('p', { class: 'howto-note' }, 'If a mission ends early, that is okay. You can always try again.'),
       h('div', { class: 'row howto-actions' },
         h('button', { type: 'button', class: 'btn btn-primary btn-lg btn-caps', 'data-autofocus': true, onclick: close }, icon('play', { size: 18 }), 'Got it'),

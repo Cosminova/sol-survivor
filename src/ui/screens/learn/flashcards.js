@@ -4,6 +4,7 @@ import { GLOSSARY, CATEGORIES, termById } from '../../../data/glossary.js';
 import { call } from '../../../state/learn.js';
 import { speak, canSpeak } from '../../speech.js';
 import { play } from '../../audio.js';
+import { keycaps } from '../../components/keycaps.js';
 import { currentProfile, isKnown, markFlashcard, markViewed } from './profile.js';
 
 const CONFETTI = ['⭐', '🚀', '🪐', '✨', '🌕', '🛰️'];
@@ -32,7 +33,7 @@ function face(side, term) {
       h('span', { class: 'flash-cat' }, cat ? `${cat.icon} ${cat.label}` : ''),
       h('span', { class: 'flash-icon' }, cat?.icon ?? '🛰️'),
       h('span', { class: 'flash-term' }, term.term),
-      h('span', { class: 'flash-tip' }, 'Tap or press Space to flip'));
+      h('span', { class: 'flash-tip' }, 'Tap or press ', keycaps([['Space']]), ' to flip'));
   }
   return h('span', { class: 'flash-face flash-back', 'aria-hidden': 'true' },
     h('span', { class: 'flash-cat' }, term.term),
@@ -128,7 +129,8 @@ export function renderFlashcards(container, { category = 'all', onExit } = {}) {
         h('button', { type: 'button', class: 'btn btn-lg flash-again', onclick: () => answer(false) }, '↺ Again'),
         canSpeak() ? h('button', { type: 'button', class: 'btn btn-lg btn-ghost', 'aria-label': `Read ${term.term} aloud`, onclick: () => speak(`${term.term}. ${term.def}`, true) }, '🔊') : null,
         h('button', { type: 'button', class: 'btn btn-lg flash-know', onclick: () => answer(true) }, 'I know it ✓')),
-      h('p', { class: 'faint center flash-keys' }, `${queue.length} card${queue.length === 1 ? '' : 's'} left · Space/Enter flip · ← → move · K know it · J again`));
+      h('p', { class: 'faint center flash-keys' }, `${queue.length} card${queue.length === 1 ? '' : 's'} left · `,
+        keycaps([['Space'], ['Enter']]), ' flip · ', keycaps([['←', '→']]), ' move · ', keycaps([['K']]), ' know it · ', keycaps([['J']]), ' again'));
     card.focus({ preventScroll: true });
   }
 

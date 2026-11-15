@@ -41,7 +41,7 @@ export const TUTORIAL_STEPS = [
   { id: 'shield', kind: 'do', target: '#plan-shield', text: 'A solar storm could hit any day. Tap Build the shield.', on: (type, v) => type === 'plan' && v === 'shield' },
   { id: 'shield-cost', kind: 'read', target: '#plan-preview', text: 'The shield grows, but nobody finds science today.', why: 'Power drops too: tonight the Sun sets, so the battery drains.' },
   { id: 'next-2', kind: 'do', target: '#next-sol', text: 'Press Next day.', on: (type) => type === 'event-open' || type === 'day-end' },
-  { id: 'real-sun', kind: 'read', target: '.kid-event-story', text: 'Real NASA scientists watch the Sun like this every day. Here is the real Sun today:', extra: realSunNow },
+  { id: 'real-sun', kind: 'read', target: '.kid-event-story', text: 'Real NASA scientists watch the Sun every day. Want to see the real Sun today?', extra: realSunNow },
   { id: 'storm', kind: 'do', target: '.event-choices', text: 'A real solar storm from 2024! Pick how to keep your crew safe.', on: (type) => type === 'event-pick' },
   { id: 'keep-going', kind: 'do', target: '.event-modal [data-autofocus]', text: 'Read what happened. Then press Keep going.', on: (type) => type === 'event-close' },
   { id: 'switch', kind: 'do', target: '#kid-switchboard', text: 'Night: no solar power. Switch off one machine to save power.', on: (type) => type === 'switch' },

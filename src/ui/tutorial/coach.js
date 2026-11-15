@@ -54,7 +54,8 @@ export function placeBubble(box, size, view) {
 }
 
 /**
- * @typedef {{ id: string, target: string, kind: 'do'|'read', text: string, why?: string, extra?: () => Node|null }} CoachStep
+ * @typedef {{ id: string, target: string, kind: 'do'|'read', text: string, why?: string, inline?: () => Node|null, extra?: () => Node|null }} CoachStep
+ * `inline` is always shown under the text (for example keycaps); `extra` is folded behind "More details".
  * @param {{ steps: CoachStep[], onSkip: () => void, onNext: (step: CoachStep) => void }} opts
  */
 export function createCoach({ steps, onSkip, onNext }) {
@@ -80,15 +81,30 @@ export function createCoach({ steps, onSkip, onNext }) {
       if (open) announce(whyText.textContent);
     },
   }, 'Why?');
-  const extra = h('div', { class: 'coach-extra' });
+  // Extra content (for example the live Sun card) stays folded away behind "More details" so the bubble
+  // stays small; a bouncing arrow points at the button until it is opened.
+  const inline = h('div', { class: 'coach-inline' });
+  const extra = h('div', { class: 'coach-extra', id: 'coach-extra', hidden: true });
+  const moreBtn = h('button', {
+    type: 'button', class: 'coach-more', 'aria-expanded': 'false', 'aria-controls': 'coach-extra',
+    onclick: () => {
+      const open = extra.hidden;
+      extra.hidden = !open;
+      moreBtn.setAttribute('aria-expanded', String(open));
+      moreBtn.querySelector('.coach-more-label').textContent = open ? 'Fewer details' : 'More details';
+      moreBtn.classList.add('seen');
+      lastKey = '';
+      if (open) announce(extra.textContent);
+    },
+  }, h('span', { class: 'coach-more-label' }, 'More details'), h('span', { class: 'coach-more-hint', 'aria-hidden': 'true' }, '←'));
   const nextBtn = h('button', { type: 'button', class: 'coach-next', onclick: () => { const st = steps[index]; if (st) onNext(st); } }, 'Next', icon('arrow-right', { size: 16 }));
   const skipBtn = h('button', { type: 'button', class: 'coach-skip', onclick: () => onSkip() }, 'Skip');
   const arrow = h('span', { class: 'coach-arrow', 'aria-hidden': 'true' });
   const bubble = h('div', { class: 'coach-bubble', role: 'dialog', 'aria-label': 'Tutorial', 'aria-describedby': 'coach-text' },
     arrow,
     h('div', { class: 'coach-top' }, count, skipBtn),
-    text, whyText, extra,
-    h('div', { class: 'coach-actions' }, whyBtn, nextBtn));
+    text, inline, whyText, extra,
+    h('div', { class: 'coach-actions' }, whyBtn, moreBtn, nextBtn));
   const root = h('div', { class: ['coach', prefersReducedMotion() && 'still'] }, ...dims, ring, bubble);
 
   const onKey = (e) => {
@@ -203,7 +219,13 @@ export function createCoach({ steps, onSkip, onNext }) {
       whyText.hidden = true;
       whyBtn.hidden = !st.why;
       whyBtn.setAttribute('aria-expanded', 'false');
+      inline.replaceChildren(...[st.inline?.()].filter(Boolean));
       extra.replaceChildren(...[st.extra?.()].filter(Boolean));
+      extra.hidden = true;
+      moreBtn.hidden = !st.extra;
+      moreBtn.classList.remove('seen');
+      moreBtn.setAttribute('aria-expanded', 'false');
+      moreBtn.querySelector('.coach-more-label').textContent = 'More details';
       nextBtn.hidden = st.kind !== 'read';
       targetEl()?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'auto' });
       announce(`Tutorial step ${i + 1} of ${steps.length}. ${st.text}${st.kind === 'read' ? ' Press Next to go on.' : ''}`);

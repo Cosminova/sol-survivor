@@ -3,6 +3,8 @@
 import { h } from '../../dom.js';
 import { getState, update } from '../../../state/store.js';
 import { openTermPopover } from '../../components/termPopover.js';
+import { keycaps } from '../../components/keycaps.js';
+import { createModeTours } from '../../tutorial/modeTours.js';
 
 const WORLD3D = import.meta.glob('../../../world3d/index.js');
 const loader = WORLD3D['../../../world3d/index.js'];
@@ -34,13 +36,14 @@ export function applyHazard(m, { phase, moduleId }) {
 export const VIEW_MODES = ['outpost', 'map', 'walk'];
 
 // onMode(mode) lets the play screen show/hide and pause the outpost backdrop and the 2D map canvas.
-export function viewToggle({ onMode, getMission, commit, onTask, onToggle, onEndSol }) {
+// tours: false turns off the per-view tours (the training mission runs its own walkthrough).
+export function viewToggle({ onMode, getMission, commit, onTask, onToggle, onEndSol, tours: toursOn = true }) {
   // Walk 3D is a full-screen mode: the mount leaves the play stage and covers the viewport between the site
   // header and the telemetry ticker, with a slim bar (Back to base + the view toggle) on top of the world.
   const worldEl = h('div', { class: 'walk-world' });
   const backBtn = h('button', { type: 'button', class: 'chip walk-back', title: 'Back to base (Esc)', onclick: () => exitWalk() }, '← Back to base');
   const barSlot = h('div', { class: 'walk-bar-toggle' });
-  const bar = h('div', { class: 'walk-bar' }, backBtn, h('span', { class: 'walk-bar-hint', 'aria-hidden': 'true' }, 'Esc to go back'), barSlot);
+  const bar = h('div', { class: 'walk-bar' }, backBtn, h('span', { class: 'walk-bar-hint', 'aria-hidden': 'true' }, keycaps([['Esc']]), ' to go back'), barSlot);
   const mountEl = h('div', { id: 'play-3d-mount', class: 'play-3d-mount', hidden: true, 'aria-label': '3D outpost view' }, bar, worldEl);
   let world = null;
   let mode = 'outpost';
@@ -60,7 +63,15 @@ export function viewToggle({ onMode, getMission, commit, onTask, onToggle, onEnd
       onclick: () => setMode('walk'),
     }, 'Walk 3D'),
   };
-  const toggle = h('div', { class: 'view-toggle', role: 'group', 'aria-label': 'Outpost view' }, buttons.outpost, buttons.map, buttons.walk);
+  const tours = createModeTours({
+    currentMode: () => mode,
+    onEnd: (ended) => { if (ended === 'walk' && mode === 'walk') focusWorld(); },
+  });
+  const helpBtn = h('button', {
+    type: 'button', class: 'chip view-help', title: 'How this view works', 'aria-label': 'How this view works',
+    onclick: () => tours.start(mode),
+  }, '?');
+  const toggle = h('div', { class: 'view-toggle', role: 'group', 'aria-label': 'Outpost view' }, buttons.outpost, buttons.map, buttons.walk, helpBtn);
 
   const options = () => {
     const { settings, world3d } = getState();
@@ -121,6 +132,7 @@ export function viewToggle({ onMode, getMission, commit, onTask, onToggle, onEnd
 
   async function setMode(next) {
     if (next === mode) return;
+    tours.stop();
     const wasWalk = mode === 'walk';
     mode = next;
     if (mode !== 'walk') lastFlat = mode;
@@ -128,6 +140,7 @@ export function viewToggle({ onMode, getMission, commit, onTask, onToggle, onEnd
     mountEl.hidden = mode !== 'walk';
     if (wasWalk !== (mode === 'walk')) setFullScreen(mode === 'walk');
     onMode?.(mode);
+    if (toursOn) tours.maybeStart(mode);
     if (wasWalk) buttons[mode].focus({ preventScroll: true });
     if (mode === 'walk' && !world && loader) {
       try {
@@ -149,6 +162,8 @@ export function viewToggle({ onMode, getMission, commit, onTask, onToggle, onEnd
     }
   }
 
+  if (toursOn) tours.maybeStart(mode); // the default view's tour, once nothing else is on screen
+
   return {
     mount: mountEl,
     toggle,
@@ -161,6 +176,7 @@ export function viewToggle({ onMode, getMission, commit, onTask, onToggle, onEnd
     },
     update: (mission) => world?.update(mission),
     stop: () => {
+      tours.stop();
       if (mode === 'walk') setFullScreen(false);
       world?.dispose();
       world = null;

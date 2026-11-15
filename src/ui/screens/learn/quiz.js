@@ -2,6 +2,7 @@
 import { h, mount, richText, announce, plainText } from '../../dom.js';
 import { CATEGORIES, termById } from '../../../data/glossary.js';
 import { openTermPopover } from '../../components/termPopover.js';
+import { keycaps } from '../../components/keycaps.js';
 import { sourceBadge, termButton, stars } from '../../components/common.js';
 import { speak, canSpeak } from '../../speech.js';
 import { play } from '../../audio.js';
@@ -142,7 +143,7 @@ export function runQuiz(stage, questions, { onFinish, onExit } = {}) {
     const q = questions[index];
     mount(stage, card(q, [
       choiceButtons(q, null, null),
-      h('p', { class: 'acad-hint faint' }, 'Tip: press 1–4 or A–D to answer.'),
+      h('p', { class: 'acad-hint faint' }, 'Tip: press ', keycaps([['1', '2', '3', '4'], ['A', 'B', 'C', 'D']]), ' to answer.'),
     ]));
     stage.querySelector('#acad-q-text')?.focus();
   }

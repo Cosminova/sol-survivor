@@ -100,7 +100,7 @@ export function render(root, route) {
     (document.getElementById(`mod-switch-${id}`) ?? document.getElementById(`switch-${id}`))?.focus();
     tutorial?.emit('switch', id);
   };
-  const view3d = viewToggle({ onMode, getMission: () => m, commit, onTask, onToggle, onEndSol: () => nextSol() });
+  const view3d = viewToggle({ onMode, getMission: () => m, commit, onTask, onToggle, onEndSol: () => nextSol(), tours: !tutorialMode });
 
   // ---- Cadet view state: which meter shows its numbers, the phone plan sheet, the drawer, the live Sun ----
   let openMeter = null;

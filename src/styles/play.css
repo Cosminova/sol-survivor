@@ -123,6 +123,7 @@ body[data-route='play']:has(.play-stage) .hud-backdrop { display: none; }
 .view-toggle .chip { min-width: 52px; justify-content: center; background: rgba(6, 11, 20, 0.85); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
 .view-toggle .chip + .chip { border-left: 0; }
 .view-toggle .chip[aria-pressed='true'] { background: var(--cyan); }
+.view-toggle .view-help { min-width: 36px; font-weight: 800; }
 .scene-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
 .scene-alerts { position: absolute; left: 10px; top: 10px; right: 10px; display: grid; gap: 6px; justify-items: start; }
 .scene-alert { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); padding: 6px var(--s-3); font-weight: 700; font-size: var(--fs-sm); background: rgba(6, 11, 20, 0.85); border: 1px solid var(--line-strong); border-left-width: 3px; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
