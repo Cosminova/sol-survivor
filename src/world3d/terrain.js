@@ -1,7 +1,16 @@
-// Ground mesh, detail texture and instanced rocks. Albedo is modulated by the real NASA Trek
-// tile around the landing site so each site's ground tone differs.
+// Ground mesh, detail texture and instanced rocks. Moon and Mars: albedo is modulated by the real NASA Trek
+// tile around the landing site so each site's ground tone differs. Every other world: colours, detail map and
+// pools are generated from the world's look (src/render), with no imagery at all.
 import * as THREE from 'three';
 import { makeRng, fbm2, clamp } from './rng.js';
+import { srgbToLinear } from '../render/color.js';
+import { cachedTexture, generateDetailTexture } from '../render/textures.js';
+import { dataTexture, createPoolMaterial } from '../render/threeLook.js';
+
+const ROCKS_HIGH = 520;
+const ROCKS_LOW = 180;
+const POOL_RADIUS_M = 290; // pools only exist in the walkable-detail zone
+const POOL_UV_TILES = 0.12; // lava pattern repeats every ~27 m with the ground's 3.2 m UVs
 
 const PALETTE = {
   mars: { dark: '#96532f', light: '#cf8a58', dust: '#e2b184', crater: '#7d4529' },
@@ -94,10 +103,11 @@ function sampleTrek(body, site, extentM) {
   });
 }
 
-function scatterRocks({ body, heightfield, layout, high }) {
+function scatterRocks({ body, heightfield, layout, high, look = null }) {
   const rng = makeRng((layout.seed ^ 0xabcdef) >>> 0);
-  const count = high ? 520 : 180;
-  const rockMat = new THREE.MeshStandardMaterial({ color: body === 'moon' ? '#9c9994' : '#93573a', roughness: 0.92, flatShading: true });
+  const full = high ? ROCKS_HIGH : ROCKS_LOW;
+  const count = look ? Math.max(12, Math.round(full * look.rockDensity * 1.3)) : full;
+  const rockMat = new THREE.MeshStandardMaterial({ color: look ? look.groundColors.rock : body === 'moon' ? '#9c9994' : '#93573a', roughness: look?.ground === 'ice-shell' ? 0.55 : 0.92, flatShading: true });
   const rocks = new THREE.InstancedMesh(rockGeometry(layout.seed), rockMat, count);
   rocks.castShadow = high;
   rocks.receiveShadow = true;
@@ -116,6 +126,7 @@ function scatterRocks({ body, heightfield, layout, high }) {
     const x = Math.sin(a) * d;
     const z = Math.cos(a) * d;
     if (blockers.some((b) => Math.hypot(b.x - x, b.z - z) < b.r)) continue;
+    if (heightfield.poolLevel != null && heightfield.heightAt(x, z) < heightfield.poolLevel + 0.1) continue; // no rocks floating in pools
     const s = 0.08 + rng.next() ** 4 * (d > 30 ? 2.4 : 1.1);
     e.set(rng.range(0, 3), rng.range(0, 6.28), rng.range(0, 3));
     q.setFromEuler(e);
@@ -171,7 +182,65 @@ export function polarGeometry(heightAt, { segs, r0, rMax }) {
   return geo;
 }
 
-export function createTerrain({ body, site, heightfield, layout, high }) {
+// Ground for a world without lidar: colours straight from the look's surface, a generated detail map and,
+// where the facts say so, a pool of liquid or lava filling the low ground.
+function createLookTerrain({ look, heightfield, layout, high }) {
+  const rMax = high ? heightfield.extent : heightfield.extent / 2;
+  const geo = polarGeometry(heightfield.heightAt, { segs: high ? 256 : 112, r0: 1.2, rMax });
+  const pos = geo.attributes.position;
+  const nrm = geo.attributes.normal;
+  const colors = new Float32Array(pos.count * 3);
+  for (let i = 0; i < pos.count; i += 1) {
+    const c = heightfield.colorAt(pos.getX(i), pos.getZ(i), pos.getY(i), 1 - nrm.getY(i));
+    colors.set([srgbToLinear(c[0]), srgbToLinear(c[1]), srgbToLinear(c[2])], i * 3);
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  const size = high ? 512 : 256;
+  const detail = dataTexture(cachedTexture(`detail:${look.worldId}:${look.seed}:${size}`, () => generateDetailTexture(look, size)), { repeat: true, anisotropy: high ? 8 : 1 });
+  const icy = look.ground === 'ice-shell';
+  const material = high
+    ? new THREE.MeshStandardMaterial({ vertexColors: true, map: detail, bumpMap: detail, bumpScale: 1.6, roughness: icy ? 0.6 : 0.97, metalness: 0 })
+    : new THREE.MeshLambertMaterial({ vertexColors: true, map: detail });
+  const ground = new THREE.Mesh(geo, material);
+  ground.receiveShadow = true;
+  ground.name = 'ground';
+  const group = new THREE.Group();
+  group.add(ground);
+  const { rocks, rockMat, colliders } = scatterRocks({ body: layout.body, heightfield, layout, high, look });
+  group.add(rocks);
+
+  let pool = null;
+  if (heightfield.poolLevel !== null) {
+    const R = look.planetRadiusM;
+    const poolGeo = polarGeometry((x, z) => heightfield.poolLevel - (x * x + z * z) / (2 * R), { segs: 48, r0: 6, rMax: POOL_RADIUS_M });
+    const mat = createPoolMaterial(look, { tiles: POOL_UV_TILES });
+    const mesh = new THREE.Mesh(poolGeo, mat.material);
+    mesh.name = 'pool';
+    mesh.receiveShadow = !mat.glow;
+    group.add(mesh);
+    pool = { mat, poolGeo };
+  }
+
+  return {
+    group,
+    ground,
+    rockColliders: [...colliders, ...heightfield.poolColliders],
+    update(time) { pool?.mat.update(time); },
+    dispose() {
+      geo.dispose();
+      material.dispose();
+      detail.dispose();
+      rocks.geometry.dispose();
+      rockMat.dispose();
+      rocks.dispose();
+      pool?.poolGeo.dispose();
+      pool?.mat.dispose();
+    },
+  };
+}
+
+export function createTerrain({ body, site, heightfield, layout, high, look = null }) {
+  if (look) return createLookTerrain({ look, heightfield, layout, high });
   const rMax = heightfield.hasDem ? Math.min(heightfield.extent * 0.98, high ? 30000 : 12000) : (high ? 1500 : 900);
   const geo = polarGeometry(heightfield.heightAt, { segs: high ? 256 : 112, r0: 1.2, rMax });
   const pos = geo.attributes.position;
@@ -228,6 +297,7 @@ export function createTerrain({ body, site, heightfield, layout, high }) {
     group,
     ground,
     rockColliders: colliders,
+    update() {},
     dispose() {
       disposed = true;
       geo.dispose();

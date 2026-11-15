@@ -1,5 +1,76 @@
-// Ambient and feedback particles: drifting dust motes, fading footprints and spark/dust bursts.
+// Ambient and feedback particles: drifting dust motes, fading footprints and spark/dust bursts. Worlds with a
+// look (everything but the Moon and Mars) also get methane drizzle and distant plumes when their hazards say so.
 import * as THREE from 'three';
+import { makeRng } from './rng.js';
+import { hexToRgb } from '../render/color.js';
+
+const RAIN_BOX = { half: 26, height: 22 };
+const RAIN_FALL_MS = 1.6; // Titan's fat raindrops drift down about as fast as snow
+const PLUME_PARTICLES = 260;
+const PLUME_HEIGHT_M = 420;
+const PLUME_CYCLE_S = 14;
+
+// Slow drizzle in a box that follows the camera.
+function createRain({ count, color, dot }) {
+  const pos = new Float32Array(count * 3);
+  const rng = makeRng(911);
+  for (let i = 0; i < count; i += 1) pos.set([rng.range(-RAIN_BOX.half, RAIN_BOX.half), rng.range(0, RAIN_BOX.height), rng.range(-RAIN_BOX.half, RAIN_BOX.half)], i * 3);
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const mat = new THREE.PointsMaterial({ map: dot, color, size: 0.09, transparent: true, opacity: 0.7, depthWrite: false });
+  const points = new THREE.Points(geo, mat);
+  points.frustumCulled = false;
+  function update(dt, camera) {
+    const cx = camera.position.x;
+    const cz = camera.position.z;
+    for (let i = 0; i < count; i += 1) {
+      let x = pos[i * 3];
+      let y = pos[i * 3 + 1] - RAIN_FALL_MS * dt;
+      let z = pos[i * 3 + 2];
+      if (y < 0) y += RAIN_BOX.height;
+      if (x - cx > RAIN_BOX.half) x -= RAIN_BOX.half * 2; else if (x - cx < -RAIN_BOX.half) x += RAIN_BOX.half * 2;
+      if (z - cz > RAIN_BOX.half) z -= RAIN_BOX.half * 2; else if (z - cz < -RAIN_BOX.half) z += RAIN_BOX.half * 2;
+      pos.set([x, y, z], i * 3);
+    }
+    geo.attributes.position.needsUpdate = true;
+  }
+  return { points, update, dispose() { geo.dispose(); mat.dispose(); } };
+}
+
+// A fountain on the horizon: an ice geyser (cryovolcanism) or a sulfur plume above a volcano.
+function createPlume({ at, color, dot, still }) {
+  const pos = new Float32Array(PLUME_PARTICLES * 3);
+  const rng = makeRng(Math.round(at.x * 7 + at.z * 13) >>> 0);
+  const seeds = Array.from({ length: PLUME_PARTICLES }, () => ({ phase: rng.next(), angle: rng.range(0, Math.PI * 2), spread: rng.next() ** 0.6 }));
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  const mat = new THREE.PointsMaterial({ map: dot, color, size: 26, transparent: true, opacity: 0.32, depthWrite: false, fog: false });
+  const points = new THREE.Points(geo, mat);
+  points.position.set(at.x, at.y, at.z);
+  points.frustumCulled = false;
+  function place(time) {
+    for (let i = 0; i < PLUME_PARTICLES; i += 1) {
+      const sd = seeds[i];
+      const k = (sd.phase + time / PLUME_CYCLE_S) % 1; // 0 at the vent, 1 falling back at the edge of the umbrella
+      const out = sd.spread * PLUME_HEIGHT_M * 0.55 * k;
+      pos.set([Math.cos(sd.angle) * out, PLUME_HEIGHT_M * 4 * k * (1 - k), Math.sin(sd.angle) * out], i * 3);
+    }
+    geo.attributes.position.needsUpdate = true;
+  }
+  place(0);
+  return { points, update: (time) => { if (!still) place(time); }, dispose() { geo.dispose(); mat.dispose(); } };
+}
+
+function plumeSites(look, surface) {
+  if (!look?.particles.plumes || !surface) return [];
+  if (surface.cones.length) return surface.cones.slice(0, 1).map((c) => ({ x: c.x, z: c.z, y: surface.heightAt(c.x, c.z) }));
+  const rng = makeRng((look.seed ^ 0x9106) >>> 0);
+  return Array.from({ length: 2 }, () => {
+    const a = rng.range(-Math.PI, Math.PI);
+    const d = rng.range(1400, 2400);
+    return { x: Math.sin(a) * d, z: Math.cos(a) * d, y: surface.heightAt(Math.sin(a) * d, Math.cos(a) * d) };
+  });
+}
 
 function softDot() {
   const c = document.createElement('canvas');
@@ -16,17 +87,24 @@ function softDot() {
   return t;
 }
 
-export function createParticles({ body, high, reducedMotion }) {
+// look / surface: world look and its ground for worlds other than the Moon and Mars (null keeps their particles as they were).
+export function createParticles({ body, high, reducedMotion, look = null, surface = null }) {
   const group = new THREE.Group();
   const dot = softDot();
-  const moteCount = body === 'mars' ? (high ? (reducedMotion ? 120 : 420) : 0) : 0;
+  const dusty = look ? look.particles.dust : body === 'mars';
+  const airless = look ? look.airless : body === 'moon';
+  const moteCount = dusty ? (high ? (reducedMotion ? 120 : 420) : 0) : 0;
+  const rain = look?.particles.methaneRain ? createRain({ count: reducedMotion ? 90 : high ? 420 : 160, color: '#e9c48a', dot }) : null;
+  if (rain) group.add(rain.points);
+  const plumes = plumeSites(look, surface).map((at) => createPlume({ at, color: look.particles.plumeColor, dot, still: reducedMotion }));
+  plumes.forEach((p) => group.add(p.points));
 
   // Dust motes live in a box around the camera and wrap as it moves.
   const motePos = new Float32Array(moteCount * 3);
   for (let i = 0; i < moteCount; i += 1) motePos.set([Math.random() * 60 - 30, Math.random() * 12, Math.random() * 60 - 30], i * 3);
   const moteGeo = new THREE.BufferGeometry();
   moteGeo.setAttribute('position', new THREE.BufferAttribute(motePos, 3));
-  const moteMat = new THREE.PointsMaterial({ map: dot, color: '#e8b98d', size: 0.12, transparent: true, opacity: 0.55, depthWrite: false });
+  const moteMat = new THREE.PointsMaterial({ map: dot, color: look ? look.particles.dustColor : '#e8b98d', size: 0.12, transparent: true, opacity: 0.55, depthWrite: false });
   const motes = new THREE.Points(moteGeo, moteMat);
   motes.frustumCulled = false;
   motes.visible = moteCount > 0;
@@ -53,6 +131,7 @@ export function createParticles({ body, high, reducedMotion }) {
   group.add(footprints);
   let printIdx = 0;
   const printDark = new THREE.Color(body === 'moon' ? 0.55 : 0.62, body === 'moon' ? 0.55 : 0.5, body === 'moon' ? 0.55 : 0.45);
+  if (look) printDark.setRGB(...hexToRgb(look.groundColors.light).map((v) => 0.45 + v * 0.2));
 
   function footprint(x, y, z, heading, side) {
     const ox = Math.cos(heading) * 0.13 * side;
@@ -80,7 +159,7 @@ export function createParticles({ body, high, reducedMotion }) {
   const bursts = new THREE.Points(bGeo, bMat);
   bursts.frustumCulled = false;
   group.add(bursts);
-  const dustMat = new THREE.PointsMaterial({ map: dot, size: 0.9, color: body === 'moon' ? '#b9b5ad' : '#c58c5c', transparent: true, opacity: 0.6, depthWrite: false });
+  const dustMat = new THREE.PointsMaterial({ map: dot, size: 0.9, color: look ? look.groundColors.dust : body === 'moon' ? '#b9b5ad' : '#c58c5c', transparent: true, opacity: 0.6, depthWrite: false });
   const dPos = new Float32Array(maxBurst * 3);
   const dVel = new Float32Array(maxBurst * 3);
   const dLife = new Float32Array(maxBurst);
@@ -92,7 +171,7 @@ export function createParticles({ body, high, reducedMotion }) {
   for (let i = 0; i < maxBurst; i += 1) { bPos[i * 3 + 1] = -999; dPos[i * 3 + 1] = -999; }
   let bIdx = 0;
   let dIdx = 0;
-  const g = body === 'moon' ? 1.62 : 3.71;
+  const g = look ? look.gravityMs2 : body === 'moon' ? 1.62 : 3.71;
 
   function burst(at, { count = 30, color = '#ffd36b', speed = 4, up: upBias = 2 } = {}) {
     const n = Math.min(count, reducedMotion ? Math.ceil(count / 3) : count);
@@ -119,7 +198,11 @@ export function createParticles({ body, high, reducedMotion }) {
     }
   }
 
+  let clock = 0;
   function update(dt, { camera, wind = { x: 0.6, z: 0.2 } }) {
+    clock += dt;
+    rain?.update(dt, camera);
+    plumes.forEach((p) => p.update(clock));
     if (motes.visible) {
       const cx = camera.position.x;
       const cz = camera.position.z;
@@ -152,9 +235,9 @@ export function createParticles({ body, high, reducedMotion }) {
       }
       if (dLife[i] > 0) {
         dLife[i] -= dt;
-        const drag = body === 'moon' ? 1 : 0.97; // no air on the Moon: dust flies in clean arcs
+        const drag = airless ? 1 : 0.97; // no air on the Moon: dust flies in clean arcs
         dVel[i * 3] *= drag; dVel[i * 3 + 2] *= drag;
-        dVel[i * 3 + 1] -= (body === 'moon' ? g : g * 0.15) * dt;
+        dVel[i * 3 + 1] -= (airless ? g : g * 0.15) * dt;
         dPos[i * 3] += dVel[i * 3] * dt;
         dPos[i * 3 + 1] = Math.max(0, dPos[i * 3 + 1] + dVel[i * 3 + 1] * dt);
         dPos[i * 3 + 2] += dVel[i * 3 + 2] * dt;
@@ -177,6 +260,8 @@ export function createParticles({ body, high, reducedMotion }) {
       [moteGeo, printGeo, bGeo, dGeo].forEach((x) => x.dispose());
       [moteMat, printMat, bMat, dustMat].forEach((x) => x.dispose());
       footprints.dispose();
+      rain?.dispose();
+      plumes.forEach((p) => p.dispose());
       dot.dispose();
     },
   };

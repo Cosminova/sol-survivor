@@ -40,11 +40,19 @@ import {
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { buildTerrainTexture } from './mosaic.js';
 import { clamp, DEG, easeInOut, fbm, hash2, lerp, smoothstep, UI } from './sceneUtil.js';
+import { lookFor } from '../../render/worldLook.js';
+import { outpostPalette, outpostStar, outpostHaze, outpostGround, outpostFixedStar, outpostParentDirection } from '../../render/outpostLook.js';
+import { dataTexture, createParentBody, createPoolMaterial } from '../../render/threeLook.js';
 
 const TERRAIN_SIZE = 260;
 const TERRAIN_SEGS = 128;
 const SKY_RADIUS = 420;
 const SOL_PASS_SECONDS = 1.8;
+const ROCK_CAPACITY = 80;
+const LOOK_MAP_SIZE = 512; // generated ground colour map for worlds other than the Moon and Mars
+const POOL_TILES = 10; // lava pattern repeats across the ground plane
+const PARENT_DISTANCE = SKY_RADIUS * 0.94;
+const SUN_DISC_COS = 0.99955;
 
 /* ---------- palettes (linear-ish hex, tone-mapped by ACES) ---------- */
 const PALETTE = {
@@ -94,7 +102,7 @@ const SKY_VERT = /* glsl */ `
 `;
 const SKY_FRAG = /* glsl */ `
   uniform vec3 uZenith; uniform vec3 uHorizon; uniform vec3 uBelow; uniform vec3 uSunDir; uniform vec3 uSunColor;
-  uniform float uSunDisc; uniform float uGlow; uniform float uStars; uniform float uAurora; uniform float uTime; uniform float uHaze;
+  uniform float uSunDisc; uniform float uDiscCos; uniform float uDiscSolid; uniform float uGlow; uniform float uStars; uniform float uAurora; uniform float uTime; uniform float uHaze;
   varying vec3 vDir;
   float hash21(vec2 p) { p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
   void main() {
@@ -105,7 +113,10 @@ const SKY_FRAG = /* glsl */ `
     float s = max(dot(d, uSunDir), 0.0);
     float sunUp = smoothstep(-0.12, 0.04, uSunDir.y);
     col += uSunColor * (pow(s, 22.0) * 0.55 + pow(s, 3.0) * 0.10) * uGlow * sunUp;
-    col += uSunColor * smoothstep(0.99935, 0.99975, s) * uSunDisc * 3.0;
+    float disc = smoothstep(uDiscCos - 0.0002, uDiscCos + 0.0002, s);
+    vec3 discCol = uSunColor * uSunDisc * 3.0;
+    float limb = 0.62 + 0.38 * smoothstep(uDiscCos, 1.0, s);
+    col = mix(col + discCol * disc, mix(col, discCol * limb, disc * smoothstep(-0.03, 0.0, h)), uDiscSolid); // wide cool stars keep their colour as a solid disc
     // Stars via stereographic cells so they stay round everywhere above the horizon.
     if (uStars > 0.001 && h > -0.02) {
       vec2 p = d.xz / (1.0 + max(h, 0.0)) * 70.0;
@@ -336,7 +347,7 @@ export class OutpostScene {
     const prev = this.model;
     this.model = model;
     if (!model) return;
-    const bodyChanged = !prev || prev.body !== model.body || prev.site?.id !== model.site?.id;
+    const bodyChanged = !prev || prev.body !== model.body || prev.worldId !== model.worldId || prev.site?.id !== model.site?.id;
     if (bodyChanged) this._loadTerrain(model);
     if (model.lockTime) {
       this.phase = model.timeOfSol;
@@ -372,6 +383,8 @@ export class OutpostScene {
       uSunDir: { value: new Vector3(0, 1, 0) },
       uSunColor: { value: new Color(pal.sunDay) },
       uSunDisc: { value: 1 },
+      uDiscCos: { value: SUN_DISC_COS },
+      uDiscSolid: { value: 0 },
       uGlow: { value: 1 },
       uStars: { value: 0 },
       uAurora: { value: 0 },
@@ -440,7 +453,7 @@ export class OutpostScene {
     scene.add(this.terrain);
 
     // Rocks (one instanced mesh)
-    this.rocks = new InstancedMesh(new DodecahedronGeometry(1, 0), this.mats.rock, 80);
+    this.rocks = new InstancedMesh(new DodecahedronGeometry(1, 0), this.mats.rock, ROCK_CAPACITY);
     this.rocks.castShadow = true;
     this.rocks.receiveShadow = true;
     scene.add(this.rocks);
@@ -616,16 +629,69 @@ export class OutpostScene {
   }
 
   /* ================= terrain ================= */
+  /** Ground, pools, star and giant planet for a world with a look: all generated, no imagery. */
+  _loadLookTerrain(look) {
+    const ground = outpostGround(look, { size: LOOK_MAP_SIZE, extentM: TERRAIN_SIZE });
+    const t = dataTexture(ground.map, { anisotropy: Math.min(8, this.renderer.capabilities.getMaxAnisotropy?.() ?? 1) });
+    t.wrapS = t.wrapT; // the map covers the ground once, edge to edge
+    t.repeat.y = -1; // the plane's UVs run south to north, the map's rows north to south
+    t.offset.y = 1;
+    const old = this.terrain.material;
+    this.terrain.material = new MeshStandardMaterial({ map: t, bumpMap: t, bumpScale: 0.4, roughness: look.ground === 'ice-shell' ? 0.6 : 1, metalness: 0 });
+    old.map?.dispose?.();
+    old.dispose();
+    this._displace(null, 'mars', ground.heightAt);
+    this.rocks.count = Math.min(ROCK_CAPACITY, Math.round(ROCK_CAPACITY * look.rockDensity * 1.5));
+    this._scatterRocks('mars');
+    if (ground.poolLevel !== null) {
+      const mat = createPoolMaterial(look, { tiles: POOL_TILES });
+      const geo = new PlaneGeometry(TERRAIN_SIZE, TERRAIN_SIZE);
+      geo.rotateX(-Math.PI / 2);
+      const mesh = new Mesh(geo, mat.material);
+      mesh.position.y = ground.poolLevel;
+      mesh.receiveShadow = !mat.glow;
+      this.scene.add(mesh);
+      this.pool = { mesh, mat, geo };
+    }
+    if (look.parent?.visible) {
+      this.parentBody = createParentBody(look.parent, { distance: PARENT_DISTANCE, sunDir: this.skyUniforms.uSunDir.value });
+      this.parentBody.setDirection(outpostParentDirection(this.model?.site));
+      this.scene.add(this.parentBody.group);
+    }
+    this._render();
+  }
+
+  _clearLookExtras() {
+    if (this.pool) { this.scene.remove(this.pool.mesh); this.pool.geo.dispose(); this.pool.mat.dispose(); this.pool = null; }
+    if (this.parentBody) { this.scene.remove(this.parentBody.group); this.parentBody.dispose(); this.parentBody = null; }
+  }
+
   async _loadTerrain(model) {
-    const key = `${model.body}:${model.site?.id}`;
+    const key = `${model.worldId ?? model.body}:${model.site?.id}`;
     if (this.terrainKey === key) return;
     this.terrainKey = key;
-    const pal = PALETTE[model.body] ?? PALETTE.mars;
+    // Worlds other than the Moon and Mars are painted from their look; those two keep the NASA Trek terrain.
+    const look = lookFor(model.worldId, model.site);
+    this.look = look;
+    this.lookPal = look ? outpostPalette(look) : null;
+    this._clearLookExtras();
+    const star = look ? outpostStar(look) : null;
+    this.skyUniforms.uDiscCos.value = star ? star.discCos : SUN_DISC_COS;
+    this.skyUniforms.uDiscSolid.value = star ? star.solid : 0;
+    this.rocks.count = ROCK_CAPACITY;
+    const pal = this.lookPal ?? PALETTE[model.body] ?? PALETTE.mars;
     this.mats.regolith.color.set(pal.regolith);
-    this.mats.rock.color.set(model.body === 'moon' ? 0x6d6d70 : 0x7a4a33);
+    this.mats.rock.color.set(look ? look.groundColors.rock : model.body === 'moon' ? 0x6d6d70 : 0x7a4a33);
     this.hemi.color.set(pal.hemiSky);
     this.hemi.groundColor.set(pal.hemiGround);
     this.rim.color.set(pal.rim);
+    if (look) { this._loadLookTerrain(look); return; }
+    if (this.terrain.material.map) { // coming back from a generated world: start again from the plain placeholder
+      const old = this.terrain.material;
+      this.terrain.material = new MeshStandardMaterial({ roughness: 1, metalness: 0 });
+      old.map.dispose();
+      old.dispose();
+    }
     this.terrain.material.color.set(pal.regolith);
     this._displace(null, model.body);
     this._scatterRocks(model.body);
@@ -660,7 +726,8 @@ export class OutpostScene {
     return h[j * (TERRAIN_SEGS + 1) + i];
   }
 
-  _displace(tex, body) {
+  /** heightFn: when given (worlds with a look) it sets the height directly instead of the Trek-driven relief. */
+  _displace(tex, body, heightFn = null) {
     const geo = this.terrain.geometry;
     const pos = geo.attributes.position;
     const n = TERRAIN_SEGS + 1;
@@ -671,6 +738,11 @@ export class OutpostScene {
         const idx = j * n + i;
         const x = pos.getX(idx);
         const z = pos.getZ(idx);
+        if (heightFn) {
+          heights[idx] = heightFn(x, z) - 0.02;
+          pos.setY(idx, heights[idx]);
+          continue;
+        }
         const d = Math.hypot(x, z);
         const flat = smoothstep(26, 48, d);
         let lum = 0.5;
@@ -1051,7 +1123,7 @@ export class OutpostScene {
     else when = this.phase < 0.42 ? 'Morning' : this.phase < 0.58 ? 'Midday' : 'Afternoon';
     const solLabel = m.hasMission ? `${isMoon ? 'Day' : 'Sol'} ${m.sol} · ${when}` : m.site?.name ?? '';
     const timeLabel = `${m.site?.name ?? ''}${m.tempC != null ? ` · ${Math.round(m.tempC)} °C` : ''}`;
-    const credit = `Terrain: NASA ${isMoon ? 'Moon' : 'Mars'} Trek`;
+    const credit = this.look ? 'Ground: generated from world facts' : `Terrain: NASA ${isMoon ? 'Moon' : 'Mars'} Trek`;
     if (this.hudCredit.textContent !== credit) this.hudCredit.textContent = credit;
     if (this.hudSol.textContent !== solLabel) this.hudSol.textContent = solLabel;
     if (this.hudTime.textContent !== timeLabel) this.hudTime.textContent = timeLabel;
@@ -1076,6 +1148,10 @@ export class OutpostScene {
   /* ================= per-frame ================= */
   _sunDir() {
     const m = this.model;
+    if (this.look?.starFixed) { // tidally locked: the star never moves
+      const d = outpostFixedStar(this.look, m?.site);
+      return new Vector3(d.x, d.y, d.z);
+    }
     const lat = (m?.site?.lat ?? 0) * DEG;
     // phase is a whole sol: 0 midnight, 0.25 sunrise (east), 0.5 noon, 0.75 sunset (west)
     const theta = (this.phase - 0.25) * Math.PI * 2;
@@ -1086,7 +1162,7 @@ export class OutpostScene {
     let y = Math.sin(theta) * Math.cos(tilt) + seasonLift * Math.cos(tilt);
     let z = Math.sin(theta) * Math.sin(tilt);
     if (Math.abs(tilt) > 1.45) y = Math.max(y, 0.2); // drawn higher than the real 1.5 degrees so the ground reads // polar day: the sun never quite sets while the site is lit
-    if (m?.body === 'moon' && !m.lit) y = -0.35;
+    if ((this.look || m?.body === 'moon') && m && !m.lit) y = -0.35;
     const v = new Vector3(x, y, z);
     if (v.lengthSq() < 1e-6) v.set(0, 1, 0);
     return v.normalize();
@@ -1154,14 +1230,19 @@ export class OutpostScene {
     this.vis.storm += ((m.stormActive ? 1 : 0) - this.vis.storm) * s;
     this.vis.sep += ((m.sepActive ? 1 : 0) - this.vis.sep) * s;
 
-    const pal = PALETTE[m.body] ?? PALETTE.mars;
-    const isMoon = m.body === 'moon';
+    const look = this.look ?? null;
+    const pal = this.lookPal ?? PALETTE[m.body] ?? PALETTE.mars;
+    const isMoon = look ? look.airless : m.body === 'moon'; // airless: black sky, hard light, no dust
     const sunDir = this._sunDir();
     const sunY = sunDir.y;
     const day = smoothstep(-0.04, 0.05, sunY) * (0.55 + 0.45 * smoothstep(0.05, 0.3, sunY)); // 0 night .. 1 full day; a grazing sun still lights the ground
     const low = 1 - smoothstep(0.02, 0.35, sunY); // sun near the horizon
     const night = 1 - smoothstep(-0.12, 0.02, sunY);
-    const tauK = clamp(this.vis.tau / 4.5, 0, 1); // 0 clear .. 1 thick storm
+    const dustK = clamp(this.vis.tau / 4.5, 0, 1); // 0 clear .. 1 thick storm
+    // Worlds with a look: dust only where the world has dust storms, plus the standing haze of its air.
+    const tauK = look ? Math.max(look.particles.dust ? dustK : 0, outpostHaze(look)) : dustK;
+    const star = look ? outpostStar(look) : null;
+    const lightScale = look ? look.lightScale : 1;
     this.vis.night = night;
 
     // --- sky ---
@@ -1176,8 +1257,8 @@ export class OutpostScene {
     u.uHorizon.value.copy(hor);
     u.uBelow.value.copy(hor).multiplyScalar(0.8);
     u.uSunDir.value.copy(sunDir);
-    u.uSunColor.value.set(pal.sunDay).lerp(new Color(pal.sunLow), low * 0.8);
-    u.uSunDisc.value = isMoon ? 1.6 : 1 - tauK * 0.95;
+    u.uSunColor.value.set(pal.sunDay).lerp(new Color(pal.sunLow), star?.solid ? 1 : low * 0.8);
+    u.uSunDisc.value = (isMoon ? 1.6 : 1 - tauK * 0.95) * (star ? star.disc / 1.4 : 1);
     u.uGlow.value = isMoon ? 0.15 : 1 - tauK * 0.6;
     u.uStars.value = isMoon ? 0.9 : night * (1 - tauK) * 0.9;
     u.uAurora.value = this.vis.sep * (isMoon ? 0.7 : 0.75 + night * 0.35);
@@ -1195,7 +1276,7 @@ export class OutpostScene {
 
     // --- lights ---
     this.sun.position.copy(sunDir).multiplyScalar(90);
-    const sunStrength = isMoon ? 3.6 : 3.0 * (1 - tauK * 0.85);
+    const sunStrength = (isMoon ? 3.6 : 3.0 * (1 - tauK * 0.85)) * lightScale;
     this.sun.intensity = sunStrength * day;
     this.sun.color.set(pal.sunDay).lerp(new Color(pal.sunLow), low * 0.9);
     this.sun.castShadow = !this.noShadows && this.sun.intensity > 0.05;
@@ -1204,11 +1285,20 @@ export class OutpostScene {
       ? 0.2 + 0.4 * day * (m.lit ? 1 : 0) // earthshine keeps the terrain readable through the lunar night // only a whisper of earthshine at lunar night
       : lerp(0.05, 0.75, day) * (1 - tauK * 0.4) + tauK * 0.35 * day;
     this.hemi.color.set(pal.hemiSky).lerp(hor, isMoon ? 0 : 0.5);
-    if (isMoon) {
+    if (look && !isMoon) this.hemi.intensity += look.haze * 0.9 * day * lightScale; // thick air glows from every side
+    if (isMoon && look) {
+      this.hemi.color.set(pal.rim).lerp(new Color(0x5a6276), 0.6);
+      this.hemi.groundColor.set(0x2a2c33);
+      this.hemi.intensity = m.lit ? (0.35 + 0.35 * day) * lightScale : 1.2;
+    } else if (isMoon) {
       // Earthshine: a cool fill so the real terrain still reads in shadow and through the two-week night.
       this.hemi.color.set(m.lit ? 0x5a6276 : 0x6f86b8);
       this.hemi.groundColor.set(m.lit ? 0x2a2c33 : 0x2a3552);
       this.hemi.intensity = m.lit ? 0.35 + 0.35 * day : 1.9;
+    }
+    if (look?.lava > 0) { // molten ground lights the base from below, day or night
+      this.hemi.groundColor.set(pal.hemiGround);
+      this.hemi.intensity += look.lava * 1.6;
     }
     this.rim.position.copy(sunDir).multiplyScalar(-1).setY(0.35).normalize().multiplyScalar(60);
     this.rim.intensity = isMoon ? 0.3 : 0.25 + 0.25 * dusk;
@@ -1241,7 +1331,8 @@ export class OutpostScene {
     this.sparks.rotation.y = t * 0.05;
 
     // --- dust storm particles ---
-    const dustAmount = isMoon ? 0 : clamp(this.vis.storm * 0.8 + smoothstep(1.2, 4, this.vis.tau) * 0.6, 0, 1);
+    this.pool?.mat.update(t);
+    const dustAmount = isMoon || (look && !look.particles.dust) ? 0 : clamp(this.vis.storm * 0.8 + smoothstep(1.2, 4, this.vis.tau) * 0.6, 0, 1);
     this.dustMat.opacity = dustAmount * 0.55;
     this.dustMat.color.copy(hor).lerp(new Color(pal.stormHorizon), 0.3).multiplyScalar(1.2);
     if (dustAmount > 0.01) {
