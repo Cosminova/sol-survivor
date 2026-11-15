@@ -11,6 +11,7 @@ const FLAG = 'sol-survivor:howto-seen';
 // The keys that work on the play screen, plus the main Walk 3D keys (press H there for the full list).
 export const KEY_ROWS = [
   [[['N']], 'Next day'],
+  [[['+'], ['−']], 'Zoom the Outpost 3D view in and out'],
   [[['Tab']], 'Move between buttons'],
   [[['Enter'], ['Space']], 'Press the button you are on'],
   [[['Esc']], 'Close a pop-up or leave Walk 3D'],

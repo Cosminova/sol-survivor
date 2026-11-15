@@ -15,7 +15,7 @@ const caps = (keys) => () => keycaps(keys);
 export const MODE_TOURS = {
   outpost: [
     { id: 'outpost-look', kind: 'read', target: '.play-stage', text: 'This is your outpost in 3D. Drag to spin around it.', inline: caps(['Drag mouse', 'or', 'Swipe']) },
-    { id: 'outpost-reset', kind: 'read', target: '.play-stage', text: 'Lost? Double-click to put the camera back.', inline: caps(['Double-click']) },
+    { id: 'outpost-zoom', kind: 'read', target: '.o3d-zoom', text: 'Zoom in close, or tap Whole camp to see your entire base.', inline: caps([['+'], ['−'], 'or scroll']) },
     { id: 'outpost-views', kind: 'read', target: '.view-toggle', text: 'Switch views here: Outpost 3D, Map 2D or Walk 3D.' },
   ],
   map: [

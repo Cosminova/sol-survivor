@@ -6,6 +6,7 @@ import {
   ACESFilmicToneMapping,
   AdditiveBlending,
   BackSide,
+  Box3,
   BoxGeometry,
   BufferAttribute,
   BufferGeometry,
@@ -31,6 +32,7 @@ import {
   PointsMaterial,
   Scene,
   ShaderMaterial,
+  Sphere,
   SphereGeometry,
   SRGBColorSpace,
   TorusGeometry,
@@ -40,6 +42,12 @@ import {
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { buildTerrainTexture } from './mosaic.js';
 import { clamp, DEG, easeInOut, fbm, hash2, lerp, smoothstep, UI } from './sceneUtil.js';
+
+const ZOOM_MIN_DISTANCE = 9; // close enough to read a module up close
+const ZOOM_MAX_BACKDROP = 120;
+const ZOOM_MAX_PANEL = 75;
+const ZOOM_STEP = 1.25; // one press of + or - changes the distance by this factor
+const CAMP_FRAME_MARGIN = 1.2; // a little room around the whole camp when framing it
 
 const TERRAIN_SIZE = 260;
 const TERRAIN_SEGS = 128;
@@ -242,13 +250,14 @@ export class OutpostScene {
     controls.enableDamping = true;
     controls.dampingFactor = 0.06;
     controls.enablePan = false;
-    controls.minDistance = 16;
-    controls.maxDistance = backdrop ? 120 : 75;
+    controls.minDistance = ZOOM_MIN_DISTANCE;
+    controls.maxDistance = backdrop ? ZOOM_MAX_BACKDROP : ZOOM_MAX_PANEL;
     controls.minPolarAngle = 0.35;
     controls.maxPolarAngle = 1.44;
     controls.autoRotate = true;
     controls.autoRotateSpeed = 0.32;
-    controls.enableZoom = zoom; // off when the scene is a page backdrop, so the wheel still scrolls the HUD
+    // The wheel zooms only over the open outpost: HUD panels sit above the canvas, so the wheel still scrolls them.
+    controls.enableZoom = zoom;
     controls.zoomSpeed = 0.7;
     controls.rotateSpeed = 0.7;
     controls.addEventListener('start', () => { controls.autoRotate = false; this.autoRotateResume = this.elapsed + 7; });
@@ -303,6 +312,38 @@ export class OutpostScene {
     if (this.focus) this.camera.setViewOffset(w, h, w / 2 - this.focus.x, h / 2 - this.focus.y, w, h);
     else this.camera.clearViewOffset();
     this.camera.updateProjectionMatrix();
+  }
+
+  /** Zoom in (factor < 1) or out (factor > 1) along the current view, within the zoom limits. */
+  zoomBy(factor) {
+    if (!this.controls) return;
+    const target = this.controls.target;
+    const offset = this.camera.position.clone().sub(target);
+    const dist = clamp(offset.length() * factor, this.controls.minDistance, this.controls.maxDistance);
+    this._moveCameraTo(target.clone().add(offset.setLength(dist)));
+  }
+
+  zoomIn() { this.zoomBy(1 / ZOOM_STEP); }
+
+  zoomOut() { this.zoomBy(ZOOM_STEP); }
+
+  /** Back far enough to see every module of the camp, from the current direction. */
+  showWholeCamp() {
+    if (!this.controls || !this.modulesGroup) return;
+    const sphere = new Box3().setFromObject(this.modulesGroup).getBoundingSphere(new Sphere());
+    if (!Number.isFinite(sphere.radius) || sphere.radius <= 0) { this.resetCamera(); return; }
+    const vFov = this.camera.fov * DEG;
+    const hFov = 2 * Math.atan(Math.tan(vFov / 2) * this.camera.aspect);
+    const need = (sphere.radius * CAMP_FRAME_MARGIN) / Math.sin(Math.min(vFov, hFov) / 2);
+    this.controls.maxDistance = Math.max(this.controls.maxDistance, need); // the whole camp always fits
+    const offset = this.camera.position.clone().sub(this.controls.target);
+    this._moveCameraTo(this.controls.target.clone().add(offset.setLength(need)));
+  }
+
+  _moveCameraTo(to) {
+    this.camAnim = { from: this.camera.position.clone(), to, start: this.elapsed };
+    this.controls.autoRotate = false;
+    this.autoRotateResume = this.elapsed + 7;
   }
 
   resetCamera() {
@@ -1026,7 +1067,7 @@ export class OutpostScene {
     const hint = document.createElement('div');
     hint.className = 'outpost3d-hint';
     hint.setAttribute('aria-hidden', 'true');
-    hint.textContent = 'Drag to look around · double-tap to reset';
+    hint.textContent = 'Drag to look around · scroll or + − to zoom · double-tap to reset';
     this.hudContainer.appendChild(hint);
     this.hud = hud;
     this.hint = hint;

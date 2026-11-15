@@ -29,6 +29,30 @@ const el = (className, attrs = {}) => {
 export function createOutpostBackdrop({ reducedMotion = () => false, onUnavailable } = {}) {
   const layer = el('outpost3d-layer');
   const overlay = el('outpost3d-overlay');
+  // Zoom: the wheel over the open outpost, these buttons, or the + and - keys. "Whole camp" frames every module.
+  const zoomButton = (label, text, onClick) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'chip o3d-zoom-btn';
+    b.setAttribute('aria-label', label);
+    b.title = label;
+    b.textContent = text;
+    b.addEventListener('click', onClick);
+    return b;
+  };
+  const zoomBar = el('o3d-zoom', { role: 'group', 'aria-label': 'Zoom the outpost view' });
+  zoomBar.append(
+    zoomButton('Zoom in (+)', '+', () => scene?.zoomIn()),
+    zoomButton('Zoom out (-)', '−', () => scene?.zoomOut()),
+    zoomButton('Zoom out to see the whole camp', 'Whole camp', () => scene?.showWholeCamp()));
+  overlay.append(zoomBar);
+  const onZoomKey = (e) => {
+    if (!active || !scene || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.target.closest?.('input, textarea, select, [contenteditable]') || document.querySelector('.modal-backdrop, .coach')) return;
+    if (e.key === '+' || e.key === '=') { e.preventDefault(); scene.zoomIn(); }
+    else if (e.key === '-' || e.key === '_') { e.preventDefault(); scene.zoomOut(); }
+  };
+  document.addEventListener('keydown', onZoomKey);
   let scene = null;
   let mission = null;
   let description = '';
@@ -82,7 +106,7 @@ export function createOutpostBackdrop({ reducedMotion = () => false, onUnavailab
     import('./outpostScene.js').then(({ OutpostScene }) => {
       if (stopped) return;
       const s = new OutpostScene();
-      s.mount(layer, { hudContainer: overlay, zoom: false, backdrop: true });
+      s.mount(layer, { hudContainer: overlay, zoom: true, backdrop: true });
       scene = s;
       s.setPaused(!active);
       refocus();
@@ -118,6 +142,7 @@ export function createOutpostBackdrop({ reducedMotion = () => false, onUnavailab
       resizeObserver.disconnect();
       window.removeEventListener('scroll', refocus);
       window.removeEventListener('resize', refocus);
+      document.removeEventListener('keydown', onZoomKey);
       try { scene?.dispose(); } catch { /* already gone */ }
       scene = null;
       layer.remove();

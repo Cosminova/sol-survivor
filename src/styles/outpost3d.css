@@ -11,6 +11,10 @@
 /* Labels drawn by the scene sit inside the stage window, never over a panel, and are click-through. */
 .outpost3d-overlay { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
 .outpost3d-overlay[hidden] { display: none; }
+/* Zoom buttons, stacked on the right above the view toggle. */
+.o3d-zoom { position: absolute; right: 10px; bottom: 58px; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; pointer-events: auto; }
+.o3d-zoom-btn { min-width: 40px; justify-content: center; background: rgba(6, 11, 20, 0.85); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); font-weight: 800; }
+@media (max-width: 640px) { .o3d-zoom { bottom: 52px; right: 6px; } }
 .outpost3d-hud {
   --ch: 10px;
   --frame-line: var(--line-strong);
