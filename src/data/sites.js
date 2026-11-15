@@ -1,5 +1,8 @@
 // Landing sites. Map positions are planetocentric lat/lon (east-positive).
 // tempOffsetC adjusts Gale Crater REMS readings for a site's latitude and elevation.
+import { EXO_WORLDS } from './exoWorlds.js';
+import { SOL_WORLDS } from './solWorlds.js';
+
 export const SITES = [
   {
     id: 'jezero', body: 'mars', name: 'Jezero Crater', lat: 18.4, lon: 77.5,
@@ -33,6 +36,19 @@ export const SITES = [
   },
 ];
 
-export const siteById = (id) => SITES.find((s) => s.id === id) ?? null;
+// Sites of every other world live on the world itself (solSites.js for real named places, exoSites.js for the
+// game model's guesses). They are read from the leaf modules, not from worlds.js, to avoid a circular import.
+const OTHER_WORLD_SITES = [...SOL_WORLDS, ...EXO_WORLDS].flatMap((world) => world.sites);
+const SITE_INDEX = new Map([...SITES, ...OTHER_WORLD_SITES].map((site) => [site.id, site]));
 
+/** Resolves a site of any world: Moon, Mars, another solar-system world or an exoplanet. */
+export const siteById = (id) => SITE_INDEX.get(id) ?? null;
+
+/** Moon and Mars sites only, for the existing body-specific screens. */
 export const sitesForBody = (body) => SITES.filter((s) => s.body === body);
+
+/** Every site of one world, by world id ('moon', 'europa', 'proxima-cen-b', ...). */
+export const sitesForWorld = (worldId) => {
+  const bodySites = SITES.filter((site) => site.body === worldId);
+  return bodySites.length ? bodySites : OTHER_WORLD_SITES.filter((site) => site.worldId === worldId);
+};
