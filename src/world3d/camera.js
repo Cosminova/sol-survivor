@@ -1,6 +1,8 @@
 // Third-person follow camera with orbit, zoom, ground/structure collision, shake and cinematic override.
 import * as THREE from 'three';
 
+const CLEARANCE = 0.6; // metres the camera always keeps above the ground under it
+
 export function createFollowCamera(camera, { heightAt, colliders, reducedMotion }) {
   let yaw = 0.35;
   let pitch = 0.32;
@@ -39,7 +41,7 @@ export function createFollowCamera(camera, { heightAt, colliders, reducedMotion 
     const k = first ? 1 : 1 - Math.exp(-dt * 8);
     target.lerp(tmp.set(focus.x, focus.y + 1.35, focus.z), k);
     desired.copy(offsetFor(clearDistance(target))).add(target);
-    const ground = heightAt(desired.x, desired.z) + 0.5;
+    const ground = heightAt(desired.x, desired.z) + CLEARANCE;
     if (desired.y < ground) desired.y = ground;
     camera.position.lerp(desired, first ? 1 : 1 - Math.exp(-dt * 10));
     first = false;
@@ -48,12 +50,15 @@ export function createFollowCamera(camera, { heightAt, colliders, reducedMotion 
       camera.position.y += (Math.random() - 0.5) * shake;
       shake = Math.max(0, shake - dt * 1.6);
     }
+    const floor = heightAt(camera.position.x, camera.position.z) + CLEARANCE;
+    if (camera.position.y < floor) camera.position.y = floor;
     camera.lookAt(target);
   }
 
   return {
     update,
     get yaw() { return yaw; },
+    get pitch() { return pitch; },
     // Ground-plane basis for camera-relative movement.
     basis: () => ({ fx: -Math.sin(yaw), fz: -Math.cos(yaw), rx: Math.cos(yaw), rz: -Math.sin(yaw) }),
     shake(amount) { if (!reducedMotion) shake = Math.max(shake, amount); },

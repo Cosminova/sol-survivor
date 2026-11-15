@@ -10,6 +10,8 @@ export function isWebGLAvailable() {
   }
 }
 
+const LOW_TIER_PIXELS = 560000; // about 1000 x 560
+
 const WEAK_GPU = /swiftshader|llvmpipe|mali-[gt]?[4-7]|adreno \(tm\) [3-5]|intel\(r\) (hd|uhd) graphics [2-6]|powervr/i;
 
 export function detectQuality(container) {
@@ -60,6 +62,9 @@ export function createStage(container, { quality }) {
   scene.add(hemi);
   const fill = new THREE.DirectionalLight('#9fb8ff', 0); // earthshine / sky bounce
   scene.add(fill);
+  // Helmet / suit lamps of the astronaut being played: a soft pool of light that follows them in the dark.
+  const lamp = new THREE.PointLight('#fff2dc', 0, 30, 1.1);
+  scene.add(lamp);
 
   scene.fog = new THREE.FogExp2('#c99a72', 0.004);
 
@@ -76,6 +81,8 @@ export function createStage(container, { quality }) {
 
   function setSize(w, h) {
     if (!w || !h) return;
+    // Weak GPUs fill pixels slowly and the ground covers most of the frame: cap the drawing buffer there.
+    if (!high) renderer.setPixelRatio(Math.min(1, Math.sqrt(LOW_TIER_PIXELS / (w * h))));
     renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
@@ -95,7 +102,7 @@ export function createStage(container, { quality }) {
   renderer.domElement.addEventListener('webglcontextrestored', onRestored);
 
   return {
-    renderer, scene, camera, sun, hemi, fill, high,
+    renderer, scene, camera, sun, hemi, fill, lamp, high,
     bakeEnvironment, setSize, aimSun,
     isLost: () => lost,
     dispose() {

@@ -35,9 +35,17 @@ export const VIEW_MODES = ['outpost', 'map', 'walk'];
 
 // onMode(mode) lets the play screen show/hide and pause the outpost backdrop and the 2D map canvas.
 export function viewToggle({ onMode, getMission, commit, onTask, onToggle, onEndSol }) {
-  const mountEl = h('div', { id: 'play-3d-mount', class: 'play-3d-mount', hidden: true, 'aria-label': '3D outpost view' });
+  // Walk 3D is a full-screen mode: the mount leaves the play stage and covers the viewport between the site
+  // header and the telemetry ticker, with a slim bar (Back to base + the view toggle) on top of the world.
+  const worldEl = h('div', { class: 'walk-world' });
+  const backBtn = h('button', { type: 'button', class: 'chip walk-back', title: 'Back to base (Esc)', onclick: () => exitWalk() }, '← Back to base');
+  const barSlot = h('div', { class: 'walk-bar-toggle' });
+  const bar = h('div', { class: 'walk-bar' }, backBtn, h('span', { class: 'walk-bar-hint', 'aria-hidden': 'true' }, 'Esc to go back'), barSlot);
+  const mountEl = h('div', { id: 'play-3d-mount', class: 'play-3d-mount', hidden: true, 'aria-label': '3D outpost view' }, bar, worldEl);
   let world = null;
   let mode = 'outpost';
+  let lastFlat = 'outpost';
+  let toggleHome = null; // where the view toggle lives while not walking
 
   const buttons = {
     outpost: h('button', { type: 'button', class: 'chip', 'data-view': 'outpost', 'aria-pressed': 'true', title: 'Look around your outpost in 3D', onclick: () => setMode('outpost') }, 'Outpost 3D'),
@@ -72,30 +80,70 @@ export function viewToggle({ onMode, getMission, commit, onTask, onToggle, onEnd
       onHazard: (hz) => commit(applyHazard(getMission(), hz)),
       onProgress: (p) => update((st) => ({ ...st, world3d: p })),
       onOpenTerm: (id) => openTermPopover(id, mountEl),
-      onExit: () => setMode(buttons.outpost.disabled ? 'map' : 'outpost'),
+      onExit: () => exitWalk(),
     };
   };
 
+  function exitWalk() {
+    if (mode === 'walk') setMode(lastFlat === 'outpost' && buttons.outpost.disabled ? 'map' : lastFlat);
+  }
+
+  // Escape leaves walk mode, unless a dialog, popup, mini-game or the intro wants the key first.
+  const onKey = (e) => {
+    if (mode !== 'walk' || e.key !== 'Escape' || e.defaultPrevented) return;
+    const a = document.activeElement;
+    if (a && a !== document.body && !mountEl.contains(a)) return;
+    if (document.querySelector('.modal-backdrop, [role="dialog"]:not([hidden]), .w3d-host[data-cinematic="true"]')) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    exitWalk();
+  };
+
+  function setFullScreen(on) {
+    document.documentElement.classList.toggle('walk-full', on);
+    if (on) {
+      const header = document.querySelector('.site-header');
+      if (header) mountEl.style.setProperty('--walk-top', `${Math.max(0, header.offsetTop - window.scrollY) + header.offsetHeight}px`);
+      if (mountEl.parentElement !== document.body) document.body.append(mountEl);
+      toggleHome = { parent: toggle.parentNode, next: toggle.nextSibling };
+      barSlot.append(toggle);
+      window.addEventListener('keydown', onKey, true);
+    } else {
+      window.removeEventListener('keydown', onKey, true);
+      if (toggleHome?.parent?.isConnected) toggleHome.parent.insertBefore(toggle, toggleHome.next?.parentNode === toggleHome.parent ? toggleHome.next : null);
+      toggleHome = null;
+    }
+  }
+
+  const focusWorld = () => worldEl.querySelector('canvas')?.focus({ preventScroll: true });
+
   async function setMode(next) {
     if (next === mode) return;
+    const wasWalk = mode === 'walk';
     mode = next;
+    if (mode !== 'walk') lastFlat = mode;
     for (const id of VIEW_MODES) buttons[id].setAttribute('aria-pressed', String(mode === id));
     mountEl.hidden = mode !== 'walk';
+    if (wasWalk !== (mode === 'walk')) setFullScreen(mode === 'walk');
     onMode?.(mode);
+    if (wasWalk) buttons[mode].focus({ preventScroll: true });
     if (mode === 'walk' && !world && loader) {
       try {
         const mod = await loader();
         if (!mod.isWebGLAvailable()) {
-          mountEl.textContent = 'The 3D view needs WebGL, which this device does not support.';
+          worldEl.textContent = 'The 3D view needs WebGL, which this device does not support.';
           return;
         }
-        world = mod.mountOutpost3D(mountEl, options());
+        world = mod.mountOutpost3D(worldEl, options());
+        if (import.meta.env.DEV) window.__walk3d = world; // dev-only hook for browser checks (lighting, fps)
+        if (mode === 'walk') focusWorld(); // so the walking keys work straight away
       } catch (err) {
         console.error('[play] 3D view failed', err);
-        mountEl.textContent = 'The 3D view could not start on this device.';
+        worldEl.textContent = 'The 3D view could not start on this device.';
       }
     } else if (world) {
       world.resize();
+      if (mode === 'walk') focusWorld();
     }
   }
 
@@ -110,6 +158,12 @@ export function viewToggle({ onMode, getMission, commit, onTask, onToggle, onEnd
       if (mode === 'outpost') setMode('map');
     },
     update: (mission) => world?.update(mission),
-    stop: () => { world?.dispose(); world = null; },
+    stop: () => {
+      if (mode === 'walk') setFullScreen(false);
+      world?.dispose();
+      world = null;
+      mountEl.remove();
+      if (import.meta.env.DEV && window.__walk3d) delete window.__walk3d;
+    },
   };
 }

@@ -5,8 +5,10 @@ import { buildSuitAstronaut } from './suitModel.js';
 import { npcTarget, steer, resolveCollisions } from './npcLogic.js';
 import { AIRLOCK } from './layout.js';
 import { ROLE_COLORS } from './facts.js';
-import { TASKS } from '../engine/sim.js';
+import { ROLES } from '../engine/sim.js';
 import { disposeTree } from './meshes/kit.js';
+
+export const LOW_HEALTH = 30; // same line the crew cards use for "needs rest now"
 
 function workVerb(task, stationId) {
   if (task === 'science') return 'sample';
@@ -25,7 +27,7 @@ export function createCrew({ parent, layout, heightAt, colliders, high, labels, 
     parent.add(astro.root);
     const angle = (index / 4) * Math.PI - Math.PI / 2;
     const pos = { x: AIRLOCK.x + Math.sin(angle) * 1.6, z: AIRLOCK.z + 1 + Math.cos(angle) * 0.6 };
-    const label = labels.add(astro.root, { y: 2.25, text: '' });
+    const label = labels.addTag(astro.root, { id: crew.id, y: 2.45 });
     const m = { crew, index, astro, pos, heading: 0, inside: false, alpha: 1, label, target: null, verb: null, speed: 0 };
     members.set(crew.id, m);
     return m;
@@ -68,8 +70,7 @@ export function createCrew({ parent, layout, heightAt, colliders, high, labels, 
   // ctx: { dt, mission, playerId, recall, damaged, gravity, reducedMotion, night }
   function update({ dt, mission, playerId, recall, damaged, gravity, reducedMotion, night }) {
     for (const m of members.values()) {
-      const tag = `${m.crew.name.split(' ')[0]} ${TASKS[m.crew.task]?.icon ?? ''}`;
-      m.label.set(m.crew.id === playerId ? `★ ${tag}` : tag);
+      m.label.set({ first: m.crew.name.split(' ')[0], full: m.crew.name, role: ROLES[m.crew.role]?.label ?? m.crew.role, player: m.crew.id === playerId, low: (m.crew.health ?? 100) <= LOW_HEALTH });
       m.label.show(m.alpha > 0.3);
       if (m.crew.id === playerId) continue;
       const target = npcTarget(m.crew, layout, mission, { index: m.index, recall, damaged });
