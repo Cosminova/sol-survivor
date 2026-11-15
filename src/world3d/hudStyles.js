@@ -100,6 +100,28 @@ const CSS = `
 .w3d-modal table{width:100%;border-collapse:collapse;font-size:14px}
 .w3d-modal td{padding:4px 0;border-bottom:1px solid rgba(255,255,255,.08)}
 .w3d-modal td:last-child{text-align:right;font-weight:700}
+.w3d-modal.w3d-summary{--ch:18px;--ln:var(--line-strong,rgba(56,189,248,.6));--br:var(--cyan,#38bdf8);width:min(600px,92vw);padding:24px 28px;border:1px solid var(--ln);border-radius:0;box-shadow:0 16px 48px rgba(0,0,0,.6);background-color:rgba(6,11,20,.95);background-image:linear-gradient(var(--br),var(--br)),linear-gradient(var(--br),var(--br)),linear-gradient(var(--br),var(--br)),linear-gradient(var(--br),var(--br)),linear-gradient(135deg,var(--ln) calc(var(--ch)*.7071 + 1px),transparent calc(var(--ch)*.7071 + 1px)),linear-gradient(315deg,var(--ln) calc(var(--ch)*.7071 + 1px),transparent calc(var(--ch)*.7071 + 1px));background-position:top right,top right,bottom left,bottom left,top left,bottom right;background-size:14px 2px,2px 14px,14px 2px,2px 14px,calc(var(--ch)*2) calc(var(--ch)*2),calc(var(--ch)*2) calc(var(--ch)*2);background-repeat:no-repeat;background-origin:border-box;clip-path:polygon(var(--ch) 0,100% 0,100% calc(100% - var(--ch)),calc(100% - var(--ch)) 100%,0 100%,0 var(--ch));color:var(--text,#e8f3fb);font-family:var(--font-body,"Atkinson Hyperlegible",system-ui,sans-serif);font-size:17px;line-height:1.5}
+.w3d-summary h2{margin:0 0 4px;font-family:var(--font-display,"Orbitron",sans-serif);font-size:24px;font-weight:700;letter-spacing:.04em;color:var(--cyan-bright,#8bdcff)}
+.w3d-summary .w3d-sum-intro{margin:0 0 16px;color:var(--text-dim,#b7c9d9)}
+.w3d-sum-xp{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 12px;padding:10px 14px;border:1px solid rgba(251,191,36,.45);background:rgba(251,191,36,.08)}
+.w3d-sum-xp span{font-family:var(--font-mono,"JetBrains Mono",monospace);font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--gold,#fbbf24)}
+.w3d-sum-xp b{font-family:var(--font-mono,"JetBrains Mono",monospace);font-size:26px;font-weight:800;color:var(--gold,#fbbf24);font-variant-numeric:tabular-nums}
+.w3d-sum-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(140px,100%),1fr));gap:8px;margin:0}
+.w3d-sum-stats>div{display:flex;flex-direction:column-reverse;justify-content:flex-end;gap:2px;padding:10px 12px;border:1px solid var(--line-soft,rgba(56,189,248,.16));background:var(--surface-2,rgba(56,189,248,.07))}
+.w3d-sum-stats dt{font-size:14px;line-height:1.3;color:var(--text-faint,#93a9bc)}
+.w3d-sum-stats dd{margin:0;font-family:var(--font-mono,"JetBrains Mono",monospace);font-size:22px;font-weight:700;line-height:1.2;color:var(--text,#e8f3fb);font-variant-numeric:tabular-nums}
+.w3d-summary .w3d-sum-head{margin:18px 0 8px;font-family:var(--font-mono,"JetBrains Mono",monospace);font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan,#38bdf8)}
+.w3d-sum-obj{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.w3d-sum-obj li{display:flex;align-items:center;gap:10px;color:var(--text-dim,#b7c9d9)}
+.w3d-sum-obj li[data-done="true"]{color:var(--text,#e8f3fb)}
+.w3d-sum-ck{flex:none;display:grid;place-items:center;width:20px;height:20px;border:1.5px solid var(--line-strong,rgba(56,189,248,.6));font:800 14px/1 system-ui,sans-serif;color:var(--on-accent,#03121c)}
+.w3d-sum-obj li[data-done="true"] .w3d-sum-ck{background:var(--good,#3ddbb0);border-color:var(--good,#3ddbb0)}
+.w3d-summary .w3d-row{margin-top:22px;gap:10px}
+.w3d-summary button.w3d-b{--c:8px;min-height:44px;padding:0 22px;border:1px solid var(--line-strong,rgba(56,189,248,.6));border-radius:0;clip-path:polygon(var(--c) 0,100% 0,100% calc(100% - var(--c)),calc(100% - var(--c)) 100%,0 100%,0 var(--c));background:rgba(56,189,248,.07);color:var(--cyan-bright,#8bdcff);font-family:var(--font-mono,"JetBrains Mono",monospace);font-size:15px;font-weight:700;letter-spacing:.02em}
+.w3d-summary button.w3d-b:hover{background:rgba(56,189,248,.18);color:#fff}
+.w3d-summary button.w3d-primary{background:var(--cyan,#38bdf8);border-color:var(--cyan-bright,#8bdcff);color:var(--on-accent,#03121c);font-weight:800}
+.w3d-summary button.w3d-primary:hover{background:var(--cyan-bright,#8bdcff);color:var(--on-accent,#03121c)}
+.w3d-summary button:focus-visible{outline:none;box-shadow:inset 0 0 0 3px #ffd23f}
 .w3d-kbd td{padding:5px 6px;vertical-align:middle;text-align:left}
 .w3d-kbd td:first-child{width:48%}
 .w3d-mg canvas{display:block;width:100%;border-radius:10px;background:#111;touch-action:none}
