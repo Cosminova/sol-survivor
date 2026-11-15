@@ -74,7 +74,7 @@ export function telemetryItems(m, fc) {
     if (mars) {
       items.push(
         { label: 'Season', value: seasonName(e.ls, m.site.lat >= 0) },
-        { label: 'Sky', value: skyWord(e), tone: e.storm || e.tau >= 2 ? 'warn' : null },
+        { label: 'Sky', value: skyWord(e, m), tone: e.storm || e.tau >= 2 ? 'warn' : null },
         { label: 'Outside', value: `${e.minC}° to ${e.maxC}°C` });
     } else {
       items.push(

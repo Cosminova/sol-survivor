@@ -13,7 +13,7 @@ const SUN_WORD = { calm: 'Calm', busy: 'Busy', stormy: 'Stormy' };
 function sky(m) {
   const e = m.env;
   if (m.today?.sep) return { icon: 'alert', text: 'Solar storm', warn: true };
-  if (m.config.body === 'mars') return { icon: 'wind', text: skyWord(e), warn: Boolean(e.storm || e.tau >= 2) };
+  if (m.config.body === 'mars') return { icon: 'wind', text: skyWord(e, m), warn: Boolean(e.storm || e.tau >= 2) };
   return e.lit ? { icon: 'sun', text: 'Sun is up', warn: false } : { icon: 'moon', text: 'Night', warn: true };
 }
 

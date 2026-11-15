@@ -40,7 +40,7 @@ export function cadetChips(m) {
   const unit = dayWord(m.config.body, { plural: true });
   const chips = [];
   if (m.config.body === 'mars') {
-    chips.push(h('span', { class: ['hud-chip', (e.storm || e.tau >= 2) && 'warn'] }, ic('wind'), termButton('tau', skyWord(e)), e.storm ? ` for ${e.storm.solsLeft} more ${unit}` : ''));
+    chips.push(h('span', { class: ['hud-chip', (e.storm || e.tau >= 2) && 'warn'] }, ic('wind'), termButton('tau', skyWord(e, m)), e.storm ? ` for ${e.storm.solsLeft} more ${unit}` : ''));
     chips.push(h('span', { class: 'hud-chip' }, ic('thermometer'), `${e.minC}° to ${e.maxC}°C outside`));
     chips.push(h('span', { class: 'hud-chip' }, ic('orbit'), termButton('solar-longitude', `Season: ${seasonName(e.ls, m.site.lat >= 0)}`)));
   } else {

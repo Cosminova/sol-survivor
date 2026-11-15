@@ -1,5 +1,6 @@
 // Plain-language layer for young players (ages 7-12). Presentation only: nothing here changes game
 // state or numbers. Pure functions and string tables, so they can be unit tested without a DOM.
+import { worldById } from '../../data/worlds.js';
 
 // One short, read-aloud-friendly sentence or two per science word. Shown first in the word popover.
 export const KID_HINTS = {
@@ -101,7 +102,17 @@ export function lastsLevel(f, remaining) {
 export const LEVEL_WORD = { good: 'Good', watch: 'Watch out', danger: 'Danger' };
 export const worstLevel = (...levels) => (levels.includes('danger') ? 'danger' : levels.includes('watch') ? 'watch' : 'good');
 
-export function skyWord(env) {
+const HAZY_PA = 1e4; // thick enough air to haze the sky (Titan); Mars at ~600 Pa is clear between dust storms
+const CLOUD_DECK_PA = 5e6; // Venus: a solid cloud deck
+
+/** Plain words for the sky. Worlds beyond the Moon and Mars describe their own air instead of Mars dust. */
+export function skyWord(env, mission = null) {
+  const id = mission?.config?.worldId;
+  const world = id && id !== 'moon' && id !== 'mars' ? worldById(id) : null;
+  const pressure = world?.facts?.pressurePa?.v ?? 0;
+  if (world && !env.storm && pressure >= CLOUD_DECK_PA) return 'Thick clouds';
+  if (world && !env.storm && pressure >= HAZY_PA) return 'Hazy sky';
+  if (world && !env.storm && pressure < 1) return 'Black sky, no air';
   if (env.storm) return 'Dust storm';
   if (env.tau >= 2) return 'Very dusty sky';
   if (env.tau >= 1) return 'A little dusty';

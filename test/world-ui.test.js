@@ -39,3 +39,15 @@ describe('Walk 3D cues', () => {
     expect(walkCues({ ...base, status: 'won' }, { visitedToday: false }).show).toBe(false);
   });
 });
+
+import { skyWord } from '../src/ui/kid/words.js';
+
+describe('sky words', () => {
+  const clear = { storm: null, tau: 0.5 };
+  it('says hazy on Titan, cloudy on Venus, and keeps Mars dust words', () => {
+    expect(skyWord(clear, { config: { worldId: 'titan' } })).toBe('Hazy sky');
+    expect(skyWord(clear, { config: { worldId: 'venus' } })).toBe('Thick clouds');
+    expect(skyWord(clear, { config: { worldId: 'mars' } })).toBe('Clear sky');
+    expect(skyWord({ storm: { solsLeft: 2 }, tau: 3 }, { config: { worldId: 'mars' } })).toBe('Dust storm');
+  });
+});
