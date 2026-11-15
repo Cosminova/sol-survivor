@@ -54,13 +54,13 @@ function gauge(res, m, fc) {
     hist.length > 1 ? sparkline(hist, { color: res.hex, label: `${res.label} over time`, min: 0 }) : null);
 }
 
-function expertResources(m, fc) {
+export function expertResources(m, fc) {
   return h('section', { class: 'panel play-resources', 'aria-label': 'Life support resources' },
     h('h2', { class: 'panel-title' }, icon('fuel', { size: 18 }), 'Life support', h('span', { class: 'spacer' }), termButton('bvad', 'How much do we need?')),
     h('div', { class: 'gauges' }, RESOURCES.map((r) => gauge(r, m, fc))));
 }
 
-function expertPower(m, power) {
+export function expertPower(m, power) {
   const gen = power.generatedKwh;
   const demand = power.demandKwh;
   const max = Math.max(gen, demand, 1);
@@ -89,7 +89,7 @@ function expertPower(m, power) {
     off.length ? h('p', { class: 'faint' }, `Offline for repairs: ${off.join(', ')}`) : null);
 }
 
-function expertDosimeter(m) {
+export function expertDosimeter(m) {
   const avg = m.crew.reduce((s, c) => s + c.doseMsv, 0) / m.crew.length;
   const transit = m.crew[0]?.transitDoseMsv ?? 0;
   const pct = (100 * avg) / RADIATION.careerLimitMsv;

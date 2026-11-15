@@ -9,7 +9,11 @@ import { niceDate } from './words.js';
 // Short, sayable names for the datasets behind the "Real NASA data" labels.
 const SOURCE_NAMES = { rems: 'Curiosity rover (REMS)', donki: 'NASA storm list (DONKI)', trek: 'NASA Trek maps' };
 
-export const isExpertView = () => Boolean(getState().settings.expertView);
+// The tutorial always runs in Cadet view, whatever the saved setting says (the setting itself is untouched).
+let forceCadet = false;
+export const setForceCadet = (on) => { forceCadet = Boolean(on); };
+
+export const isExpertView = () => !forceCadet && Boolean(getState().settings.expertView);
 
 // Open/closed state of each "More details" box, kept across redraws (the play screen redraws often).
 const openState = new Map();

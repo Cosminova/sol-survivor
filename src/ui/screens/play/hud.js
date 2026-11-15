@@ -35,7 +35,7 @@ function expertChips(m) {
 }
 
 // The same facts in plain words. Tapping a chip explains the science word behind it.
-function cadetChips(m) {
+export function cadetChips(m) {
   const e = m.env;
   const unit = dayWord(m.config.body, { plural: true });
   const chips = [];
@@ -54,7 +54,7 @@ function cadetChips(m) {
 }
 
 // REMS weather is replayed from the Curiosity archive: say so, with the date it was recorded.
-const weatherSource = (m) => (m.env.reference && m.config.body === 'mars'
+export const weatherSource = (m) => (m.env.reference && m.config.body === 'mars'
   ? realDataLabel(m.env.reference.earthDate, 'rems', 'Weather')
   : null);
 
@@ -94,7 +94,7 @@ export function hud(m, { onNext, onRun, busy, fc }) {
     weatherSource(m) ? h('div', { class: 'hud-extra' }, weatherSource(m)) : null);
 }
 
-export function sceneOverlay(m, { onDebrief }) {
+export function sceneOverlay(m, { onDebrief, training = false }) {
   const items = [];
   const expert = isExpertView();
   if (m.today?.sep) {
@@ -102,11 +102,12 @@ export function sceneOverlay(m, { onDebrief }) {
   }
   if (m.today?.shelter) items.push(h('div', { class: 'scene-alert shelter' }, ic('shield'), m.today.shelter === true ? 'Crew is safe in the storm shelter' : 'Crew is hiding behind the water tanks'));
   if (m.env.storm) items.push(h('div', { class: 'scene-alert storm' }, ic('wind'), expert ? `Dust storm · τ ${m.env.tau}` : 'Dust storm: solar panels make less power'));
-  const ref = m.env.reference && m.config.body === 'mars'
+  // Cadet view keeps the outpost clear: the weather source line lives in the Mission details drawer.
+  const ref = expert && m.env.reference && m.config.body === 'mars'
     ? h('div', { class: 'scene-ref' }, realDataLabel(m.env.reference.earthDate, 'rems', `Weather from the Curiosity rover, sol ${m.env.reference.sol}`))
     : null;
   const won = m.status === 'won';
-  const end = m.status !== 'active'
+  const end = m.status !== 'active' && !training
     ? h('div', { class: ['scene-end', m.status] },
       h('span', { class: 'scene-end-kicker' }, icon('status', { size: 18 }), 'End of mission'),
       h('p', { class: 'scene-end-title' }, won ? 'Mission complete!' : LOSS_TITLE),
