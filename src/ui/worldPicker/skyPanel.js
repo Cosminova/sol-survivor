@@ -39,7 +39,7 @@ function targetList(targets, onFly) {
     h('h3', { class: 'wp-targets-title' }, 'In our Solar System'),
     h('ul', { class: 'wp-target-list' }, sol.map((t) => targetButton(t, onFly))),
     h('h3', { class: 'wp-targets-title' }, 'Stars with rocky planets'),
-    stars.length ? h('ul', { class: 'wp-target-list' }, stars.map((t) => targetButton(t, onFly)))
+    stars.length ? h('ul', { class: 'wp-target-list is-stars', tabindex: '-1' }, stars.map((t) => targetButton(t, onFly)))
       : h('p', { class: 'muted' }, ui.stars ? 'No star systems yet.' : 'Loading the stars...'));
 }
 

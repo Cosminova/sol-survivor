@@ -1,5 +1,5 @@
 // Landing sites for any world, and the evening instant the sky is drawn for. Pure logic, no DOM.
-import * as siteData from '../../data/sites.js';
+import { sitesForWorld, sitesForBody } from '../../data/sites.js';
 
 const EVENING_HOUR_LOCAL = 21; // the sky is shown at 9 pm local mean solar time on the chosen night
 const MS_PER_HOUR = 3600000;
@@ -13,17 +13,15 @@ export function eveningInstant(nightIso, observer) {
 }
 
 /**
- * Landing sites for a world. Uses sitesForWorld() from src/data/sites.js once the data work adds it, then
- * world.sites, then the Moon/Mars site lists. A world with no mapped sites gets one practice zone borrowed from
- * its analog body, so the mission can still launch.
+ * Landing sites for a world, from sitesForWorld() in src/data/sites.js (then world.sites). A world with no
+ * mapped sites gets one practice zone borrowed from its analog body, so the mission can still launch.
+ * @param {object} world
+ * @param {{ sitesForWorld: Function, sitesForBody: Function }} [data] injectable for tests
  * @returns {{ sites: Array<object>, practice: boolean }}
  */
-export function resolveSites(world, data = siteData) {
-  const sitesForWorld = Reflect.get(data, 'sitesForWorld');
-  const fromData = typeof sitesForWorld === 'function' ? sitesForWorld(world.id) ?? [] : [];
-  const list = fromData.length ? fromData
-    : world.sites?.length ? world.sites
-      : world.id === 'moon' || world.id === 'mars' ? data.sitesForBody(world.id) : [];
+export function resolveSites(world, data = { sitesForWorld, sitesForBody }) {
+  const fromData = data.sitesForWorld(world.id) ?? [];
+  const list = fromData.length ? fromData : world.sites ?? [];
   if (list.length) return { sites: list, practice: false };
   return { sites: data.sitesForBody(world.analog).slice(0, 1), practice: true };
 }

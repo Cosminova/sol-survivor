@@ -5,7 +5,7 @@ import {
 import {
   GAS_GIANTS, SOLAR_TARGETS, OBSERVERS, isLandableWorld, isAllowedTarget, skyTargets, starTargets, worldsForTarget, catalogueMatch, whereInSky,
 } from '../src/ui/worldPicker/targets.js';
-import { factRows, provenanceLine, formatDay, formatPressure } from '../src/ui/worldPicker/worldFacts.js';
+import { factRows, provenanceLine, disputedLine, formatDay, formatPressure } from '../src/ui/worldPicker/worldFacts.js';
 import { eveningInstant, resolveSites } from '../src/ui/worldPicker/worldSites.js';
 import { WORLDS, worldById, real, generated } from '../src/data/worlds.js';
 import { siteById } from '../src/data/sites.js';
@@ -153,10 +153,33 @@ describe('sky targets', () => {
 
   it('only opens moons from Jupiter and Saturn, never the planet itself', () => {
     const jupiter = { ...SOLAR_TARGETS.find((t) => t.id === 'jupiter'), kind: 'body' };
-    const worlds = [...WORLDS, { id: 'jupiter', kind: 'planet', facts: {} }, { id: 'europa', kind: 'moon', parent: 'jupiter', facts: {} }];
+    const worlds = [{ id: 'jupiter', kind: 'planet', facts: {} }, { id: 'europa', kind: 'moon', parent: 'jupiter', facts: {} }];
     const { worlds: found, missing } = worldsForTarget(jupiter, worlds);
     expect(found.map((w) => w.id)).toEqual(['europa']);
     expect(missing).toEqual(['io', 'ganymede', 'callisto']);
+  });
+
+  it('finds every promised moon of Jupiter and Saturn in the world data', () => {
+    for (const id of ['jupiter', 'saturn']) {
+      const target = { ...SOLAR_TARGETS.find((t) => t.id === id), kind: 'body' };
+      const { worlds, missing } = worldsForTarget(target, WORLDS);
+      expect(missing, id).toEqual([]);
+      expect(worlds.map((w) => w.id)).toEqual(expect.arrayContaining(target.moons));
+      expect(worlds.some((w) => GAS_GIANTS.has(w.id))).toBe(false);
+    }
+  });
+
+  it('has a world profile behind every Solar System target that is not a gateway', () => {
+    for (const t of SOLAR_TARGETS.filter((x) => !x.gateway)) {
+      expect(worldsForTarget({ ...t, kind: 'body' }, WORLDS).missing, t.id).toEqual([]);
+    }
+  });
+
+  it('gives every exoplanet a ringed host star, and only rocky worlds behind it', () => {
+    const stars = starTargets(WORLDS, SKY.stars);
+    const systems = new Set(WORLDS.filter((w) => w.kind === 'exoplanet').map((w) => w.system));
+    expect(stars.length).toBe(systems.size);
+    for (const t of stars) for (const w of worldsForTarget(t, WORLDS).worlds) expect(isLandableWorld(w)).toBe(true);
   });
 
   it('makes one ringed host-star target per exoplanet system, flagged too faint when not in the catalogue', () => {
@@ -175,7 +198,7 @@ describe('sky targets', () => {
 
   it('lists Proxima Centauri b behind its host star', () => {
     const proxima = targets.find((t) => t.system === 'Proxima Cen');
-    expect(worldsForTarget(proxima, WORLDS).worlds.map((w) => w.id)).toEqual(['proxima-cen-b']);
+    expect(worldsForTarget(proxima, WORLDS).worlds.map((w) => w.id)).toContain('proxima-cen-b');
   });
 
   it('sees Proxima Centauri above the horizon from Canberra in the evening', () => {
@@ -203,9 +226,22 @@ describe('world cards', () => {
 
   it('says plainly when some details are generated', () => {
     expect(provenanceLine(worldById('proxima-cen-b'))).toMatch(/Real planet.*Some details below are generated because nobody has measured them yet\./);
-    expect(provenanceLine(exo({ discovered: 2016 }))).toMatch(/discovered in 2016/);
+    expect(provenanceLine(exo({ discovery: { year: 2016 } }))).toMatch(/discovered in 2016/);
     expect(provenanceLine(worldById('mars'))).toMatch(/Every detail below is measured/);
     expect(provenanceLine(exo({ facts: { gravityG: generated(1) } }))).toMatch(/generated/);
+  });
+
+  it('carries fact notes such as "minimum mass" through to the card rows', () => {
+    const rows = factRows(exo({ facts: { gravityG: { ...real(1, 'exo-archive'), note: 'from the minimum mass' } } }));
+    expect(rows.find((r) => r.key === 'gravity').note).toBe('from the minimum mass');
+    expect(rows.find((r) => r.key === 'distance').note).toBeNull();
+  });
+
+  it('warns plainly about disputed planets', () => {
+    expect(disputedLine(exo({ disputed: true }))).toMatch(/^NASA lists this planet as disputed\./);
+    expect(disputedLine(exo())).toBeNull();
+    const disputed = WORLDS.filter((w) => w.disputed);
+    for (const w of disputed) expect(disputedLine(w)).toMatch(/disputed/);
   });
 
   it('formats days and air for kids', () => {
@@ -222,7 +258,14 @@ describe('landing sites', () => {
     expect(resolveSites(worldById('moon')).practice).toBe(false);
   });
 
-  it('prefers sitesForWorld() once the data module provides it', () => {
+  it('uses the mapped sites of Proxima Centauri b, and every one resolves for the engine', () => {
+    const { sites, practice } = resolveSites(worldById('proxima-cen-b'));
+    expect(practice).toBe(false);
+    expect(sites.length).toBeGreaterThan(0);
+    for (const s of sites) expect(siteById(s.id)).not.toBeNull();
+  });
+
+  it('prefers sitesForWorld() from the data module', () => {
     const data = { sitesForWorld: (id) => (id === 'test-b' ? [{ id: 'test-site' }] : []), sitesForBody: () => [] };
     expect(resolveSites(exo(), data)).toEqual({ sites: [{ id: 'test-site' }], practice: false });
   });

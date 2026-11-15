@@ -1,6 +1,6 @@
 // World cards and the landing-site list for the Cosminova sky picker.
 import { h } from '../dom.js';
-import { factRows, provenanceLine } from './worldFacts.js';
+import { factRows, provenanceLine, disputedLine } from './worldFacts.js';
 
 const badge = (text, measured) => h('span', { class: ['wp-badge', measured ? 'wp-badge-real' : 'wp-badge-gen'] }, text);
 
@@ -18,11 +18,14 @@ export function worldCard(world, { onChoose, selected = false, challenge, effect
     h('header', { class: 'wp-card-head' },
       h('h4', { id: titleId, class: 'wp-card-title' }, world.name),
       h('p', { class: 'wp-card-prov' }, provenanceLine(world)),
+      world.disputed ? h('p', { class: 'wp-card-disputed' }, disputedLine(world)) : null,
       h('p', { class: 'wp-card-blurb' }, world.blurb)),
     challenge ? h('p', { class: 'wp-card-challenge' }, challenge(world)) : null,
-    h('dl', { class: 'wp-facts' }, rows.map((r) => h('div', { class: 'wp-fact', dataset: { fact: r.key } },
+    h('dl', { class: 'wp-facts' }, rows.map((r) => h('div', { class: 'wp-fact', dataset: { fact: r.key }, title: r.note ?? null },
       h('dt', null, r.label),
-      h('dd', null, h('span', { class: 'wp-fact-value' }, r.value), badge(r.badge, r.measured))))),
+      h('dd', null,
+        h('span', { class: 'wp-fact-value' }, r.value), badge(r.badge, r.measured),
+        r.note ? h('span', { class: 'wp-fact-note' }, r.note) : null)))),
     h('div', { class: 'wp-effects', 'data-slot': 'world-effects' }, effects ? effects(world) : null),
     onChoose ? h('button', {
       type: 'button', class: ['btn', selected ? 'btn-cyan' : 'btn-primary', 'wp-choose'], 'aria-pressed': String(selected),

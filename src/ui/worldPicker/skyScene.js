@@ -43,6 +43,9 @@ const PICK_RADIUS_PX = 30;
 const TURN_SECONDS = 1.1;
 const ZOOM_SECONDS = 1.7;
 const SKYLINE_SEGMENTS = 240;
+const LABEL_CHAR_PX = 7.4; // label width estimate, so no layout reads happen in the frame loop
+const LABEL_PAD_PX = 12;
+const LABEL_HEIGHT_PX = 20;
 
 const STAR_VERT = /* glsl */ `
   attribute float size; attribute vec3 color; varying vec3 vColor; varying float vAlpha;
@@ -230,6 +233,7 @@ export class SkyScene {
     this.labelLayer.replaceChildren();
     this.labels.clear();
     this.targets = targets;
+    this.selectedId = selectedId;
     for (const t of targets) {
       const isStar = t.kind === 'star';
       const color = isStar ? '#5eead4' : t.color;
@@ -245,7 +249,8 @@ export class SkyScene {
       label.type = 'button';
       label.tabIndex = -1; // the keyboard list beside the sky is the focusable way in
       label.className = `wp-sky-label${isStar ? ' is-star' : ''}${t.gateway ? ' is-gateway' : ''}${t.id === selectedId ? ' is-selected' : ''}`;
-      label.textContent = isStar && !t.nakedEye ? `${t.name} (too faint to see)` : t.name;
+      label.textContent = t.name;
+      if (isStar && !t.nakedEye) label.title = `${t.name}: too faint to see with your eyes`;
       label.dataset.target = t.id;
       label.addEventListener('click', () => this.onPick?.(t.id));
       this.labelLayer.append(label);
@@ -473,21 +478,37 @@ export class SkyScene {
     this._placeLabels();
   }
 
+  // Labels never pile up: bodies and the selected target win, then each ring's label only shows if it has room.
   _placeLabels() {
     const flying = Boolean(this.flight);
-    for (const t of this.targets) {
+    const placed = [];
+    const fits = (box) => !placed.some((b) => box.x < b.x + b.w && b.x < box.x + box.w && box.y < b.y + LABEL_HEIGHT_PX && b.y < box.y + LABEL_HEIGHT_PX);
+    const order = [...this.targets].sort((a, b) => this._labelRank(a) - this._labelRank(b));
+    for (const t of order) {
       const label = this.labels.get(t.id);
       const marker = this.markers.get(t.id);
       const s = t.aboveHorizon || flying ? this._screen(marker.position) : null;
       marker.visible = t.aboveHorizon || this.flight?.id === t.id;
-      const show = Boolean(s?.inView) && (!flying || this.flight.id === t.id);
+      const w = t.name.length * LABEL_CHAR_PX + LABEL_PAD_PX;
+      const box = s ? { x: s.x - w / 2, y: s.y + 14, w } : null;
+      const show = Boolean(s?.inView) && (!flying || this.flight.id === t.id) && fits(box);
       label.hidden = !show;
-      if (show) label.style.transform = `translate(${s.x.toFixed(1)}px, ${(s.y + 14).toFixed(1)}px) translateX(-50%)`;
+      if (!show) continue;
+      placed.push(box);
+      label.style.transform = `translate(${s.x.toFixed(1)}px, ${(s.y + 14).toFixed(1)}px) translateX(-50%)`;
     }
     for (const n of this.starNameLabels ?? []) {
       const s = n.alt > 0 && !flying ? this._screen(n.vec) : null;
-      n.span.hidden = !s?.inView;
-      if (s?.inView) n.span.style.transform = `translate(${(s.x + 6).toFixed(1)}px, ${(s.y - 6).toFixed(1)}px)`;
+      const box = s ? { x: s.x + 6, y: s.y - 6, w: n.span.textContent.length * LABEL_CHAR_PX } : null;
+      const show = Boolean(s?.inView) && fits(box);
+      n.span.hidden = !show;
+      if (show) n.span.style.transform = `translate(${box.x.toFixed(1)}px, ${box.y.toFixed(1)}px)`;
     }
+  }
+
+  _labelRank(t) {
+    if (t.id === this.selectedId) return 0;
+    if (t.kind === 'body') return 1;
+    return t.nakedEye ? 2 : 3;
   }
 }

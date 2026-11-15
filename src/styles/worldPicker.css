@@ -68,6 +68,8 @@
 .wp-card-title { margin: 0; font-size: var(--fs-lg); }
 .wp-card-prov { font-size: var(--fs-sm); color: var(--cyan-bright); }
 .wp-card-blurb { color: var(--text-dim); }
+.wp-card-disputed { padding: 0.3rem 0.6rem; border-left: 3px solid var(--danger); background: var(--danger-bg); color: var(--text); font-size: var(--fs-sm); }
+.wp-fact-note { flex-basis: 100%; font-size: var(--fs-xs); color: var(--text-faint); }
 .wp-card-challenge { margin: 0; font-weight: 700; color: var(--warn); }
 .wp-facts { display: grid; gap: 0.35rem; margin: 0; }
 .wp-fact { display: grid; grid-template-columns: minmax(7rem, 40%) 1fr; gap: 0.5rem; font-size: var(--fs-sm); }
@@ -102,3 +104,4 @@
   .wp-stage { height: clamp(260px, 46vh, 380px); }
   .wp-fact { grid-template-columns: 1fr; gap: 0.1rem; }
 }
+.wp-target-list.is-stars { max-height: 24rem; overflow-y: auto; padding-right: 4px; }

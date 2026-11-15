@@ -62,7 +62,9 @@ export function formatDistance(world) {
  */
 export function factRows(world) {
   const f = world.facts ?? {};
-  const row = (key, label, fact, format) => (fact ? { key, label, value: format(fact.v), badge: factLabel(fact), measured: isMeasured(fact) } : null);
+  const row = (key, label, fact, format) => (fact
+    ? { key, label, value: format(fact.v), badge: factLabel(fact), measured: isMeasured(fact), note: fact.note ?? null }
+    : null);
   const dist = formatDistance(world);
   return [
     row('gravity', 'Gravity', f.gravityG, formatGravity),
@@ -75,14 +77,17 @@ export function factRows(world) {
     row('water', 'Liquid water', f.liquidWater, (v) => WATER_WORDS[v] ?? String(v)),
     row('ground', 'Ground', f.ground, (v) => GROUND_WORDS[v] ?? String(v)),
     row('radiation', 'Radiation on the ground', f.radiationMsvPerDay, formatRadiation),
-    dist ? { key: 'distance', label: 'Distance', value: dist.value, badge: factLabel(dist.fact), measured: isMeasured(dist.fact) } : null,
+    dist ? { key: 'distance', label: 'Distance', value: dist.value, badge: factLabel(dist.fact), measured: isMeasured(dist.fact), note: dist.fact.note ?? null } : null,
   ].filter(Boolean);
 }
+
+/** Warning shown on worlds the NASA Exoplanet Archive flags as controversial, or null. */
+export const disputedLine = (world) => (world.disputed ? 'NASA lists this planet as disputed. Astronomers are not yet sure it is really there.' : null);
 
 /** The plain-language header line about where the facts come from. */
 export function provenanceLine(world) {
   const anyGenerated = Object.values(world.facts ?? {}).some((fact) => fact && !isMeasured(fact));
-  const year = world.discovered ?? world.discoveryYear ?? null;
+  const year = world.discovery?.year ?? null;
   const first = world.kind === 'exoplanet'
     ? `Real planet${year ? ` discovered in ${year}` : ''}, listed in NASA's Exoplanet Archive.`
     : 'A real world in our Solar System, explored by NASA spacecraft.';
