@@ -93,7 +93,9 @@ export function viewToggle({ onMode, getMission, commit, onTask, onToggle, onEnd
     if (mode !== 'walk' || e.key !== 'Escape' || e.defaultPrevented) return;
     const a = document.activeElement;
     if (a && a !== document.body && !mountEl.contains(a)) return;
-    if (document.querySelector('.modal-backdrop, [role="dialog"]:not([hidden]), .w3d-host[data-cinematic="true"]')) return;
+    // Only dialogs that are actually on screen count: some (the Mission details drawer) hide a wrapper, not themselves.
+    const shown = (el) => (el.checkVisibility ? el.checkVisibility() : el.getClientRects().length > 0);
+    if ([...document.querySelectorAll('.modal-backdrop, [role="dialog"], .w3d-host[data-cinematic="true"]')].some(shown)) return;
     e.preventDefault();
     e.stopImmediatePropagation();
     exitWalk();
