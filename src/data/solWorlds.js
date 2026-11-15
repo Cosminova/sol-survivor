@@ -21,7 +21,6 @@ const GRAVITATIONAL_CONSTANT = 6.6743e-11;
 const HOURS_PER_DAY = 24;
 const KG_PER_M3_PER_GCC = 1000;
 const PA_PER_BAR = 1e5;
-const EARTH_SEA_LEVEL_PA = 101325;
 
 // Parent planets: semimajor axis (AU), sidereal year (days) and sunlight (W/m²) from their fact sheets.
 const JUPITER = { id: 'jupiter', src: 'jupiter-fact', satSrc: 'jovian-sat-fact', orbitAu: 5.20336, yearDays: 4332.589, sunlightWm2: 50.26 };
@@ -181,7 +180,7 @@ const TITAN = world({
   facts: {
     ...moonBulk({ parent: SATURN, radiusKm: 2575, massE20Kg: 1345.5, densityKgM3: 1880, periodDays: 15.945421 }),
     tempDayC: real(-179, 'titan-facts'), tempNightC: real(-179, 'titan-facts', 'thick air keeps day and night the same'),
-    pressurePa: derived(round(1.6 * EARTH_SEA_LEVEL_PA, -2), 'titan-facts', 'about 60% more than air pressure on Earth'),
+    pressurePa: real(146700, 'huygens-hasi', 'measured by the Huygens probe as it landed in 2005: about 1.5 times Earth’s air pressure'),
     air: real([{ gas: 'N2', pct: 95 }, { gas: 'CH4', pct: 5 }], 'titan-facts'),
     magneticField: noMoonField(),
     radiationMsvPerDay: generated(0.01, 'thick air blocks most space radiation; no NASA surface dose found'),

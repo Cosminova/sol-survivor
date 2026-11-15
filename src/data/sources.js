@@ -497,6 +497,13 @@ export const SOURCES = {
     kind: 'reference',
     use: 'Callisto’s cratered rock-and-ice surface, possible ocean and trace carbon dioxide.',
   },
+  'huygens-hasi': {
+    title: 'In situ measurements of the physical characteristics of Titan’s environment (Fulchignoni et al. 2005, Nature), Huygens HASI',
+    org: 'ESA / NASA Cassini-Huygens',
+    url: 'https://www.esa.int/Science_Exploration/Space_Science/Results_from_Mars_Express_and_Huygens/Titan_s_turbulence_surprises_scientists',
+    kind: 'paper',
+    use: 'Titan’s surface pressure, 1467 hPa, measured by the Huygens probe at its landing site.',
+  },
   'titan-facts': {
     title: 'Titan: Facts',
     org: 'NASA Science',
