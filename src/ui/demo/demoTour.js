@@ -53,7 +53,8 @@ async function playTraining(t, setCaption) {
       if (step === 'real-sun') { await t.click('.coach-more'); await t.hold(4500); } else await t.hold(3000);
       await t.click('.coach-next');
     } else {
-      await t.hold(2000);
+      // the storm choice and the night switch-off are the heart of the trade-off: give them time to be read
+      await t.hold(step === 'storm' || step === 'switch' ? 4500 : 2000);
       if (step === 'storm') await t.click('.event-modal .event-choice:not([disabled])');
       else if (step === 'keep-going') await t.click('.event-modal [data-autofocus]');
       else if (step === 'switch') await t.click('#kid-switchboard .kid-switch.on:not([disabled])');
@@ -91,6 +92,8 @@ export const DEMO_STEPS = [
       setCaption('The debrief sums up the trade-offs. Failing is fine: every mission can be replayed, and events change between playthroughs.');
       t.spot(await t.waitFor('.tutorial-recap', { timeout: 8000 }));
       await t.hold(5000);
+      t.spot(null);
+      await t.click('.tutorial-recap .modal-close'); // close it, or it stays over the next screens
     },
   },
   {
