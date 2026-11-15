@@ -148,9 +148,11 @@ export function skyPanel(fp, onChange, hooks = {}) {
   function visitWorld(world) {
     ui.planetId = world.id;
     ui.view = 'planet';
+    // Choosing the world redraws the loadout, which builds a fresh panel from ui. Painting this (now detached)
+    // panel as well would pull the shared 3D globe into it and off the screen, so only paint if still shown.
     chooseWorld(world);
-    paint();
-    root.querySelector('.wp-planet-title')?.focus();
+    if (root.isConnected) paint();
+    document.querySelector('.wp-planet-title')?.focus();
   }
 
   function backToSystem() {

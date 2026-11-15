@@ -10,6 +10,15 @@ describe('portraitLook', () => {
     expect(look.glow).toBeTruthy();
   });
 
+  it('shows Titan as a hazy world, not an ice ball, and Mars with clear air', () => {
+    const titan = portraitLook(worldById('titan'));
+    expect(titan.haze).toBeGreaterThan(0.4);
+    expect(titan.haze).toBeLessThan(0.8);
+    expect(titan.iceCap).toBeLessThan(0.1);
+    expect(portraitLook(worldById('mars')).haze).toBe(0);
+    expect(portraitLook(worldById('venus')).haze).toBeCloseTo(1, 1);
+  });
+
   it('hides Venus under cloud and leaves airless worlds without a glow', () => {
     expect(portraitLook(worldById('venus')).thickClouds).toBe(true);
     expect(portraitLook(worldById('moon')).glow).toBeNull();

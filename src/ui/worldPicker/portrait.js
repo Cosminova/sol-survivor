@@ -15,10 +15,11 @@ const SYSTEM_W = 640;
 const SYSTEM_H = 140;
 const STAR_X = 40;
 const NOISE_CELLS = 9;
-const ICE_CAP_MAX = 0.45; // fraction of the globe's height a fully icy world's caps cover
+const ICE_CAP_MAX = 0.25; // fraction of the globe's height a fully icy world's polar caps cover
 const LIGHT = [-0.55, -0.35, 0.76]; // light from the upper left, toward the viewer
 const THIN_AIR_PA = 1000;
 const CLOUD_DECK_PA = 5e6; // above this the ground is hidden under cloud (Venus)
+const HAZE_DECADES = 4; // haze strength grows with each factor of ten of air above THIN_AIR_PA: Mars 0, Titan ~0.5, Venus 1
 
 const rgb = (hex) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
 const css = ([r, g, b], a = 1) => `rgba(${Math.round(r)},${Math.round(g)},${Math.round(b)},${a})`;
@@ -56,11 +57,14 @@ export function portraitLook(world) {
   const pressure = f.pressurePa?.v ?? 0;
   // The palette carries a liquid colour only when the world has open liquid on top (Titan's methane, lava, seas).
   const liquid = p.liquid ?? (f.liquidWater?.v === 'surface' ? '#2f6f8f' : null);
+  const haze = pressure > THIN_AIR_PA && (p.haze ?? p.sky) ? clamp01(Math.log10(pressure / THIN_AIR_PA) / HAZE_DECADES) : 0;
   return {
+    haze,
     ground: p.ground ?? '#6b5a4e',
     rock: p.rock ?? '#3f3530',
     ice: p.ice ?? '#d8e4ee',
-    iceCap: clamp01(f.waterIce?.v ?? 0) * ICE_CAP_MAX,
+    // Ice under thick haze (Titan's water-ice bedrock under dunes) is not what you see from space.
+    iceCap: clamp01(f.waterIce?.v ?? 0) * ICE_CAP_MAX * (1 - haze),
     liquid,
     lava: f.ground?.v === 'lava' || (f.hazards?.v ?? []).includes('volcanism'),
     glow: pressure > THIN_AIR_PA ? (p.haze ?? p.sky ?? null) : null,
@@ -69,7 +73,13 @@ export function portraitLook(world) {
 }
 
 function surfaceColour(look, cols, n, fine, polar) {
-  if (look.thickClouds && cols.cloud) return cols.cloud.map((c) => lerp(c, 255, 0.15 + 0.2 * fine));
+  const ground = groundColour(look, cols, n, fine, polar);
+  if (!cols.cloud || !look.haze) return ground;
+  const cloud = cols.cloud.map((c) => lerp(c, 255, 0.1 + 0.15 * fine));
+  return ground.map((c, i) => lerp(c, cloud[i], look.thickClouds ? 1 : look.haze));
+}
+
+function groundColour(look, cols, n, fine, polar) {
   if (polar > 1 - look.iceCap * 2 + (n - 0.5) * 0.15) return cols.ice;
   if (look.lava && fine > 0.86) return [255, 120, 40];
   if (cols.liquid && n < 0.38) return cols.liquid;
