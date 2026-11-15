@@ -21,6 +21,7 @@ import { freePlayPanel, difficultyPicker, codeField, crewFields } from './loadou
 import { isUnlocked } from './campaign.js';
 import { onLive } from '../../live/liveData.js';
 import { liveSunCard } from '../live/liveSun.js';
+import { dayKey } from '../kid/words.js';
 
 const drafts = new Map();
 const EMPTY = { modules: {}, supplies: { o2: 0, water: 0, food: 0 } };
@@ -139,7 +140,7 @@ export function render(root, { params, query }) {
       missionId === 'free-play' ? freePlayPanel(draft.free, (patch) => setDraft({ free: { ...draft.free, ...patch } }), WORLD_CARD_HOOKS) : null,
       h('section', { class: 'panel' },
         h('h2', { class: 'panel-title' }, 'Machines'),
-        h('div', { class: 'lo-modules' }, modules.map((mod) => moduleCard(mod, draft.loadout.modules[mod.id] ?? 0, (n) => { play('click'); setModules(mod.id, n); })))),
+        h('div', { class: 'lo-modules' }, modules.map((mod) => moduleCard(mod, draft.loadout.modules[mod.id] ?? 0, (n) => { play('click'); setModules(mod.id, n); }, dayKey(config))))),
       h('section', { class: 'panel' },
         h('h2', { class: 'panel-title' }, 'Supplies from Earth'),
         needsPanel(result.needs),
@@ -149,7 +150,7 @@ export function render(root, { params, query }) {
       h('div', { class: 'panel lo-check' },
         h('h2', { class: 'panel-title mars' }, 'Flight check'),
         massBar(result),
-        validationList(result),
+        validationList(result, dayKey(config)),
         difficultyPicker(draft.difficulty, (difficulty) => setDraft({ difficulty })),
         codeField(draft.code, (code) => setDraft({ code })),
         crewFields(draft.crew, (crew) => setDraft({ crew })),

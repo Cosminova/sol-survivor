@@ -3,7 +3,7 @@
 import { h, s } from '../../dom.js';
 import { icon } from '../../icons.js';
 import { METER_WORD } from '../../kid/plans.js';
-import { dayWord } from '../../kid/words.js';
+import { dayWord, dayKey } from '../../kid/words.js';
 
 const LEVEL_ICON = { good: 'check', low: 'alert', danger: 'alert' };
 const fmt = (v) => (v >= 100 ? Math.round(v).toLocaleString() : (Math.round(v * 10) / 10).toString());
@@ -92,7 +92,7 @@ function meter({ id, name, level, art, word, detail, open, onToggle }) {
  * @param {{ sim: object|null, open: string|null, onToggle: (id: string) => void }} opts
  */
 export function metersPanel(mission, states, { sim, open, onToggle }) {
-  const body = mission.config.body;
+  const body = dayKey(mission.config);
   const { air, power, shield } = states;
   const cells = power.hasBattery ? Math.ceil(power.pct / 25) : power.cold ? 0 : power.shed.length ? 2 : 4;
   return h('section', { class: 'kid-meters', 'aria-label': 'Air, power and shield' },

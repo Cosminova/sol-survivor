@@ -10,7 +10,7 @@ import { moduleById } from '../../../data/modules.js';
 import { icon } from '../../icons.js';
 import { computePower } from '../../../engine/sim.js';
 import { isExpertView, moreDetails } from '../../kid/view.js';
-import { lastsText, lastsLevel, worstLevel, LEVEL_WORD, dayWord } from '../../kid/words.js';
+import { lastsText, lastsLevel, worstLevel, LEVEL_WORD, dayWord, dayKey } from '../../kid/words.js';
 
 const GAUGE_ICONS = { o2: 'bubbles', water: 'droplet', food: 'package', batteryKwh: 'battery', spares: 'wrench' };
 
@@ -24,11 +24,11 @@ const RESOURCES = [
 
 const fmt = (v) => (v >= 100 ? Math.round(v).toLocaleString() : (Math.round(v * 10) / 10).toString());
 
-function solsLeftBadge(f, remaining) {
-  if (!f) return h('span', { class: 'badge' }, 'Forecast after Sol 1');
+function solsLeftBadge(f, remaining, key) {
+  if (!f) return h('span', { class: 'badge' }, `Forecast after ${dayWord(key, { cap: true })} 1`);
   if (!Number.isFinite(f.sols)) return h('span', { class: 'badge good' }, f.rate > 0 ? '▲ Growing' : '♾️ Stable');
   const level = f.sols <= 3 ? 'danger' : f.sols < remaining ? 'warn' : 'good';
-  return h('span', { class: ['badge', level] }, `${f.sols} sol${f.sols === 1 ? '' : 's'} left`);
+  return h('span', { class: ['badge', level] }, `${f.sols} ${dayWord(key, { plural: f.sols !== 1 })} left`);
 }
 
 function gauge(res, m, fc) {
@@ -49,8 +49,8 @@ function gauge(res, m, fc) {
     h('div', { class: 'gauge-bar', role: 'meter', 'aria-label': `${res.label} level`, 'aria-valuemin': 0, 'aria-valuemax': 100, 'aria-valuenow': Math.round(pct) },
       h('span', { style: { width: `${Math.min(100, pct)}%` } })),
     h('div', { class: 'gauge-foot' },
-      res.fc ? solsLeftBadge(f, remaining) : h('span', { class: 'badge' }, `${value} ready`),
-      f && Number.isFinite(f.rate) ? h('span', { class: 'faint mono' }, `${f.rate >= 0 ? '+' : ''}${fmt(f.rate)}/sol`) : null),
+      res.fc ? solsLeftBadge(f, remaining, dayKey(m.config)) : h('span', { class: 'badge' }, `${value} ready`),
+      f && Number.isFinite(f.rate) ? h('span', { class: 'faint mono' }, `${f.rate >= 0 ? '+' : ''}${fmt(f.rate)}/${dayWord(dayKey(m.config))}`) : null),
     hist.length > 1 ? sparkline(hist, { color: res.hex, label: `${res.label} over time`, min: 0 }) : null);
 }
 
@@ -149,7 +149,7 @@ function card({ id, name, term, iconName, level, color }, ...children) {
 
 function airGauge(m, fc) {
   const remaining = m.config.targetSols - m.sol;
-  const body = m.config.body;
+  const body = dayKey(m.config);
   const parts = [
     { key: 'o2', label: 'Air', f: fc?.o2 },
     { key: 'water', label: 'Water', f: fc?.water },

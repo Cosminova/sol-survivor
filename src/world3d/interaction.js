@@ -7,6 +7,7 @@ import { recordAssign, recordTaskResult, recordVerb, endSolState, solSummary } f
 import { runMinigame } from './minigames/runner.js';
 import { summaryBody, factCard } from './menus.js';
 import { ROCK_FACTS } from './facts.js';
+import { dayKey, dayWord } from '../ui/kid/words.js';
 import { makeRng, hashString } from './rng.js';
 import { applyEvents } from './feedback.js';
 
@@ -182,7 +183,7 @@ export function endSolFlow(rt, { auto }) {
     rt.hud.setAlert('📡 Mission Control is crunching today’s numbers…', 'info');
     rt.opts.onEndSol?.();
   };
-  const buttons = [{ label: auto ? 'Continue ▶' : 'End sol ▶', primary: true, onClick: finish }];
+  const buttons = [{ label: auto ? 'Continue ▶' : `End ${dayWord(dayKey(rt.mission.config))} ▶`, primary: true, onClick: finish }];
   if (!auto) {
     buttons.unshift({
       label: 'Keep working',
@@ -190,7 +191,7 @@ export function endSolFlow(rt, { auto }) {
     });
   }
   rt.modals.open({
-    title: `${rt.world.parts.body === 'moon' ? 'Day' : 'Sol'} ${rt.gs.sol} complete`,
+    title: `${dayWord(dayKey(rt.mission.config), { cap: true })} ${rt.gs.sol} complete`,
     body: summaryBody(summary, { auto }),
     className: 'w3d-summary',
     buttons,

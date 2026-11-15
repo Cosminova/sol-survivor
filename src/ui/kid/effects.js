@@ -5,7 +5,7 @@ import { effectiveShieldLevel } from '../../engine/sim.js';
 import { moduleById } from '../../data/modules.js';
 import { RADIATION, SHIELDING } from '../../data/constants.js';
 import { METER_WORD, meterStates, simulateNextDay } from './plans.js';
-import { KID_MODULE_NAMES, dayWord } from './words.js';
+import { KID_MODULE_NAMES, dayWord, dayKey } from './words.js';
 
 const HEALTH_DROP = 10; // points lost in one day by one astronaut
 const SCIENCE_MARKS = [0.5, 1]; // share of the science goal
@@ -66,7 +66,7 @@ export function dayEffects(before, after, ctx = {}) {
     add(icon, `${name} is now ${METER_WORD[now[key].level]}. ${detail}`, RANK[now[key].level] > RANK[was[key].level] ? 'bad' : 'good');
   };
   const worstSupply = now.air.supplies.find((s) => s.level === now.air.level) ?? now.air.supplies[0];
-  band('air', 'bubbles', 'Air', `${fmt(worstSupply.amount)} kg of ${worstSupply.name.toLowerCase()} left${Number.isFinite(worstSupply.days) ? `, about ${worstSupply.days} ${dayWord(body, { plural: worstSupply.days !== 1 })}` : ''}.`);
+  band('air', 'bubbles', 'Air', `${fmt(worstSupply.amount)} kg of ${worstSupply.name.toLowerCase()} left${Number.isFinite(worstSupply.days) ? `, about ${worstSupply.days} ${dayWord(dayKey(after.config), { plural: worstSupply.days !== 1 })}` : ''}.`);
   if (!powerItem) band('power', 'zap', 'Power', now.power.hasBattery ? `Battery ${now.power.pct}%.` : '');
   if (shieldAfter === shieldBefore) band('shield', 'shield', 'Shield', `Crew radiation so far: ${fmt(now.shield.dose)} of ${now.shield.limit} mSv.`);
 

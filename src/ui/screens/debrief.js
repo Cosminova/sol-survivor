@@ -6,7 +6,7 @@ import { getState, clearNewBadges } from '../../state/store.js';
 import { CAMPAIGN } from '../../data/missions.js';
 import { stars, didYouKnow, sourceBadge, badgeToast } from '../components/common.js';
 import { speak, canSpeak } from '../speech.js';
-import { lossMessage, LOSS_TITLE, LOSS_CHEER, plainify } from '../kid/words.js';
+import { lossMessage, LOSS_TITLE, LOSS_CHEER, plainify, dayKey, daysText } from '../kid/words.js';
 import { isExpertView } from '../kid/view.js';
 import { scoreBreakdown, lessonsPanel, radiationPanel, historyCharts, badgesPanel, certificate } from './debrief/sections.js';
 
@@ -50,7 +50,7 @@ function hero(mission, report, pointsEl) {
       h('p', { class: 'db-sub' }, `${mission.config.title} · ${mission.site.name} · ${mission.sol} of ${mission.config.targetSols} ${unit}`),
       won ? null : h('p', { class: 'db-cheer' }, LOSS_CHEER),
       tryNext ? h('p', { class: 'db-try' }, h('strong', null, 'What to try next: '), tryNext) : null,
-      story ? h('p', { class: 'db-story' }, isExpertView() ? story : plainify(story, mission.config.body)) : null,
+      story ? h('p', { class: 'db-story' }, isExpertView() ? daysText(story, dayKey(mission.config)) : plainify(story, dayKey(mission.config))) : null,
       canSpeak() ? h('button', { type: 'button', class: 'btn btn-sm no-print', onclick: () => speak(`${won ? 'Mission complete' : `${LOSS_TITLE}. ${LOSS_CHEER} ${tryNext}`}. ${story ?? ''} ${report.radiation}`, true) }, 'Read aloud') : null),
     h('div', { class: 'db-hero-score' },
       stars(report.score.stars, 3, { size: '3.2rem', animate: !prefersReducedMotion() }),
@@ -85,7 +85,7 @@ export function render(root) {
     actions(mission),
     badgesPanel(newBadges),
     h('div', { class: 'db-grid' }, scoreBreakdown(report.score), radiationPanel(report, mission)),
-    lessonsPanel(report, mission.config.body),
+    lessonsPanel(report, dayKey(mission.config)),
     historyCharts(mission),
     certificate({ mission, report, commander, date }),
     h('p', { class: 'db-sources faint no-print' }, 'Real NASA data, saved from NASA records (not live): the weather in this mission was measured by ', sourceBadge('rems', { label: 'Curiosity REMS' }), ' and the solar storms were recorded in ', sourceBadge('donki', { label: 'NASA DONKI' }), '.')));

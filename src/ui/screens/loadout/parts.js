@@ -2,6 +2,7 @@
 import { h } from '../../dom.js';
 import { icon, MODULE_ICONS, SUPPLY_ICONS } from '../../icons.js';
 import { termButton, sourceBadge } from '../../components/common.js';
+import { daysText } from '../../kid/words.js';
 
 const CATEGORY_LABEL = { power: '⚡ Power', life: '🫁 Life support', isru: '⛏️ Living off the land', safety: '🛡️ Safety', science: '🔬 Science' };
 
@@ -31,7 +32,7 @@ function stepper({ id, value, max, label, onChange }) {
     h('button', { id: `${id}-inc`, type: 'button', class: 'btn btn-icon', 'aria-label': `Add one ${label}`, disabled: value >= max, onclick: () => onChange(value + 1) }, '+'));
 }
 
-export function moduleCard(mod, count, onChange) {
+export function moduleCard(mod, count, onChange, key = 'mars') {
   const stats = [
     `${mod.massKg.toLocaleString()} kg`,
     mod.kw > 0 ? `uses ${mod.kw} kW` : null,
@@ -44,7 +45,7 @@ export function moduleCard(mod, count, onChange) {
     h('div', { class: 'lo-module-head' },
       h('span', { class: 'lo-module-icon', 'aria-hidden': 'true' }, icon(MODULE_ICONS[mod.id] ?? 'settings', { size: 26 })),
       h('div', null, h('h3', null, mod.name), h('span', { class: 'lo-module-cat' }, CATEGORY_LABEL[mod.category] ?? mod.category))),
-    h('p', { class: 'lo-module-blurb' }, mod.blurb),
+    h('p', { class: 'lo-module-blurb' }, daysText(mod.blurb, key)),
     h('div', { class: 'lo-module-stats' }, stats.map((st) => h('span', { class: 'badge' }, st))),
     h('div', { class: 'row between lo-module-foot' },
       h('div', { class: 'row' }, mod.term ? termButton(mod.term, 'What is it?') : null),
@@ -73,13 +74,13 @@ export function supplySlider(sup, value, crewDayKg, onChange) {
     note);
 }
 
-export function validationList(result) {
+export function validationList(result, key = 'mars') {
   if (result.ok && !result.warnings.length) {
     return h('div', { class: 'lo-valid ok', role: 'status' }, 'Flight check passed. Ready to launch!');
   }
   return h('div', { class: 'lo-valid', role: 'status', 'aria-live': 'polite' },
-    result.errors.map((e) => h('p', { class: 'lo-err' }, '🚫 ', e)),
-    result.warnings.map((w) => h('p', { class: 'lo-warn' }, '⚠️ ', w)),
+    result.errors.map((e) => h('p', { class: 'lo-err' }, '🚫 ', daysText(e, key))),
+    result.warnings.map((w) => h('p', { class: 'lo-warn' }, '⚠️ ', daysText(w, key))),
     result.ok ? h('p', { class: 'lo-okish' }, 'You can launch, but read the yellow notes first!') : null);
 }
 

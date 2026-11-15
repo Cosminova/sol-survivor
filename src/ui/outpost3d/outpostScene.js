@@ -1162,7 +1162,7 @@ export class OutpostScene {
     else if (sunY < -0.03) when = 'Night';
     else if (sunY < 0.08) when = this.phase < 0.5 ? 'Sunrise' : 'Sunset';
     else when = this.phase < 0.42 ? 'Morning' : this.phase < 0.58 ? 'Midday' : 'Afternoon';
-    const solLabel = m.hasMission ? `${isMoon ? 'Day' : 'Sol'} ${m.sol} · ${when}` : m.site?.name ?? '';
+    const solLabel = m.hasMission ? `${m.dayUnit ?? (isMoon ? 'Day' : 'Sol')} ${m.sol} · ${when}` : m.site?.name ?? '';
     const timeLabel = `${m.site?.name ?? ''}${m.tempC != null ? ` · ${Math.round(m.tempC)} °C` : ''}`;
     const credit = this.look ? 'Ground: generated from world facts' : `Terrain: NASA ${isMoon ? 'Moon' : 'Mars'} Trek`;
     if (this.hudCredit.textContent !== credit) this.hudCredit.textContent = credit;

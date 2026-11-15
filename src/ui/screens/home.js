@@ -7,6 +7,7 @@ import { tutorialDone, TUTORIAL_ROUTE } from '../tutorial/tutorial.js';
 import { onLive } from '../../live/liveData.js';
 import { liveSunCard } from '../live/liveSun.js';
 import { startDemo } from '../demo/demoTour.js';
+import { dayKey, dayWord } from '../kid/words.js';
 
 const img = (file) => `./images/${file}`;
 
@@ -63,7 +64,7 @@ function hero(saved, sunSlot) {
 
 function resume(saved) {
   if (!saved || saved.status !== 'active') return null;
-  const unit = saved.config.body === 'mars' ? 'Sol' : 'Day';
+  const unit = dayWord(dayKey(saved.config), { cap: true });
   return h('section', { class: 'home-resume', 'aria-label': 'Mission in progress' },
     h('p', null, h('strong', null, saved.config.title), ` · ${unit} ${saved.sol} of ${saved.config.targetSols}`),
     h('a', { class: 'btn btn-primary', href: '#/play' }, 'Keep playing'));

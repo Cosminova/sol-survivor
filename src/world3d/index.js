@@ -6,6 +6,7 @@ import { createWorld } from './world.js';
 import { createFollowCamera } from './camera.js';
 import { createControls } from './controls.js';
 import { createHud, el } from './hud.js';
+import { dayKey, dayWord } from '../ui/kid/words.js';
 import { createMinimap } from './minimap.js';
 import { createModals, helpBody, controlsTable, factCard } from './menus.js';
 import { createLabels } from './labels.js';
@@ -225,7 +226,7 @@ export function mountOutpost3D(container, options = {}) {
   function refreshHud(z) {
     const p = world.parts;
     const clock = dayClock(rt.gs.elapsed, rt.tuning.daySeconds);
-    hud.setSol({ sol: rt.mission.sol, site: rt.mission.site?.name ?? '', hours: clock.hours, t: clock.t, body: p.body });
+    hud.setSol({ sol: rt.mission.sol, site: rt.mission.site?.name ?? '', hours: clock.hours, t: clock.t, body: p.body, unit: dayWord(dayKey(rt.mission.config), { cap: true }) });
     hud.setObjectives(rt.gs.objectives);
     const rk = rankFor(rt.gs.progress.xp);
     hud.setRank({ rank: rk.rank, xp: rt.gs.progress.xp, progress: rk.progress, next: rk.next, combo: rt.gs.combo });
