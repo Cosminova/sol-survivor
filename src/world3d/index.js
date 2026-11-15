@@ -123,6 +123,15 @@ export function mountOutpost3D(container, options = {}) {
     });
   }
 
+  // The crew-switch hint shows until the player has switched astronaut once (remembered across visits).
+  const SWITCH_FLAG = 'sol-survivor:walk-switch-learned';
+  let switchLearned = (() => { try { return localStorage.getItem(SWITCH_FLAG) === '1'; } catch { return false; } })();
+  function markSwitchLearned() {
+    if (switchLearned) return;
+    switchLearned = true;
+    try { localStorage.setItem(SWITCH_FLAG, '1'); } catch { /* storage unavailable: the hint just shows next visit */ }
+  }
+
   function setPlayer(crewId) {
     const p = world.parts;
     if (!p) return;
@@ -131,6 +140,7 @@ export function mountOutpost3D(container, options = {}) {
     if (player.inRover) player.exitRover();
     player.setHidden(false);
     rt.playerId = crewId;
+    markSwitchLearned();
     p.crew.bringOutside(m);
     player.setMember(m);
     rt.hold = null;
@@ -220,6 +230,7 @@ export function mountOutpost3D(container, options = {}) {
     const rk = rankFor(rt.gs.progress.xp);
     hud.setRank({ rank: rk.rank, xp: rt.gs.progress.xp, progress: rk.progress, next: rk.next, combo: rt.gs.combo });
     hud.setRoster(rt.mission.crew, rt.playerId);
+    hud.setSwitchHint(!switchLearned && !rt.modals.isOpen());
     hud.setSuit({ o2: rt.gs.o2[rt.playerId] ?? 1, dose: rt.gs.dose, rate: rt.gs.doseRate ?? 0, outside: z.outside, inRover: z.inRover, cold: rt.gs.cold });
     hud.setPrompt(rt.modals.isOpen() ? null : currentPrompt(rt));
     const pos = player.position();

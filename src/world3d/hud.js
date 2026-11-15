@@ -1,6 +1,7 @@
 // HUD overlay DOM (all inside the container). Pure presentation: index.js feeds it state.
 import { TASKS } from '../engine/sim.js';
 import { formatClock } from './gameLogic.js';
+import { keycaps } from '../ui/components/keycaps.js';
 
 export function el(tag, attrs = {}, ...children) {
   const node = document.createElement(tag);
@@ -41,6 +42,11 @@ export function createHud(container, { onSelectCrew, onButton, onWhy, touch }) {
   const tr = el('div', { class: 'w3d-tr w3d-hide-cine' }, map, el('div', { class: 'w3d-panel w3d-rank' }, rankName, el('div', { class: 'w3d-bar' }, rankBar), rankXp, combo));
 
   const roster = el('div', { class: 'w3d-roster w3d-hide-cine', role: 'group', 'aria-label': 'Crew: pick who you control' });
+  // Points at the crew list until the player has switched astronaut once: each astronaut can do a different job.
+  const switchHint = el('div', { class: 'w3d-switch-hint w3d-hide-cine', role: 'note', hidden: true },
+    el('span', { class: 'w3d-switch-arrow', 'aria-hidden': 'true' }, '←'),
+    el('span', null, el('b', null, 'Switch astronauts to give each one a job.'), ' ',
+      keycaps([['C'], ['1', '2', '3', '4']], el), ' or tap a name.'));
 
   const gauge = el('div', { class: 'w3d-gauge', role: 'meter', 'aria-label': 'Suit oxygen' }, el('div', { text: '100%' }));
   const suitDl = el('dl');
@@ -84,7 +90,7 @@ export function createHud(container, { onSelectCrew, onButton, onWhy, touch }) {
   const layer = el('div', { class: 'w3d-layer' });
   const skip = el('button', { class: 'w3d-skip', onclick: () => onButton('skipIntro') }, 'Skip intro ▶');
   const root = el('div', { class: 'w3d-root' },
-    vig, flashEl, floats, tl, obj, tr, roster, suit, bottom, ring, toasts, alert, btns, touchLayer, title, level,
+    vig, flashEl, floats, tl, obj, tr, roster, switchHint, suit, bottom, ring, toasts, alert, btns, touchLayer, title, level,
     el('div', { class: 'w3d-cut w3d-top' }), el('div', { class: 'w3d-cut w3d-bot' }), skip, layer);
   container.append(root);
   if (touch) container.dataset.touch = 'true';
@@ -205,6 +211,7 @@ export function createHud(container, { onSelectCrew, onButton, onWhy, touch }) {
 
   return {
     root, layer, map, radio, joy, knob, act,
+    setSwitchHint: (on) => { switchHint.hidden = !on; },
     setRoster, setObjectives, setSol, setRank, setSuit, setPrompt, setHold, toast, setAlert, floatText, flash, levelUp,
     setCaption,
     setVignette: (v) => { vig.style.opacity = String(v); },

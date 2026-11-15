@@ -41,6 +41,12 @@ const CSS = `
 .w3d-rank .w3d-bar>span{display:block;height:100%;background:linear-gradient(90deg,#7fe3ff,#b388ff);transition:width .4s}
 .w3d-combo{font-weight:900;color:#ffd23f;font-size:13px}
 .w3d-roster{position:absolute;left:12px;top:110px;display:flex;flex-direction:column;gap:6px;pointer-events:auto}
+.w3d-switch-hint{position:absolute;left:236px;top:118px;max-width:250px;display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-radius:10px;background:rgba(6,14,24,.88);border:2px solid #ffe066;color:#fff;font-size:13px;line-height:1.4;pointer-events:none;z-index:2}
+.w3d-switch-hint[hidden]{display:none}
+.w3d-switch-hint .keycaps{margin:2px 0}
+.w3d-switch-arrow{color:#ffe066;font-size:22px;font-weight:900;line-height:1;animation:w3d-nudge .9s ease-in-out infinite}
+@keyframes w3d-nudge{50%{transform:translateX(-7px)}}
+@media (prefers-reduced-motion:reduce){.w3d-switch-arrow{animation:none}}
 .w3d-chip{display:grid;grid-template-columns:30px 1fr 22px;gap:6px;align-items:center;padding:6px 8px;min-width:190px;border-radius:10px;border:1px solid rgba(255,255,255,.14);background:rgba(12,16,28,.55);text-align:left}
 .w3d-chip[aria-pressed="true"]{border-color:#7fe3ff;box-shadow:0 0 0 2px rgba(127,227,255,.4);background:rgba(20,40,70,.75)}
 .w3d-chip .w3d-av{font-size:22px}
@@ -130,7 +136,7 @@ const CSS = `
 @keyframes w3d-rise{from{opacity:1;margin-top:0}to{opacity:0;margin-top:-60px}}
 @keyframes w3d-zoom{0%{transform:scale(.3);opacity:0}15%{transform:scale(1.15);opacity:1}25%{transform:scale(1)}80%{opacity:1}100%{opacity:0}}
 .w3d-host[data-motion="reduced"] *{animation-duration:.01s!important;transition:none!important}
-@media (max-width:760px){.w3d-roster{top:92px;flex-direction:row;left:8px;right:8px;overflow-x:auto}.w3d-chip{min-width:132px;padding:4px 6px}.w3d-obj{top:186px;left:8px;transform:none;max-width:62vw;padding:6px 10px;font-size:12px}.w3d-tl{left:8px;top:8px;min-width:0;max-width:calc(100% - 128px)}.w3d-tr{right:8px;top:8px}.w3d-map{width:92px;height:92px}.w3d-rank{display:none}.w3d-bottom{bottom:90px;width:calc(100% - 16px)}.w3d-suit{left:8px;bottom:8px;padding:6px 10px}.w3d-host[data-touch="true"] .w3d-bottom{bottom:240px}}
+@media (max-width:760px){.w3d-switch-hint{left:8px;top:150px;max-width:calc(100% - 16px)}.w3d-switch-arrow{transform:rotate(90deg);animation:none}.w3d-roster{top:92px;flex-direction:row;left:8px;right:8px;overflow-x:auto}.w3d-chip{min-width:132px;padding:4px 6px}.w3d-obj{top:186px;left:8px;transform:none;max-width:62vw;padding:6px 10px;font-size:12px}.w3d-tl{left:8px;top:8px;min-width:0;max-width:calc(100% - 128px)}.w3d-tr{right:8px;top:8px}.w3d-map{width:92px;height:92px}.w3d-rank{display:none}.w3d-bottom{bottom:90px;width:calc(100% - 16px)}.w3d-suit{left:8px;bottom:8px;padding:6px 10px}.w3d-host[data-touch="true"] .w3d-bottom{bottom:240px}}
 `;
 
 let injected = 0;
