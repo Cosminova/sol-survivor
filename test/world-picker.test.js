@@ -225,10 +225,10 @@ describe('world cards', () => {
   });
 
   it('says plainly when some details are generated', () => {
-    expect(provenanceLine(worldById('proxima-cen-b'))).toMatch(/Real planet.*Some details below are generated because nobody has measured them yet\./);
-    expect(provenanceLine(exo({ discovery: { year: 2016 } }))).toMatch(/discovered in 2016/);
-    expect(provenanceLine(worldById('mars'))).toMatch(/Every detail below is measured/);
-    expect(provenanceLine(exo({ facts: { gravityG: generated(1) } }))).toMatch(/generated/);
+    expect(provenanceLine(worldById('proxima-cen-b'))).toMatch(/Real planet.*Some facts are game guesses\./);
+    expect(provenanceLine(exo({ discovery: { year: 2016 } }))).toMatch(/found 2016/);
+    expect(provenanceLine(worldById('mars'))).toMatch(/Every fact is measured/);
+    expect(provenanceLine(exo({ facts: { gravityG: generated(1) } }))).toMatch(/game guesses/);
   });
 
   it('carries fact notes such as "minimum mass" through to the card rows', () => {
@@ -238,10 +238,10 @@ describe('world cards', () => {
   });
 
   it('warns plainly about disputed planets', () => {
-    expect(disputedLine(exo({ disputed: true }))).toMatch(/^NASA lists this planet as disputed\./);
+    expect(disputedLine(exo({ disputed: true }))).toMatch(/^Disputed: NASA lists it/);
     expect(disputedLine(exo())).toBeNull();
     const disputed = WORLDS.filter((w) => w.disputed);
-    for (const w of disputed) expect(disputedLine(w)).toMatch(/disputed/);
+    for (const w of disputed) expect(disputedLine(w)).toMatch(/disputed/i);
   });
 
   it('formats days and air for kids', () => {

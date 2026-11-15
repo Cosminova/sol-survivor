@@ -82,14 +82,12 @@ export function factRows(world) {
 }
 
 /** Warning shown on worlds the NASA Exoplanet Archive flags as controversial, or null. */
-export const disputedLine = (world) => (world.disputed ? 'NASA lists this planet as disputed. Astronomers are not yet sure it is really there.' : null);
+export const disputedLine = (world) => (world.disputed ? 'Disputed: NASA lists it, but astronomers are not sure it is really there.' : null);
 
 /** The plain-language header line about where the facts come from. */
 export function provenanceLine(world) {
   const anyGenerated = Object.values(world.facts ?? {}).some((fact) => fact && !isMeasured(fact));
   const year = world.discovery?.year ?? null;
-  const first = world.kind === 'exoplanet'
-    ? `Real planet${year ? ` discovered in ${year}` : ''}, listed in NASA's Exoplanet Archive.`
-    : 'A real world in our Solar System, explored by NASA spacecraft.';
-  return anyGenerated ? `${first} Some details below are generated because nobody has measured them yet.` : `${first} Every detail below is measured.`;
+  const first = world.kind === 'exoplanet' ? `Real planet${year ? `, found ${year}` : ''}. NASA Exoplanet Archive.` : 'Real world, explored by NASA.';
+  return anyGenerated ? `${first} Some facts are game guesses.` : `${first} Every fact is measured.`;
 }

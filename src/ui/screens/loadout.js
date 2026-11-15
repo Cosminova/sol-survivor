@@ -48,15 +48,14 @@ const LEVEL_WORD = { easy: 'Easy', medium: 'Medium', hard: 'Hard', extreme: 'Ext
 const WORLD_CARD_HOOKS = {
   challenge: (world) => {
     if (isLegacyWorldId(world.id)) return null;
-    const { level, reasons, maxSols } = worldChallenge(world);
-    const cap = maxSols ? ` Longest safe stay: ${maxSols} days.` : '';
-    return `${LEVEL_WORD[level] ?? level}. ${reasons.join(' ')}${cap}`;
+    const { level, maxSols } = worldChallenge(world);
+    return `${LEVEL_WORD[level] ?? level}${maxSols ? ` · stay up to ${maxSols} days` : ''}`;
   },
   effects: (world) => {
     if (isLegacyWorldId(world.id)) return null;
-    const lines = worldEffects(world);
-    if (!lines.length) return null;
-    return [h('h4', { class: 'wp-effects-title' }, 'What this world does to your crew'), h('ul', null, lines.map((line) => h('li', null, line)))];
+    const { reasons } = worldChallenge(world);
+    const lines = [...reasons, ...worldEffects(world)];
+    return lines.length ? h('ul', null, lines.map((line) => h('li', null, line))) : null;
   },
 };
 // The pack list follows the world: no oxygen-from-air machine where the air has no CO2, no solar on a night site.

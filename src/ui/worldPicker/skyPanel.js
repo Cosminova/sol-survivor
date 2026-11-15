@@ -3,6 +3,7 @@
 import { h, mount, prefersReducedMotion, announce } from '../dom.js';
 import { WORLDS, worldById } from '../../data/worlds.js';
 import { OBSERVERS, observerById, skyTargets, worldsForTarget, whereInSky } from './targets.js';
+import { systemPortrait } from './portrait.js';
 import { worldCard, missingCard, siteList } from './cards.js';
 import { skyStage, skyAvailable, skyScene, loadSkyAssets } from './skyHost.js';
 import { eveningInstant, resolveSites } from './worldSites.js';
@@ -55,17 +56,19 @@ function skyControls(repaint) {
       h('input', { class: 'input', type: 'date', min: '1900-01-01', max: '2049-12-31', value: ui.night, onchange: (e) => { ui.night = e.target.value || todayIso(); repaint(); } })));
 }
 
+// Plain colour words for a star's surface temperature (kelvin).
+const starWord = (teffK) => (teffK < 3900 ? 'Small red' : teffK < 5300 ? 'Orange' : teffK < 6000 ? 'Yellow, like our Sun,' : 'White');
+
 function systemHeader(target) {
   if (target.kind === 'star') {
     const facts = [
-      target.distanceLy ? `${Number(target.distanceLy).toFixed(2)} light-years away` : null,
-      target.spectralType ? `a type ${target.spectralType} star` : null,
-      target.teffK ? `about ${Math.round(target.teffK).toLocaleString('en-US')} K on the surface` : null,
-    ].filter(Boolean).join(', ');
+      target.distanceLy ? `${Math.round(Number(target.distanceLy))} light-years away` : null,
+      target.teffK ? `${starWord(target.teffK)} star` : null,
+    ].filter(Boolean).join(' · ');
     return [
       h('h3', { class: 'wp-system-title', tabindex: '-1' }, `The ${target.name} system`),
-      facts ? h('p', null, `${target.name} is ${facts}.`) : null,
-      target.nakedEye ? null : h('p', { class: 'wp-note' }, 'This star is too faint to see with your eyes. Astronomers found it with telescopes.'),
+      facts ? h('p', { class: 'wp-system-facts' }, facts) : null,
+      target.nakedEye ? null : h('p', { class: 'wp-note' }, 'Too faint to see with your eyes. Found with telescopes.'),
     ];
   }
   return [
@@ -145,6 +148,7 @@ export function skyPanel(fp, onChange, hooks = {}) {
       h('div', { class: 'wp-system-head' },
         h('div', null, systemHeader(target)),
         h('button', { type: 'button', class: 'btn btn-ghost wp-back', onclick: backToSky }, 'Back to the night sky')),
+      target.kind === 'star' && worlds.length ? systemPortrait(target, worlds) : null,
       h('div', { class: 'wp-cards' },
         worlds.map((w) => worldCard(w, { onChoose: chooseWorld, selected: w.id === fp.worldId, challenge: hooks.challenge, effects: hooks.effects })),
         missing.map(missingCard)),

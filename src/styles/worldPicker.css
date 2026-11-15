@@ -64,13 +64,25 @@
 .wp-card { display: grid; gap: 0.6rem; align-content: start; padding: 0.9rem; border: 1px solid var(--line); background: var(--surface-2); }
 .wp-card.is-selected { border-color: var(--cyan); box-shadow: var(--glow-cyan); }
 .wp-card-missing { opacity: 0.75; border-style: dashed; }
-.wp-card-head p { margin: 0.25rem 0 0; }
+.wp-card-head { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0.7rem; align-items: start; }
+.wp-card-head p { margin: 0.2rem 0 0; }
+.wp-card-id { min-width: 0; }
+.wp-card { overflow-wrap: anywhere; }
+.wp-portrait { margin: 0; width: 84px; }
+.wp-portrait canvas { display: block; width: 84px; height: 84px; }
+.wp-portrait-caption { margin-top: 2px; font-size: 0.6875rem; line-height: 1.25; color: var(--text-faint); }
+.wp-system-portrait { margin: 0 0 0.8rem; }
+.wp-system-portrait canvas { display: block; width: 100%; max-width: 640px; height: auto; background: #02040a; border: 1px solid var(--line-soft); }
+.wp-system-facts { margin: 0.2rem 0 0; color: var(--text-dim); }
+.wp-more summary { cursor: pointer; font-size: var(--fs-sm); color: var(--cyan-bright); }
+.wp-more[open] summary { margin-bottom: 0.4rem; }
+.wp-effects ul { margin: 0.5rem 0 0; padding-left: 1.1rem; font-size: var(--fs-sm); color: var(--text-dim); }
 .wp-card-title { margin: 0; font-size: var(--fs-lg); }
-.wp-card-prov { font-size: var(--fs-sm); color: var(--cyan-bright); }
-.wp-card-blurb { color: var(--text-dim); }
+.wp-card-prov { font-size: var(--fs-xs); color: var(--cyan-bright); }
+.wp-card-blurb { margin: 0; color: var(--text-dim); font-size: var(--fs-sm); }
 .wp-card-disputed { padding: 0.3rem 0.6rem; border-left: 3px solid var(--danger); background: var(--danger-bg); color: var(--text); font-size: var(--fs-sm); }
 .wp-fact-note { flex-basis: 100%; font-size: var(--fs-xs); color: var(--text-faint); }
-.wp-card-challenge { margin: 0; font-weight: 700; color: var(--warn); }
+.wp-card-challenge { font-size: var(--fs-sm); font-weight: 700; color: var(--warn); }
 .wp-facts { display: grid; gap: 0.35rem; margin: 0; }
 .wp-fact { display: grid; grid-template-columns: minmax(7rem, 40%) 1fr; gap: 0.5rem; font-size: var(--fs-sm); }
 .wp-fact dt { color: var(--text-faint); }
