@@ -23,6 +23,7 @@ import { stopSpeaking } from './ui/speech.js';
 import { createStarfield } from './ui/starfield.js';
 import { createTicker } from './ui/components/ticker.js';
 import { maybeShowHowToPlay } from './ui/kid/howToPlay.js';
+import { maybeStartDemoFromUrl } from './ui/demo/demoTour.js';
 
 const NAV = [['campaign', 'Missions'], ['dictionary', 'Dictionary'], ['academy', 'Academy'], ['datalab', 'Data'], ['educators', 'Educators']];
 const MENU = [
@@ -174,3 +175,5 @@ startRouter(view, {
     maybeShowHowToPlay(route.name);
   },
 });
+// A #/?demo=1 link (for judges) starts the hands-free demo tour.
+maybeStartDemoFromUrl();
