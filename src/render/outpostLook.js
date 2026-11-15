@@ -8,7 +8,7 @@ import { smoothstep, fbm2, clamp } from '../world3d/rng.js';
 
 const BASE_PAD_M = 30; // flat ground under the modules
 const LAVA_FREE_M = 46; // nobody walks in the backdrop, so lava may come closer than in the walk mode
-const RIM_HILLS = { from: 80, to: 128, base: 10, extra: 16, fadeFrom: 250, fadeTo: 700 }; // hills that close the horizon of the small scene
+const RIM_HILLS = { from: 80, to: 128, base: 10, extra: 16 }; // hills that close the horizon of the small scene
 const LEGACY_DISC_COS = 0.99955; // the Sun as the Moon and Mars scenes draw it (larger than life so it reads)
 const SUN_DEG = 0.53;
 const BIG_STAR_DEG = 0.8;
@@ -54,9 +54,7 @@ export function outpostGround(look, { size = 512, extentM }) {
   const surface = makeSurface(look, { pads: [{ x: 0, z: 0, r: BASE_PAD_M }], lavaFreeRadius: LAVA_FREE_M });
   const hillSeed = look.seed % 997;
   const heightAt = (x, z) => {
-    const d = Math.hypot(x, z);
-    // The rim hills frame the camp, then fade into open ground so the far terrain is not one endless plateau.
-    const rim = smoothstep(RIM_HILLS.from, RIM_HILLS.to, d) * (1 - smoothstep(RIM_HILLS.fadeFrom, RIM_HILLS.fadeTo, d));
+    const rim = smoothstep(RIM_HILLS.from, RIM_HILLS.to, Math.hypot(x, z));
     return surface.heightAt(x, z) + (rim > 0 ? rim * (RIM_HILLS.base + (fbm2(x * 0.025, z * 0.025, hillSeed, 3) * 0.5 + 0.5) * RIM_HILLS.extra) : 0);
   };
   const map = cachedTexture(`ground:${look.worldId}:${look.seed}:${size}:${extentM}`, () => generateGroundMap(look, surface, { size, extentM, heightAt }));

@@ -41,8 +41,6 @@ import {
 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { buildTerrainTexture } from './mosaic.js';
-import { loadLidar } from '../../world3d/lidar.js';
-import { polarGeometry } from '../../world3d/terrain.js';
 import { clamp, DEG, easeInOut, fbm, hash2, lerp, smoothstep, UI } from './sceneUtil.js';
 import { lookFor } from '../../render/worldLook.js';
 import { outpostPalette, outpostStar, outpostHaze, outpostGround, outpostFixedStar, outpostParentDirection } from '../../render/outpostLook.js';
@@ -56,16 +54,6 @@ const CAMP_FRAME_MARGIN = 1.2; // a little room around the whole camp when frami
 
 const TERRAIN_SIZE = 260;
 const TERRAIN_SEGS = 128;
-// Far ground: a ring of terrain from just inside the textured square out to the horizon haze, so the edge of the
-// scene never shows when zooming out. On the Moon and Mars its heights are NASA lidar (LOLA / MOLA).
-const SKIRT_R0 = 126;
-const SKIRT_RMAX = 4000;
-const SKIRT_SEGS = 160;
-const SKIRT_SINK = 0.3; // sits just under the textured square where the two overlap
-const CAMERA_FAR = 6000;
-const CAMP_FLAT_R = [40, 110]; // lidar relief fades in between these radii, so the camp itself stays level
-const RELIEF_FADE_R = [95, 125]; // the near square's own bumps fade out before the far ground takes over
-const RIM_HILLS_FADE_R = [250, 700]; // without lidar, the old rim hills fade into open plains further out
 const SKY_RADIUS = 420;
 const SOL_PASS_SECONDS = 1.8;
 const ROCK_CAPACITY = 80;
@@ -261,7 +249,7 @@ export class OutpostScene {
     this.renderer = renderer;
 
     this.scene = new Scene();
-    this.camera = new PerspectiveCamera(42, 1, 0.5, CAMERA_FAR);
+    this.camera = new PerspectiveCamera(42, 1, 0.5, 1200);
     // As a page backdrop only a window of the canvas is clear of panels, so stand further back and higher up:
     // the whole base fits in that window and more of the real terrain shows.
     if (backdrop) this.camera.position.set(36, 30, 43);
@@ -694,7 +682,6 @@ export class OutpostScene {
     old.map?.dispose?.();
     old.dispose();
     this._displace(null, 'mars', ground.heightAt);
-    this._buildSkirt(ground.heightAt, look.groundColors.base ?? look.groundColors.rock);
     this.rocks.count = Math.min(ROCK_CAPACITY, Math.round(ROCK_CAPACITY * look.rockDensity * 1.5));
     this._scatterRocks('mars');
     if (ground.poolLevel !== null) {
@@ -747,10 +734,7 @@ export class OutpostScene {
       old.dispose();
     }
     this.terrain.material.color.set(pal.regolith);
-    // NASA laser altimetry for the site (MOLA on Mars, LOLA on the Moon): the same files Walk 3D uses.
-    const demLoad = loadLidar(model.site?.id).catch(() => null);
     this._displace(null, model.body);
-    this._buildSkirt(this._bodyHeight(model.body, null), pal.regolith);
     this._scatterRocks(model.body);
     let tex;
     try {
@@ -758,12 +742,7 @@ export class OutpostScene {
     } catch {
       tex = null;
     }
-    const dem = await demLoad;
     if (this.terrainKey !== key || !this.renderer) return;
-    this.dem = dem;
-    this._displace(null, model.body, null, dem);
-    this._buildSkirt(this._bodyHeight(model.body, dem), pal.regolith);
-    this._scatterRocks(model.body);
     if (tex) {
       const t = new CanvasTexture(tex.canvas);
       t.colorSpace = SRGBColorSpace;
@@ -772,7 +751,7 @@ export class OutpostScene {
       this.terrain.material = new MeshStandardMaterial({ map: t, bumpMap: t, bumpScale: model.body === 'moon' ? 0.5 : 0.35, roughness: 1, metalness: 0 });
       old.map?.dispose?.();
       old.dispose();
-      this._displace(tex, model.body, null, dem);
+      this._displace(tex, model.body);
       this._scatterRocks(model.body);
     }
     this._render();
@@ -788,79 +767,42 @@ export class OutpostScene {
     return h[j * (TERRAIN_SEGS + 1) + i];
   }
 
-  /**
-   * The ground height of a Moon or Mars site: NASA lidar landform (level under the camp), the small Trek-driven
-   * bumps near the camp, and, only when there is no lidar, the old rim hills fading out into plains.
-   * Returns (x, z, lum) -> metres; lum is the Trek image brightness under the point (0.5 when unknown).
-   */
-  _bodyHeight(body, dem) {
-    const amp = body === 'moon' ? 1.25 : 1;
-    return (x, z, lum = 0.5) => {
-      const d = Math.hypot(x, z);
-      const flat = smoothstep(26, 48, d) * (1 - smoothstep(RELIEF_FADE_R[0], RELIEF_FADE_R[1], d));
-      const relief = d < RELIEF_FADE_R[1]
-        ? (lum - 0.5) * 6 + (fbm(x * 0.012 + 3, z * 0.012 + 9, 4) - 0.5) * 5 + (fbm(x * 0.06, z * 0.06, 3) - 0.5) * 1.2 + craterField(x, z)
-        : 0;
-      const land = dem
-        ? dem.sample(x, z) * smoothstep(CAMP_FLAT_R[0], CAMP_FLAT_R[1], d)
-        : smoothstep(80, 128, d) * (1 - smoothstep(RIM_HILLS_FADE_R[0], RIM_HILLS_FADE_R[1], d)) * (10 + fbm(x * 0.025, z * 0.025, 3) * 16) * amp;
-      return relief * flat * amp + land;
-    };
-  }
-
-  /** heightFn: when given (worlds with a look) it sets the height directly; otherwise _bodyHeight(body, dem). */
-  _displace(tex, body, heightFn = null, dem = null) {
+  /** heightFn: when given (worlds with a look) it sets the height directly instead of the Trek-driven relief. */
+  _displace(tex, body, heightFn = null) {
     const geo = this.terrain.geometry;
     const pos = geo.attributes.position;
     const n = TERRAIN_SEGS + 1;
     const heights = new Float32Array(n * n);
-    const bodyHeight = heightFn ? null : this._bodyHeight(body, dem);
+    const amp = body === 'moon' ? 1.25 : 1;
     for (let j = 0; j < n; j++) {
       for (let i = 0; i < n; i++) {
         const idx = j * n + i;
         const x = pos.getX(idx);
         const z = pos.getZ(idx);
+        if (heightFn) {
+          heights[idx] = heightFn(x, z) - 0.02;
+          pos.setY(idx, heights[idx]);
+          continue;
+        }
+        const d = Math.hypot(x, z);
+        const flat = smoothstep(26, 48, d);
         let lum = 0.5;
-        if (!heightFn && tex) {
+        if (tex) {
           const ti = clamp(Math.floor((i / TERRAIN_SEGS) * (tex.size - 1)), 0, tex.size - 1);
           const tj = clamp(Math.floor((j / TERRAIN_SEGS) * (tex.size - 1)), 0, tex.size - 1);
           lum = tex.lum[tj * tex.size + ti] - tex.meanLum + 0.5;
         }
-        heights[idx] = (heightFn ? heightFn(x, z) : bodyHeight(x, z, lum)) - 0.02;
-        pos.setY(idx, heights[idx]);
+        const crater = craterField(x, z);
+        const relief = (lum - 0.5) * 6 + (fbm(x * 0.012 + 3, z * 0.012 + 9, 4) - 0.5) * 5 + (fbm(x * 0.06, z * 0.06, 3) - 0.5) * 1.2 + crater;
+        const rimHills = smoothstep(80, 128, d) * (10 + fbm(x * 0.025, z * 0.025, 3) * 16);
+        const y = (relief * flat + rimHills) * amp - 0.02;
+        heights[idx] = y;
+        pos.setY(idx, y);
       }
     }
     this.heightField = heights;
     pos.needsUpdate = true;
     geo.computeVertexNormals();
-  }
-
-  /** The far ground ring. heightAt in metres; colour a CSS/hex colour, varied a little so it does not look flat. */
-  _buildSkirt(heightAt, color) {
-    this._clearSkirt();
-    const geo = polarGeometry((x, z) => heightAt(x, z) - SKIRT_SINK, { segs: SKIRT_SEGS, r0: SKIRT_R0, rMax: SKIRT_RMAX });
-    const pos = geo.attributes.position;
-    const base = new Color(color);
-    const colors = new Float32Array(pos.count * 3);
-    const c = new Color();
-    for (let i = 0; i < pos.count; i += 1) {
-      const k = 0.82 + 0.3 * fbm(pos.getX(i) * 0.004 + 5, pos.getZ(i) * 0.004 + 7, 3);
-      c.copy(base).multiplyScalar(k);
-      colors.set([c.r, c.g, c.b], i * 3);
-    }
-    geo.setAttribute('color', new BufferAttribute(colors, 3));
-    const mat = new MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0 });
-    this.skirt = new Mesh(geo, mat);
-    this.skirt.receiveShadow = false;
-    this.scene.add(this.skirt);
-  }
-
-  _clearSkirt() {
-    if (!this.skirt) return;
-    this.scene.remove(this.skirt);
-    this.skirt.geometry.dispose();
-    this.skirt.material.dispose();
-    this.skirt = null;
   }
 
   _scatterRocks(body) {
