@@ -29,10 +29,12 @@ import {
 } from 'three';
 import { SITES } from '../../data/sites.js';
 import { loadMosaicCanvas } from './mosaic.js';
-import { clamp, DEG, easeInOut, hash2, lerp, UI } from './sceneUtil.js';
+import { advanceDrag, clamp, DEG, easeInOut, hash2, lerp, pointerReleased, UI } from './sceneUtil.js';
 
 const TILT = { mars: 25.19 * DEG, moon: 6.68 * DEG };
 const SPIN = 0.07; // rad/s idle spin
+const FLING = 30; // turns the last drag step into a coasting speed (rad/s)
+const CAM_LAT_MAX = 0.9; // rad: how far a drag can tilt the view towards a pole
 
 const GLOW_VERT = /* glsl */ `
   varying vec3 vN; varying vec3 vV;
@@ -152,7 +154,7 @@ export class PlanetScene {
     const hint = document.createElement('div');
     hint.className = 'outpost3d-hint';
     hint.setAttribute('aria-hidden', 'true');
-    hint.textContent = 'Tap a pin to pick a landing site';
+    hint.textContent = 'Drag to turn · tap a pin to pick a site';
     container.appendChild(hint);
     this.hint = hint;
 
@@ -161,26 +163,37 @@ export class PlanetScene {
     this.pointer = new Vector2();
     const el = renderer.domElement;
     this.drag = null;
-    el.addEventListener('pointerdown', (ev) => { this.drag = { x: ev.clientX, y: ev.clientY, moved: false, id: ev.pointerId }; this.spinAnim = null; });
+    // The canvas captures the pointer for the whole drag. Without that, letting go outside the globe box never
+    // reached it, the drag stayed "on", and the globe then swung away from the cursor on every hover.
+    el.addEventListener('pointerdown', (ev) => {
+      if (ev.pointerType === 'mouse' && ev.button !== 0) return;
+      this.drag = { x: ev.clientX, y: ev.clientY, moved: false, id: ev.pointerId };
+      this.spinAnim = null;
+      this.spinVel = 0;
+      try { el.setPointerCapture(ev.pointerId); } catch { /* pointer already gone; pointerReleased() below still ends the drag */ }
+    });
     el.addEventListener('pointermove', (ev) => {
       if (!this.drag || ev.pointerId !== this.drag.id) return;
-      const dx = ev.clientX - this.drag.x;
-      if (Math.abs(dx) > 4 || Math.abs(ev.clientY - this.drag.y) > 4) this.drag.moved = true;
-      if (this.drag.moved) {
-        this.spin += dx * 0.008;
-        this.spinVel = dx * 0.008 * 30;
-        this.drag.x = ev.clientX;
-        this.idleUntil = this.elapsed + 4;
-      }
+      if (pointerReleased(ev)) { this.drag = null; return; }
+      const step = advanceDrag(this.drag, { x: ev.clientX, y: ev.clientY });
+      this.drag = step.drag;
+      if (!step.drag.moved) return;
+      this.spin += step.dSpin;
+      this.spinVel = step.dSpin * FLING;
+      this.camLatTarget = clamp(this.camLatTarget + step.dLat, -CAM_LAT_MAX, CAM_LAT_MAX);
+      this.camLat = clamp(this.camLat + step.dLat, -CAM_LAT_MAX, CAM_LAT_MAX);
+      this.idleUntil = this.elapsed + 4;
     });
     const end = (ev) => {
-      if (!this.drag) return;
+      if (!this.drag || ev.pointerId !== this.drag.id) return;
       const wasTap = !this.drag.moved;
       this.drag = null;
       if (wasTap) this._pick(ev);
     };
+    const drop = (ev) => { if (this.drag?.id === ev.pointerId) this.drag = null; };
     el.addEventListener('pointerup', end);
-    el.addEventListener('pointercancel', () => { this.drag = null; });
+    el.addEventListener('pointercancel', drop);
+    el.addEventListener('lostpointercapture', drop);
 
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(container);
@@ -297,6 +310,7 @@ export class PlanetScene {
     const target = -Math.PI / 2 - site.lon * DEG;
     let delta = ((target - this.spin) % (Math.PI * 2) + Math.PI * 3) % (Math.PI * 2) - Math.PI;
     this.spinAnim = { from: this.spin, to: this.spin + delta, start: this.elapsed };
+    this.spinVel = 0; // a fling left over from the last drag must not carry the chosen site away again
     this.camLatTarget = clamp(site.lat * DEG, -1.05, 1.05) * 0.85;
     this.idleUntil = this.elapsed + 3.5;
   }
@@ -327,7 +341,8 @@ export class PlanetScene {
 
   _raf(now) {
     if (!this.running) return;
-    const dt = Math.min(0.1, (now - this.clockLast) / 1000);
+    // the first frame's timestamp can be older than clockLast; a negative dt would throw the camera easing off
+    const dt = clamp((now - this.clockLast) / 1000, 0, 0.1);
     this.clockLast = now;
     this.elapsed += dt;
     this._step(dt);

@@ -9,6 +9,29 @@ export const smoothstep = (e0, e1, x) => {
 export const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 export const DEG = Math.PI / 180;
 
+/* ---- globe drag (site picker) ---- */
+export const DRAG_SLOP_PX = 4; // a press that moves less than this is a tap on a pin
+export const SPIN_PER_PX = 0.008; // rad of globe spin per px dragged sideways
+export const TILT_PER_PX = 0.006; // rad of view tilt per px dragged up or down
+
+/**
+ * One pointer move of a globe drag. Returns the next drag state (a new object once the press has become a drag)
+ * and how far to spin and tilt. Until the pointer leaves the slop the anchor stays where the press began.
+ * @param {{ x: number, y: number, moved: boolean, id: number }} drag
+ * @param {{ x: number, y: number }} point
+ * @returns {{ drag: { x: number, y: number, moved: boolean, id: number }, dSpin: number, dLat: number }}
+ */
+export function advanceDrag(drag, point) {
+  const dx = point.x - drag.x;
+  const dy = point.y - drag.y;
+  const moved = drag.moved || Math.abs(dx) > DRAG_SLOP_PX || Math.abs(dy) > DRAG_SLOP_PX;
+  if (!moved) return { drag, dSpin: 0, dLat: 0 };
+  return { drag: { ...drag, x: point.x, y: point.y, moved: true }, dSpin: dx * SPIN_PER_PX, dLat: dy * TILT_PER_PX };
+}
+
+/** True when a mouse move arrives with no button held: the release happened where the canvas could not hear it. */
+export const pointerReleased = (ev) => ev.pointerType === 'mouse' && ev.buttons === 0;
+
 /** Deterministic 0–1 hash of two numbers (for rock scatter, stars). */
 export function hash2(x, y) {
   let h = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
