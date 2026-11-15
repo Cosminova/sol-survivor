@@ -14,7 +14,8 @@ import { h, mount } from './ui/dom.js';
 import { logo } from './ui/logo.js';
 import { icon } from './ui/icons.js';
 import { startRouter } from './ui/router.js';
-import { getState, subscribe } from './state/store.js';
+import { getState, subscribe, setSettings } from './state/store.js';
+import { startMusic } from './audio/director.js';
 import { loadSimContext } from './state/nasaData.js';
 import { closeTermPopover } from './ui/components/termPopover.js';
 import { trapFocus } from './ui/components/modal.js';
@@ -77,6 +78,21 @@ function mobileMenu(toggle) {
   return { sheet, close };
 }
 
+// Top-bar mute button for the background music. Pressed = muted.
+function musicButton() {
+  const btn = h('button', { type: 'button', id: 'music-toggle', class: 'btn btn-ghost btn-icon', 'aria-label': 'Mute music' });
+  const paint = ({ settings }) => {
+    const muted = !settings.musicOn;
+    btn.setAttribute('aria-pressed', String(muted));
+    btn.title = muted ? 'Music is off. Press to turn it on.' : 'Music is on. Press to mute.';
+    mount(btn, icon(muted ? 'volume-off' : 'volume', { size: 22 }), h('span', { class: 'header-action-label' }, 'Mute'));
+  };
+  btn.addEventListener('click', () => setSettings({ musicOn: !getState().settings.musicOn }));
+  paint(getState());
+  subscribe(paint);
+  return btn;
+}
+
 function header() {
   const toggle = h('button', { type: 'button', class: 'btn btn-ghost btn-icon nav-toggle', 'aria-label': 'Open menu', 'aria-controls': 'menu-sheet', 'aria-expanded': 'false' }, icon('menu', { size: 24 }), h('span', { class: 'header-action-label' }, 'Menu'));
   const menu = mobileMenu(toggle);
@@ -90,6 +106,7 @@ function header() {
       h('div', { class: 'header-actions' },
         h('a', { class: 'btn btn-ghost btn-icon', href: '#/badges', 'aria-label': 'Badges and profile', dataset: { route: 'badges' } }, icon('award', { size: 22 }), h('span', { class: 'header-action-label' }, 'Badges')),
         h('a', { class: 'btn btn-ghost btn-icon', href: '#/settings', 'aria-label': 'Settings', dataset: { route: 'settings' } }, icon('settings', { size: 22 }), h('span', { class: 'header-action-label' }, 'Settings')),
+        musicButton(),
         toggle)));
   return { strip, bar, menu };
 }
@@ -144,8 +161,10 @@ applySettings(getState());
 subscribe(applySettings);
 const { view, menu, links } = buildShell();
 loadSimContext().catch((err) => console.warn('[data] NASA data failed to load', err));
+const musicForRoute = startMusic();
 startRouter(view, {
   onRoute: (route) => {
+    musicForRoute(route.name);
     closeTermPopover();
     stopSpeaking();
     menu.close();

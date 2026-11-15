@@ -22,6 +22,12 @@ const TABS = [
 ];
 
 const tabById = (id) => TABS.find((t) => t.id === id) ?? TABS[0];
+// Links like #/datalab/methodology (header "Data sources", footer) name the tab in the path.
+const TAB_ALIASES = { methodology: 'sources', credits: 'sources' };
+const tabFromRoute = (route) => {
+  const fromPath = route?.params?.[0];
+  return route?.query?.tab ?? TAB_ALIASES[fromPath] ?? fromPath;
+};
 
 function rememberTab(id) {
   const next = `#/datalab?tab=${encodeURIComponent(id)}`;
@@ -29,7 +35,7 @@ function rememberTab(id) {
 }
 
 export function render(root, route) {
-  let active = tabById(route?.query?.tab).id;
+  let active = tabById(tabFromRoute(route)).id;
   let sectionCleanup = null;
   const panel = h('section', { class: 'dl-panel', id: 'dl-panel', tabindex: '-1' });
   const tabs = h('div', { class: 'tabs dl-tabs', role: 'group', 'aria-label': 'Data Lab sections' });

@@ -5,8 +5,15 @@ import { speakable } from './kid/words.js';
 
 export const canSpeak = () => typeof window !== 'undefined' && 'speechSynthesis' in window;
 
+// Background music listens for this to duck itself while the voice is talking.
+const announceSpeaking = (speaking) => {
+  if (typeof document !== 'undefined') document.dispatchEvent(new CustomEvent('sol:speech', { detail: { speaking } }));
+};
+
 export function stopSpeaking() {
-  if (canSpeak()) window.speechSynthesis.cancel();
+  if (!canSpeak()) return;
+  window.speechSynthesis.cancel();
+  announceSpeaking(false);
 }
 
 // force=true speaks even when the read-aloud setting is off (explicit "Read aloud" buttons).
@@ -18,5 +25,8 @@ export function speak(text, force = false) {
   utterance.rate = 0.95;
   utterance.pitch = 1.05;
   utterance.lang = 'en-US';
+  utterance.onstart = () => announceSpeaking(true);
+  utterance.onend = () => announceSpeaking(false);
+  utterance.onerror = () => announceSpeaking(false);
   window.speechSynthesis.speak(utterance);
 }

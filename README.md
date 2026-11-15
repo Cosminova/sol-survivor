@@ -47,6 +47,21 @@ Sol Survivor is a mission simulator built on real data:
 
 The full bibliography (53 sources) is in `src/data/sources.js`. Every quiz question, fact, timeline entry and comparison value cites one of them, and the tests fail if a citation is missing.
 
+## Music
+
+Background music changes with the screen. Tracks live in `public/audio/` and load only when first needed.
+
+| Track | File | Length | Plays on |
+|---|---|---|---|
+| Pale Blue | `pale-blue.mp3` | 1:25 | Home, campaign map, dictionary, academy, Data Lab and other menus |
+| Near Earth | `near-earth.mp3` | 1:02 | Pack the lander (loadout) |
+| Deep Space | `deep-space.mp3` | 1:02 | Moon missions |
+| Alien World | `alien-world.mp3` | 1:02 | Mars missions |
+| Far Shore | `far-shore.mp3` | 1:35 | While a solar storm or dust storm card is open |
+| Lantern Moss | `lantern-moss.mp3` | 1:21 | Mission debrief |
+
+**Source and license: to be confirmed.** The tracks were provided to the team; record their source and license here and in `MUSIC_CREDIT` in `src/audio/tracks.js` before publishing.
+
 ## Science validity
 
 - Life support needs, radiation dose rates and planetary values are NASA numbers, rounded only for display.
