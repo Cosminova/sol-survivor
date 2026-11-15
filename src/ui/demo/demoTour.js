@@ -152,6 +152,13 @@ function runDemo(snapshot) {
   const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); end(); } };
   document.addEventListener('keydown', onKey, true);
 
+  // The caption bar sits bottom-left; if that would cover what the tour points at, it moves bottom-right.
+  const overlaps = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+  function dodge() {
+    bar.classList.remove('demo-bar-right');
+    if (spotted && overlaps(bar.getBoundingClientRect(), spotted.getBoundingClientRect())) bar.classList.add('demo-bar-right');
+  }
+
   const check = () => {
     if (stopped) throw new DemoStopped();
     if (skip) { skip = false; throw new StepSkipped(); }
@@ -188,6 +195,7 @@ function runDemo(snapshot) {
       spotted = el ?? null;
       spotted?.classList.add('demo-spot');
       spotted?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+      window.setTimeout(dodge, 450); // after the smooth scroll settles
     },
     // Next day, answering any event card with its first available choice so the tour keeps moving.
     async nextDay() {
