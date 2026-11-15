@@ -19,7 +19,14 @@ const visible = (el) => Boolean(el) && (el.checkVisibility ? el.checkVisibility(
 export const DEMO_STEPS = [
   {
     id: 'home', caption: 'Sol Survivor trains young astronauts with real NASA data. This card is today’s real Sun, read live from NASA’s DONKI space weather service.',
-    async run(t) { navigate('home'); t.spot(await t.waitFor('.hero-sun')); await t.hold(10000); },
+    async run(t) {
+      navigate('home');
+      await t.waitFor('.hero-sun .live-sun:not(.is-loading)', { timeout: 8000 }).catch(() => null);
+      const card = await t.waitFor('.hero-sun');
+      card.scrollIntoView({ block: 'center' });
+      t.spot(card);
+      await t.hold(10000);
+    },
   },
   {
     id: 'sky', caption: 'Pick any world from a real night sky, inspired by our partner project Cosminova. Rings mark stars with rocky planets from NASA’s Exoplanet Archive.',
