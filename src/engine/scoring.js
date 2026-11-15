@@ -1,5 +1,5 @@
 import { RADIATION } from '../data/constants.js';
-import { gcrPerSol } from './sim.js';
+import { unshieldedDosePerSol } from './sim.js';
 
 const avg = (list, fn) => list.reduce((s, x) => s + fn(x), 0) / list.length;
 
@@ -11,7 +11,7 @@ export function scoreMission(m) {
   const morale = avg(m.crew, (c) => c.morale);
   const doseOk = m.crew.every((c) => c.doseMsv <= RADIATION.careerLimitMsv);
   const surfaceDose = avg(m.crew, (c) => c.doseMsv - c.transitDoseMsv);
-  const unshieldedDose = gcrPerSol(m.config.body) * m.sol;
+  const unshieldedDose = unshieldedDosePerSol(m) * m.sol;
   const doseSaved = Math.max(0, 1 - surfaceDose / Math.max(1, unshieldedDose));
 
   const breakdown = {
@@ -32,6 +32,8 @@ const LOST_LESSONS = {
   water: 'Water ran out. On the ISS, 98% of water is recycled. Without a recycler, a crew of four uses about 14 kg of water every day.',
   food: 'Food ran out. Packaged food is heavy, so long missions need greenhouses. Remember: plants take about 25 sols before the first harvest!',
   cold: 'The power ran out and the heaters stopped. Mars nights drop below −70 °C. Batteries and nuclear power keep heaters running when the Sun is gone.',
+  coldWorld: 'The power ran out and the heaters stopped. Far from a star, a habitat leaks heat all day and all night. Nuclear power keeps heaters running when there is little sunlight.',
+  heat: 'The power ran out and the chillers stopped. On a world this hot, keeping the heat out takes as much power as heating does on a cold one. Nuclear power keeps chillers running day and night.',
   health: 'The crew’s health gave out. Watch radiation dose, rest, and supplies together.',
 };
 
@@ -41,7 +43,7 @@ export function debrief(m) {
   const went = [];
   const improve = [];
 
-  if (m.status === 'lost') improve.push(LOST_LESSONS[m.lostReason] ?? LOST_LESSONS.health);
+  if (m.status === 'lost') improve.push(LOST_LESSONS[m.profile && m.lostReason === 'cold' ? 'coldWorld' : m.lostReason] ?? LOST_LESSONS.health);
   if (s.o2Made > 0) went.push(`Your machines made ${Math.round(s.o2Made)} kg of oxygen on site. That is ISRU and life support working together!`);
   if (s.waterRecycled > 0) went.push(`The recycler saved ${Math.round(s.waterRecycled)} kg of water, about ${Math.round(s.waterRecycled / 3.5)} crew-days’ worth.`);
   if (s.waterMined > 0) went.push(`You mined ${Math.round(s.waterMined)} kg of water from buried ice.`);
@@ -61,6 +63,7 @@ export function debrief(m) {
   const xrays = Math.round(surface / RADIATION.chestXrayMsv);
   const earthDays = Math.round(surface / RADIATION.earthBackgroundMsvPerDay);
   const radiation = `Each astronaut received about ${surface.toFixed(1)} mSv on the surface: like ${xrays} chest X-rays, or ${earthDays.toLocaleString()} days of natural radiation on Earth.`
+    + (m.profile && score.surfaceDose > RADIATION.careerLimitMsv ? ` That is over the ${RADIATION.careerLimitMsv} mSv a NASA astronaut may receive in a whole career.` : '')
     + (m.crew[0].transitDoseMsv > 0 ? ` Plus ${m.crew[0].transitDoseMsv} mSv from the 6-month trip to Mars.` : '');
 
   return { score, went, improve, radiation };

@@ -1,3 +1,8 @@
+import { worldById } from './worlds.js';
+import { isLegacyWorldId, resolveSite } from '../engine/worldModel.js';
+import { worldChallenge } from '../engine/worldGuide.js';
+import { recommendedLoadout, worldBudgetKg } from '../engine/worldLoadout.js';
+
 // Story campaign. Each chapter teaches one big trade-off, then the next adds another.
 // Start dates fall inside the bundled DONKI range (2024–2025) so real solar storms replay.
 export const DIFFICULTY = {
@@ -79,7 +84,29 @@ export const CAMPAIGN = [
 
 export const missionById = (id) => CAMPAIGN.find((m) => m.id === id) ?? null;
 
-export function freePlayConfig({ body, siteId, targetSols, difficulty, startDate, includeTransitDose }) {
+const standardFreePlayBudgetKg = (targetSols) => Math.round(3500 + targetSols * 75);
+
+// Free play on any world from src/data/worlds.js. `worldId` picks the world (or pass a World object as `world`).
+// The Moon and Mars keep the original config below; every other world gets a config built from its profile:
+// body is the world's analog (for the Moon/Mars-specific UI), the mission length is capped where radiation
+// makes a longer stay impossible, and the mass budget always has room for the recommended pack.
+function worldFreePlayConfig(world, { siteId, targetSols, difficulty, startDate }) {
+  const site = resolveSite({ siteId }, world);
+  const { maxSols } = worldChallenge(world);
+  const sols = maxSols ? Math.min(targetSols, maxSols) : targetSols;
+  const recommended = recommendedLoadout(world, site, sols);
+  return {
+    id: 'free-play', chapter: 0, title: `Free Play: ${world.name}`, body: world.analog, worldId: world.id, siteId: site.id,
+    targetSols: sols, budgetKg: worldBudgetKg(recommended, standardFreePlayBudgetKg(sols)), scienceGoal: Math.round(sols * 8),
+    startDate, phaseOffsetDays: 0, scripted: [], includeTransitDose: false, difficulty,
+    lesson: 'Design your own mission.', intro: `Welcome to ${world.name}. ${world.blurb}`, win: `Mission accomplished! Your crew lived on ${world.name}.`,
+    recommended,
+  };
+}
+
+export function freePlayConfig({ body, siteId, targetSols, difficulty, startDate, includeTransitDose, worldId, world }) {
+  const played = world ?? (worldId && !isLegacyWorldId(worldId) ? worldById(worldId) : null);
+  if (played && !isLegacyWorldId(played.id)) return worldFreePlayConfig(played, { siteId, targetSols, difficulty, startDate });
   return {
     id: 'free-play', chapter: 0, title: 'Free Play', body, siteId,
     targetSols, budgetKg: Math.round(3500 + targetSols * 75), scienceGoal: Math.round(targetSols * 8),

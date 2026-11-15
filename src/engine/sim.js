@@ -1,7 +1,7 @@
 // Core outpost simulation. Every function returns a new mission object; nothing is mutated.
 // Flow per sol: beginSol (environment + event roll) -> resolveEvent (if any) -> runSol (physics).
 import { CREW, LIFE_SUPPORT, POWER, RADIATION, SHIELDING, MARS, MOON } from '../data/constants.js';
-import { MODULES, SUPPLIES, moduleById } from '../data/modules.js';
+import { MODULES, SUPPLIES, moduleById, modulesForWorld } from '../data/modules.js';
 import { siteById } from '../data/sites.js';
 import { DIFFICULTY } from '../data/missions.js';
 import { eventById } from '../data/eventCards.js';
@@ -11,6 +11,10 @@ import { marsWeather, baselineTau, dustStormChance, moonConditions } from './env
 import { sepBetween } from './spaceWeather.js';
 import { hashSeed, rngFromState } from './rng.js';
 import { rollEvent, applyEffects, addShieldWork, BREAKABLE, choiceAvailable, fillTemplate } from './events.js';
+import {
+  RULES, worldForConfig, resolveSite, worldProfile, worldEnv, worldSolarKwh, thermalKw, isHot,
+  insideDose, evaDose, openDose, acuteHealthLoss, stellarFlareSeverity, evaO2MultiplierFor, isLegacyWorldId,
+} from './worldModel.js';
 
 export const ROLES = {
   commander: { label: 'Commander', bonus: 'Keeps the whole crew’s morale up.' },
@@ -44,6 +48,12 @@ export const dayHours = (body) => (body === 'mars' ? MARS.dayHours : MOON.dayHou
 const dayLengthEarthDays = (body) => (body === 'mars' ? solsToEarthDays(1) : 1);
 export const gcrPerSol = (body) => (body === 'mars' ? RADIATION.marsSurfaceGcrMsvPerSol : RADIATION.moonSurfaceMsvPerDay);
 
+// Missions on any world other than the Moon or Mars carry a profile (src/engine/worldModel.js). Moon and Mars
+// missions have none and run the original code paths untouched.
+export const turnHoursFor = (m) => (m.profile ? m.profile.turnHours : dayHours(m.config.body));
+/** Dose per turn for someone standing outside with no habitat: the yardstick for "dose saved". */
+export const unshieldedDosePerSol = (m) => (m.profile ? openDose(m.profile) : gcrPerSol(m.config.body));
+
 // ---------- Loadout ----------
 
 export function loadoutMass({ modules = {}, supplies = {} }) {
@@ -65,7 +75,8 @@ export function missionNeeds(config, crewCount = 4) {
   };
 }
 
-export function validateLoadout(config, loadout, difficulty) {
+export function validateLoadout(config, loadout, difficulty, world = worldForConfig(config)) {
+  const allowed = world && !isLegacyWorldId(world.id) ? modulesForWorld(world, resolveSite(config, world)).map((mod) => mod.id) : null;
   const massKg = loadoutMass(loadout);
   const budgetKg = budgetFor(config, difficulty);
   const m = loadout.modules ?? {};
@@ -76,7 +87,9 @@ export function validateLoadout(config, loadout, difficulty) {
   if (massKg > budgetKg) errors.push(`Too heavy! ${massKg.toLocaleString()} kg is over the ${budgetKg.toLocaleString()} kg limit.`);
   for (const mod of MODULES) {
     if ((m[mod.id] ?? 0) > mod.max) errors.push(`You can carry at most ${mod.max} × ${mod.name}.`);
-    if (mod.body && mod.body !== config.body && (m[mod.id] ?? 0) > 0) errors.push(`${mod.name} only works on ${mod.body === 'mars' ? 'Mars' : 'the Moon'}.`);
+    if (allowed) {
+      if (!allowed.includes(mod.id) && (m[mod.id] ?? 0) > 0) errors.push(`${mod.name} does not work on ${world.name}.`);
+    } else if (mod.body && mod.body !== config.body && (m[mod.id] ?? 0) > 0) errors.push(`${mod.name} only works on ${mod.body === 'mars' ? 'Mars' : 'the Moon'}.`);
   }
   if (!(m.solar > 0) && !(m.fission > 0)) errors.push('No power source! Pack solar arrays or a fission unit.');
   const makesO2 = (m.oxygen ?? 0) + (m.moxie ?? 0) + (m.regolithO2 ?? 0) > 0;
@@ -97,9 +110,11 @@ function defaultTask(role, modules) {
   return 'science';
 }
 
-export function createMission({ config, loadout, difficulty = 'cadet', code = 'SOL001', crew = DEFAULT_CREW }, ctx = {}) {
-  const site = siteById(config.siteId);
+export function createMission({ config, loadout, difficulty = 'cadet', code = 'SOL001', crew = DEFAULT_CREW, world = worldForConfig(config) }, ctx = {}) {
+  const playedWorld = world && !isLegacyWorldId(world.id) ? world : null;
+  const site = playedWorld ? resolveSite(config, playedWorld) : siteById(config.siteId);
   if (!site) throw new Error(`Unknown site ${config.siteId}`);
+  const profile = playedWorld ? worldProfile(playedWorld, site) : null;
   const modules = Object.fromEntries(Object.entries(loadout.modules ?? {}).filter(([, n]) => n > 0));
   const supplies = loadout.supplies ?? {};
   const capacity = { batteryKwh: (modules.battery ?? 0) * moduleById('battery').storageKwh };
@@ -114,6 +129,7 @@ export function createMission({ config, loadout, difficulty = 'cadet', code = 'S
     rngState: hashSeed(code),
     config: { ...config, difficulty },
     site,
+    ...(profile ? { profile } : {}),
     sol: 0,
     phase: 'plan',
     status: 'active',
@@ -159,10 +175,15 @@ export function missionDateMs(config, sol) {
   return Date.parse(`${config.startDate}T12:00:00Z`) + sol * dayLengthEarthDays(config.body) * 864e5;
 }
 
+const worldDateMs = (config, profile, sol) => Date.parse(`${config.startDate}T12:00:00Z`) + sol * profile.turnHours * 36e5;
+
 export function computeEnv(mission, ctx, sol, prev) {
   const { config, site } = mission;
-  const dateMs = missionDateMs(config, sol);
   const dust = prev?.dust ?? 0;
+  if (mission.profile) {
+    return { dateMs: worldDateMs(config, mission.profile, sol), ...worldEnv(mission.profile, sol, config.phaseOffsetDays ?? 0, prev), dust };
+  }
+  const dateMs = missionDateMs(config, sol);
   if (config.body === 'moon') {
     const c = moonConditions(site, sol, config.phaseOffsetDays ?? 0);
     return { dateMs, ls: null, ...c, tau: 0, storm: null, dust, stormChance: 0, reference: null };
@@ -182,9 +203,14 @@ export function beginSol(mission, ctx = {}) {
   const sol = mission.sol + 1;
   const stepped = { ...mission, sol, today: { sep: null, shelter: false }, lastEvent: null };
   const env = computeEnv(stepped, ctx, sol, mission.env);
-  const sep = ctx.seps ? sepBetween(ctx.seps, mission.env.dateMs, env.dateMs) : null;
+  const profile = mission.profile;
+  const sep = profile
+    ? worldSep(profile, ctx, rng, mission.env.dateMs, env.dateMs)
+    : ctx.seps ? sepBetween(ctx.seps, mission.env.dateMs, env.dateMs) : null;
   const withEnv = { ...stepped, env, today: { sep, shelter: false } };
-  const nightfall = mission.config.body === 'moon' && mission.env.lit && !env.lit;
+  const nightfall = profile
+    ? mission.env.lit && !env.lit && profile.nightTurns >= RULES.longNightTurns
+    : mission.config.body === 'moon' && mission.env.lit && !env.lit;
   const queued = withEnv.queue.find((q) => q.sol <= sol);
   const scriptView = queued
     ? { ...withEnv, config: { ...withEnv.config, scripted: [...(withEnv.config.scripted ?? []), { sol, eventId: queued.eventId }] } }
@@ -198,6 +224,14 @@ export function beginSol(mission, ctx = {}) {
     pendingEvent: event,
     stats: { ...next.stats, events: next.stats.events + 1, sepEvents: next.stats.sepEvents + (sep ? 1 : 0) },
   };
+}
+
+// Storms for a world mission. Inside our solar system the real NASA DONKI record is replayed wherever the
+// particles would still matter; around another star the game rolls that star's own flares.
+function worldSep(profile, ctx, rng, fromMs, toMs) {
+  if (profile.solarStorms) return ctx.seps ? sepBetween(ctx.seps, fromMs, toMs) : null;
+  if (!(profile.flareChance > 0) || !rng.chance(profile.flareChance)) return null;
+  return { time: toMs, severity: stellarFlareSeverity(rng.next()), flareClass: null, cardId: 'stellar_flare' };
 }
 
 export function resolveEvent(mission, choiceIndex) {
@@ -236,14 +270,24 @@ export const effectiveShieldLevel = (m) => Math.min(SHIELDING.maxLevel, m.shield
 
 const sheltering = (m) => Boolean(m.today.shelter);
 
-export function isOnEva(m, c) {
+function hasOutsideJob(m, c) {
   if (sheltering(m)) return false;
   if (c.task === 'science' || c.task === 'shield') return true;
   return c.task === 'maintain' && !BREAKABLE.some((id) => (m.broken[id] ?? 0) > 0) && (m.modules.solar ?? 0) > 0 && m.env.dust > 0.01;
 }
 
+// Some worlds are too dangerous to walk on (crushing air, deadly radiation, oven heat). There the crew stays
+// inside and drives robots: no walk outside, and the outdoor work goes at RULES.remoteWorkFactor speed.
+export const isRemoteOnly = (m) => Boolean(m.profile && m.env?.remote);
+const outsideWorkFactor = (m) => (isRemoteOnly(m) ? RULES.remoteWorkFactor : 1);
+
+export function isOnEva(m, c) {
+  return !isRemoteOnly(m) && hasOutsideJob(m, c);
+}
+
 // Hours of sunlight in this sol: Mars from the site latitude and season, the Moon all day or not at all.
 export function daylightFor(m) {
+  if (m.profile) return m.env.daylightHours;
   if (m.config.body === 'mars') return daylightHours(m.site.lat, m.env.ls);
   return m.env.lit ? dayHours('moon') : 0;
 }
@@ -252,20 +296,26 @@ export function daylightFor(m) {
 // battery carries the night. Daytime surplus beyond a full battery is wasted. A deficit the battery cannot
 // cover switches machines off by priority (life support last); whatever is still unmet leaves the habitat cold.
 export function computePower(m) {
-  const hours = dayHours(m.config.body);
+  const profile = m.profile;
+  const hours = turnHoursFor(m);
   const daylight = daylightFor(m);
   const night = Math.max(0, hours - daylight);
   const solarArea = workingCount(m, 'solar') * moduleById('solar').areaM2;
-  const solarKwh = m.config.body === 'mars'
+  const solarKwh = profile
+    ? worldSolarKwh(profile, { areaM2: solarArea, daylightHours: daylight, tau: m.env.tau, dust: m.env.dust })
+    : m.config.body === 'mars'
     ? marsSolarKwh({ areaM2: solarArea, latDeg: m.site.lat, ls: m.env.ls, tau: m.env.tau, dust: m.env.dust })
     : moonSolarKwh({ areaM2: solarArea, site: m.site, dayIndex: m.sol, phaseOffsetDays: m.config.phaseOffsetDays ?? 0, dust: m.env.dust });
   const fissionKw = workingCount(m, 'fission') * moduleById('fission').outputKw;
   const fissionKwh = fissionKw * hours;
 
   const insulation = 1 - SHIELDING.bermHeatSavingPerLevel * Math.min(SHIELDING.maxLevel, m.shield.level);
-  const heatKwAt = (tempC) => POWER.heatKwPerDegree * Math.max(0, POWER.habitatTargetC - tempC) * insulation;
-  const dayTempC = m.config.body === 'mars' ? m.env.maxC : m.env.avgC;
-  const nightTempC = m.config.body === 'mars' ? m.env.minC : m.env.avgC;
+  const heatKwAt = profile
+    ? (tempC) => thermalKw(profile, tempC) * insulation
+    : (tempC) => POWER.heatKwPerDegree * Math.max(0, POWER.habitatTargetC - tempC) * insulation;
+  const splitDayNight = profile || m.config.body === 'mars';
+  const dayTempC = splitDayNight ? m.env.maxC : m.env.avgC;
+  const nightTempC = splitDayNight ? m.env.minC : m.env.avgC;
   const habitatDayKwh = (POWER.habitatBaseKw + heatKwAt(dayTempC)) * daylight;
   const habitatNightKwh = (POWER.habitatBaseKw + heatKwAt(nightTempC)) * night;
   const baseKwh = habitatDayKwh + habitatNightKwh;
@@ -313,6 +363,8 @@ export function computePower(m) {
     wastedKwh: round1(plan.wasted), shortfallKwh: round1(plan.shortfall), daylightHours: round1(daylight),
     coldFraction: Math.round(coldFraction * 100) / 100,
     thermalOk: plan.shortfall <= 0, running, shed, batteryAfter: plan.battery,
+    // World missions only: true when the thermal bill is for chillers (hot outside), not heaters.
+    ...(profile ? { hot: isHot(daylight > 0 ? dayTempC : nightTempC) } : {}),
   };
 }
 
@@ -322,12 +374,12 @@ function lifeSupport(m, power, evaFlags) {
   const botanistTending = tenders.some((c) => c.role === 'botanist');
   const r = power.running;
 
-  const o2Need = sum(m.crew, (_c, i) => LIFE_SUPPORT.o2KgPerCrewDay * (evaFlags[i] ? LIFE_SUPPORT.evaO2Multiplier : 1));
+  const o2Need = sum(m.crew, (_c, i) => LIFE_SUPPORT.o2KgPerCrewDay * (evaFlags[i] ? evaO2MultiplierFor(m.profile) : 1));
   const waterNeed = crewN * LIFE_SUPPORT.waterKgPerCrewDay;
   const foodNeed = crewN * LIFE_SUPPORT.foodKgPerCrewDay;
 
   const recycled = r.recycler ? waterNeed * moduleById('recycler').recovery : 0;
-  const mined = (r.iceDrill ?? 0) * moduleById('iceDrill').waterKg * m.site.iceAccess * (1 + m.modifiers.iceBonus);
+  const mined = (r.iceDrill ?? 0) * moduleById('iceDrill').waterKg * (m.profile ? m.profile.iceAccess : m.site.iceAccess) * (1 + m.modifiers.iceBonus);
   const greenhouseUnits = r.greenhouse ?? 0;
   const greenhouseWater = greenhouseUnits * GREENHOUSE_WATER_KG;
   let water = m.resources.water - waterNeed + recycled + mined - greenhouseWater;
@@ -362,8 +414,12 @@ function lifeSupport(m, power, evaFlags) {
 
 function crewWork(m, power, evaFlags) {
   const level = effectiveShieldLevel(m);
+  const profile = m.profile;
   const gcr = gcrPerSol(m.config.body);
   const sep = m.today.sep;
+  const sepScale = profile ? profile.flareDoseFactor : 1;
+  const remoteFactor = outsideWorkFactor(m);
+  const buildSpeed = profile ? profile.buildSpeed : 1;
   const roverBoost = power.running.rover ? 1.5 : 1;
   const stormPenalty = m.env.tau > 2 ? 0.6 : 1;
   const nightPenalty = m.env.lit ? 1 : 0.7;
@@ -378,13 +434,15 @@ function crewWork(m, power, evaFlags) {
 
   const doses = m.crew.map((c, i) => {
     const eva = evaFlags[i];
-    let dose = eva ? gcr : gcr * SHIELDING.gcrFactor[level];
+    let dose = profile
+      ? (eva ? evaDose(profile, level) : insideDose(profile, level))
+      : eva ? gcr : gcr * SHIELDING.gcrFactor[level];
     if (sep) {
       const shelter = m.today.shelter;
       const factor = shelter === true ? SHIELDING.shelterSepFactor
         : shelter === 'partial' ? SHIELDING.sepFactor[Math.min(SHIELDING.maxLevel, level + 1)]
           : eva ? 1 : SHIELDING.sepFactor[level];
-      const d = RADIATION.sepDoseMsv[sep.severity] * factor;
+      const d = RADIATION.sepDoseMsv[sep.severity] * factor * sepScale;
       sepDose += d;
       dose += d;
     }
@@ -396,9 +454,9 @@ function crewWork(m, power, evaFlags) {
     const prod = c.morale < 30 ? 0.5 : 1;
     const eng = c.role === 'engineer' ? 1.5 : 1;
     if (c.task === 'science') {
-      science += CREW.evaScience * m.site.science * roverBoost * (c.role === 'geologist' ? CREW.sciencePerGeologistBonus : 1) * prod * stormPenalty * nightPenalty;
+      science += CREW.evaScience * m.site.science * roverBoost * (c.role === 'geologist' ? CREW.sciencePerGeologistBonus : 1) * prod * stormPenalty * nightPenalty * remoteFactor;
     } else if (c.task === 'shield') {
-      shieldWork += prod * eng;
+      shieldWork += prod * eng * buildSpeed * remoteFactor;
     } else if (c.task === 'maintain') {
       const brokenId = BREAKABLE.find((id) => (broken[id] ?? 0) > 0);
       if (brokenId) {
@@ -414,8 +472,8 @@ function crewWork(m, power, evaFlags) {
             repairs += 1;
           }
         }
-      } else if (evaFlags[i]) {
-        dust = Math.max(0, dust - 0.15 * eng * prod);
+      } else if (evaFlags[i] || (isRemoteOnly(m) && hasOutsideJob(m, c))) {
+        dust = Math.max(0, dust - 0.15 * eng * prod * remoteFactor);
       }
     }
   });
@@ -435,6 +493,7 @@ function nextCrew(m, life, power, doses, evaFlags) {
     if (!power.thermalOk) health -= Math.ceil(POWER.coldHealthPerSol * power.coldFraction);
     const dose = c.doseMsv + doses[i];
     if (dose > RADIATION.careerLimitMsv) health -= 2;
+    if (m.profile) health -= acuteHealthLoss(doses[i]);
     if (c.morale <= 0) health -= 2;
     if (!deficit && power.thermalOk) health += resting ? CREW.restHeal : 1;
 
@@ -484,7 +543,9 @@ export function runSol(mission) {
   const work = crewWork(m, power, evaFlags);
   const crew = nextCrew(m, life, power, work.doses, evaFlags);
 
-  const dustRate = m.config.body === 'mars' ? (m.env.storm ? POWER.stormDustPerSol : POWER.dustPerSol) : 0.0005;
+  const dustRate = m.profile
+    ? m.profile.dustPerSol * (m.env.storm ? RULES.stormDustMultiplier : 1)
+    : m.config.body === 'mars' ? (m.env.storm ? POWER.stormDustPerSol : POWER.dustPerSol) : 0.0005;
   const storm = m.env.storm && m.env.storm.solsLeft > 1 ? { ...m.env.storm, solsLeft: m.env.storm.solsLeft - 1 } : null;
   const firstHarvest = life.freshFood && !m.flags.harvest && !m.queue.some((q) => q.eventId === 'harvest');
 
@@ -562,7 +623,8 @@ function snapshot(m, power, doseToday) {
 function solNotes(m, power, life) {
   const notes = [];
   if (power.shed.length) notes.push({ sol: m.sol, type: 'warn', text: `⚡ Not enough power: ${power.shed.map((id) => moduleById(id).name).join(', ')} switched off automatically.` });
-  if (!power.thermalOk) notes.push({ sol: m.sol, type: 'danger', text: `🥶 Power ran out! ${Math.round(power.coldFraction * 100)}% of the habitat's power was missing, so the heaters could not keep it warm.` });
+  if (!power.thermalOk && power.hot) notes.push({ sol: m.sol, type: 'danger', text: `🥵 Power ran out! ${Math.round(power.coldFraction * 100)}% of the habitat's power was missing, so the chillers could not keep the heat out.` });
+  else if (!power.thermalOk) notes.push({ sol: m.sol, type: 'danger', text: `🥶 Power ran out! ${Math.round(power.coldFraction * 100)}% of the habitat's power was missing, so the heaters could not keep it warm.` });
   else if (m.capacity.batteryKwh > 0 && power.nightKwh > 0 && power.batteryAfter <= 0.2 * m.capacity.batteryKwh) {
     notes.push({ sol: m.sol, type: 'warn', text: `🌙 The night needed ${Math.round(power.nightKwh)} kWh. Battery at dawn: only ${Math.round((100 * power.batteryAfter) / m.capacity.batteryKwh)}%.` });
   }
@@ -575,7 +637,7 @@ function solNotes(m, power, life) {
 function checkEnd(m, life, power) {
   const down = m.crew.find((c) => c.health <= 0);
   if (down) {
-    const reason = life.o2Deficit ? 'oxygen' : life.waterDeficit ? 'water' : life.foodDeficit ? 'food' : !power.thermalOk ? 'cold' : 'health';
+    const reason = life.o2Deficit ? 'oxygen' : life.waterDeficit ? 'water' : life.foodDeficit ? 'food' : !power.thermalOk ? (power.hot ? 'heat' : 'cold') : 'health';
     return {
       ...m, status: 'lost', lostReason: reason,
       log: [...m.log, { sol: m.sol, type: 'danger', text: `🚨 ${down.name} needed an emergency evacuation to orbit. Mission aborted.` }],
