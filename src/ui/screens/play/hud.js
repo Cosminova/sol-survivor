@@ -8,7 +8,7 @@ import { icon } from '../../icons.js';
 import { statusBadge } from './status.js';
 import { isExpertView, moreDetails, realDataLabel, viewSwitch } from '../../kid/view.js';
 import { howToPlayButton } from '../../kid/howToPlay.js';
-import { skyWord, delayWords, dayWord, niceDate, lossMessage, LOSS_TITLE, LOSS_CHEER } from '../../kid/words.js';
+import { skyWord, delayWords, dayWord, niceDate, lossMessage, LOSS_TITLE, LOSS_CHEER, dayKey } from '../../kid/words.js';
 
 const ic = (name) => icon(name, { size: 16 });
 
@@ -21,7 +21,7 @@ function expertChips(m) {
   const chips = [];
   if (m.config.body === 'mars') {
     chips.push(h('span', { class: 'hud-chip' }, ic('orbit'), termButton('solar-longitude', `Ls ${Math.round(e.ls)}°`), ` ${seasonName(e.ls, m.site.lat >= 0)}`));
-    chips.push(h('span', { class: ['hud-chip', e.tau >= 2 && 'warn'] }, ic('wind'), termButton('tau', `Dust τ ${e.tau}`), e.storm ? ` · storm ${e.storm.solsLeft} sols` : ''));
+    chips.push(h('span', { class: ['hud-chip', e.tau >= 2 && 'warn'] }, ic('wind'), termButton('tau', `Dust τ ${e.tau}`), e.storm ? ` · storm ${e.storm.solsLeft} ${dayWord(dayKey(m.config), { plural: true })}` : ''));
     chips.push(h('span', { class: 'hud-chip' }, ic('thermometer'), `${e.minC}° to ${e.maxC}°C`));
     chips.push(h('span', { class: 'hud-chip' }, ic('pressure'), termButton('atmospheric-pressure', `${e.pressurePa} Pa`)));
   } else {
@@ -30,14 +30,14 @@ function expertChips(m) {
     chips.push(h('span', { class: 'hud-chip' }, ic('pressure'), termButton('atmospheric-pressure', '0 Pa (no air)')));
   }
   const blackout = m.modifiers?.blackout > 0;
-  chips.push(h('span', { class: ['hud-chip', blackout && 'warn'] }, ic('antenna'), termButton(blackout ? 'solar-conjunction' : 'light-delay', blackout ? `No contact ${m.modifiers.blackout} sols` : `Earth ${fmtDelay(radioDelay(m))} away`)));
+  chips.push(h('span', { class: ['hud-chip', blackout && 'warn'] }, ic('antenna'), termButton(blackout ? 'solar-conjunction' : 'light-delay', blackout ? `No contact ${m.modifiers.blackout} ${dayWord(dayKey(m.config), { plural: true })}` : `Earth ${fmtDelay(radioDelay(m))} away`)));
   return chips;
 }
 
 // The same facts in plain words. Tapping a chip explains the science word behind it.
 export function cadetChips(m) {
   const e = m.env;
-  const unit = dayWord(m.config.body, { plural: true });
+  const unit = dayWord(dayKey(m.config), { plural: true });
   const chips = [];
   if (m.config.body === 'mars') {
     chips.push(h('span', { class: ['hud-chip', (e.storm || e.tau >= 2) && 'warn'] }, ic('wind'), termButton('tau', skyWord(e, m)), e.storm ? ` for ${e.storm.solsLeft} more ${unit}` : ''));
@@ -63,9 +63,10 @@ export function hud(m, { onNext, onRun, busy, fc }) {
   const sciPct = Math.min(100, (100 * m.science) / m.config.scienceGoal);
   const active = m.status === 'active';
   const mars = m.config.body === 'mars';
+  const solWorld = dayKey(m.config) === 'mars';
   const expert = isExpertView();
   const date = new Date(m.env.dateMs).toISOString().slice(0, 10);
-  const unit = dayWord(m.config.body, { plural: true });
+  const unit = dayWord(dayKey(m.config), { plural: true });
   const idLine = `Earth date ${date} · code ${m.code}`;
   return h('header', { class: ['play-hud', m.config.body, expert ? 'is-expert' : 'is-cadet'] },
     h('div', { class: 'hud-title' },
@@ -75,15 +76,15 @@ export function hud(m, { onNext, onRun, busy, fc }) {
     h('div', { class: 'hud-progress' },
       h('div', { class: 'hud-sol' },
         icon('reticle', { size: 22 }),
-        h('span', { class: 'hud-sol-label' }, mars ? 'Sol' : 'Day'),
+        h('span', { class: 'hud-sol-label' }, solWorld ? 'Sol' : 'Day'),
         h('span', { class: 'hud-sol-num mono' }, m.sol), h('span', { class: 'hud-sol-of' }, expert ? ` / ${m.config.targetSols} ${unit}` : ` of ${m.config.targetSols}`), ' ',
-        mars ? termButton('sol', expert ? 'Sol?' : 'A sol is a Mars day') : (expert ? termButton('lunar-day', 'Day?') : null)),
+        solWorld ? termButton('sol', expert ? 'Sol?' : 'A sol is a Mars day') : (expert && dayKey(m.config) === 'moon' ? termButton('lunar-day', 'Day?') : null)),
       h('div', { class: 'meter hud-meter', role: 'progressbar', 'aria-label': 'Mission progress', 'aria-valuenow': Math.round(pct), 'aria-valuemin': 0, 'aria-valuemax': 100, style: { '--pct': `${pct}%`, '--meter-color': 'var(--cyan)' } }, h('span')),
       h('div', { class: 'hud-sci' }, h('span', { class: 'hud-sci-label' }, ic('flask'), expert ? `Science ${Math.round(m.science)} / ${m.config.scienceGoal}` : `Science points: ${Math.round(m.science)} of ${m.config.scienceGoal}`),
         h('div', { class: 'meter', role: 'progressbar', 'aria-label': 'Science goal progress', 'aria-valuenow': Math.round(sciPct), 'aria-valuemin': 0, 'aria-valuemax': 100, style: { '--pct': `${sciPct}%`, '--meter-color': 'var(--violet)' } }, h('span')))),
     h('div', { class: 'hud-status' }, h('span', { class: 'hud-status-label' }, 'Mission status'), statusBadge(m, fc)),
     h('div', { class: 'hud-actions' },
-      h('button', { type: 'button', id: 'next-sol', class: 'btn btn-primary btn-lg btn-caps hud-next', disabled: !active || busy, onclick: onNext, 'aria-keyshortcuts': 'N' }, icon('play', { size: 18 }), active ? `Next ${mars && expert ? 'Sol' : 'Day'}` : 'Mission over'),
+      h('button', { type: 'button', id: 'next-sol', class: 'btn btn-primary btn-lg btn-caps hud-next', disabled: !active || busy, onclick: onNext, 'aria-keyshortcuts': 'N' }, icon('play', { size: 18 }), active ? `Next ${solWorld && expert ? 'Sol' : 'Day'}` : 'Mission over'),
       h('button', { type: 'button', id: 'run-sols', class: 'btn btn-sm', disabled: !active || busy, onclick: onRun, title: `Plays up to 5 ${unit} in a row. It stops if something happens.` }, icon('fast-forward', { size: 16 }), expert ? 'Run 5' : `Skip 5 ${unit}`)),
     h('div', { class: 'hud-env' },
       expert ? expertChips(m) : cadetChips(m),

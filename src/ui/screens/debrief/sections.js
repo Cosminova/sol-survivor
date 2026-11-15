@@ -7,7 +7,7 @@ import { compareDose } from '../../../engine/dataLab.js';
 import { RADIATION } from '../../../data/constants.js';
 import { logo } from '../../logo.js';
 import { isExpertView } from '../../kid/view.js';
-import { plainify } from '../../kid/words.js';
+import { plainify, dayKey, daysText, dayWord } from '../../kid/words.js';
 
 const PARTS = [
   { key: 'survival', icon: '🫁', label: 'Survival', max: 400, color: 'var(--cyan)', tip: 'How many of the planned days the crew lasted.' },
@@ -33,7 +33,7 @@ export function scoreBreakdown(score) {
 
 // Cadet view reads the engine's lessons through the kid words layer (same facts and numbers, plainer words).
 export function lessonsPanel(report, body = 'mars') {
-  const say = (t) => (isExpertView() ? t : plainify(t, body));
+  const say = (t) => (isExpertView() ? daysText(t, body) : plainify(t, body));
   const list = (items, cls, empty) => (items.length
     ? h('ul', { class: ['db-list', cls] }, items.map((t) => h('li', null, say(t))))
     : h('p', { class: 'faint' }, empty));
@@ -54,7 +54,7 @@ export function radiationPanel(report, mission) {
     h('span', null, h('span', { class: 'faint' }, `${label}: `), d.label, h('strong', { class: 'mono' }, ` ${d.msv} mSv`))) : null);
   return h('section', { class: 'panel db-rad', 'aria-label': 'Radiation report' },
     h('h2', { class: 'panel-title mars' }, '☢️ Radiation report', h('span', { class: 'spacer' }), termButton('sievert', 'What is a millisievert?')),
-    h('p', null, isExpertView() ? report.radiation : plainify(report.radiation, mission.config.body)),
+    h('p', null, isExpertView() ? daysText(report.radiation, dayKey(mission.config)) : plainify(report.radiation, dayKey(mission.config))),
     h('div', { class: 'db-rad-stats' },
       h('div', { class: 'db-stat' }, h('span', { class: 'db-stat-num mono' }, c.msv.toFixed(1)), h('span', null, 'mSv each')),
       h('div', { class: 'db-stat' }, h('span', { class: 'db-stat-num mono' }, c.chestXrays.toLocaleString()), h('span', null, 'chest X-rays')),
@@ -75,7 +75,7 @@ export function historyCharts(mission) {
     return h('section', { class: 'panel db-charts' }, h('h2', { class: 'panel-title' }, 'Mission charts'),
       h('p', { class: 'faint' }, 'The mission was too short to draw charts. Next time you will get further!'));
   }
-  const unit = mission.config.body === 'mars' ? 'Sol' : 'Day';
+  const unit = dayWord(dayKey(mission.config), { cap: true });
   const common = { xLabel: unit, xFormat: (v) => String(Math.round(v)), width: 560, height: 230, yZero: true };
   return h('section', { class: 'panel db-charts', 'aria-label': 'Mission telemetry charts' },
     h('h2', { class: 'panel-title' }, 'Mission charts'),

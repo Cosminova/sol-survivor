@@ -3,6 +3,7 @@
 import { computePower, effectiveShieldLevel, isOnEva, workingCount, dayHours, turnHoursFor } from '../../engine/sim.js';
 import { siteById, sitesForBody } from '../../data/sites.js';
 import { clamp } from './sceneUtil.js';
+import { dayKey, dayWord } from '../kid/words.js';
 
 export const SCENE_MODULE_IDS = ['solar', 'fission', 'battery', 'recycler', 'oxygen', 'moxie', 'regolithO2', 'iceDrill', 'greenhouse', 'shelter', 'rover', 'relay', 'spares'];
 
@@ -90,6 +91,7 @@ export function outpostModelFrom(m, opts = {}) {
     over: Boolean(m) && m.status !== 'active',
     pendingCard: m?.phase === 'event' && Boolean(m?.pendingEvent),
     hasMission: Boolean(m),
+    dayUnit: dayWord(dayKey(m?.config), { cap: true }), // 'Sol' on Mars, 'Day' everywhere else
     reducedMotion: Boolean(opts.reducedMotion),
   };
 }

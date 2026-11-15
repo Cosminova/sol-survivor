@@ -9,14 +9,14 @@ import { termButton } from '../../components/common.js';
 import { expertResources, expertPower, expertDosimeter } from './gauges.js';
 import { capcomPanel, cadetModules, expertLog } from './side.js';
 import { cadetChips, weatherSource } from './hud.js';
-import { plainify, dayWord } from '../../kid/words.js';
+import { plainify, dayWord, dayKey } from '../../kid/words.js';
 import { moreDetails, realDataLabel } from '../../kid/view.js';
 
 function latestNews(m) {
   const last = m.log[m.log.length - 1];
   if (!last) return null;
-  const unit = dayWord(m.config.body, { cap: true });
-  return h('p', { class: 'kid-news' }, h('strong', null, `${unit} ${last.sol}: `), richText(plainify(last.text, m.config.body), openTermPopover));
+  const unit = dayWord(dayKey(m.config), { cap: true });
+  return h('p', { class: 'kid-news' }, h('strong', null, `${unit} ${last.sol}: `), richText(plainify(last.text, dayKey(m.config)), openTermPopover));
 }
 
 /** Everything inside the drawer for the current mission. Rebuilt on every redraw while the drawer is open. */
@@ -26,12 +26,12 @@ export function drawerContent(m, { power, onToggle }) {
   const src = weatherSource(m);
   return [
     h('section', { class: 'kid-drawer-part' }, latestNews(m)),
-    capcomPanel(advise(m), body),
+    capcomPanel(advise(m), dayKey(m.config)),
     cadetModules(m, power, onToggle),
     h('section', { class: 'panel', 'aria-label': 'Outside today' },
       h('h3', { class: 'panel-title' }, icon('thermometer', { size: 18 }), 'Outside today'),
       h('div', { class: 'hud-env' }, cadetChips(m)),
-      body === 'mars' ? h('p', null, termButton('sol', 'A day on Mars is called a sol.')) : null,
+      dayKey(m.config) === 'mars' ? h('p', null, termButton('sol', 'A day on Mars is called a sol.')) : null,
       src ? h('p', { class: 'kid-drawer-src' }, src) : null,
       m.today?.sep ? h('p', { class: 'kid-drawer-src' }, realDataLabel(m.today.sep.time, 'donki', 'Solar storm')) : null),
     moreDetails('numbers', 'Exact numbers', expertResources(m, fc), expertPower(m, power), expertDosimeter(m)),

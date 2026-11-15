@@ -123,8 +123,8 @@ export function createHud(container, { onSelectCrew, onButton, onWhy, touch }) {
       el('span', null, o.label, o.target > 1 ? ` (${o.count}/${o.target})` : '', el('span', { class: 'w3d-sr' }, o.done ? ' done' : ' to do')))));
   }
 
-  function setSol({ sol, site, hours, t, body }) {
-    solName.textContent = `${body === 'moon' ? 'Day' : 'Sol'} ${sol} · ${site}`;
+  function setSol({ sol, site, hours, t, body, unit }) {
+    solName.textContent = `${unit ?? (body === 'moon' ? 'Day' : 'Sol')} ${sol} · ${site}`;
     solTime.textContent = `${formatClock(hours)} ${body === 'moon' ? 'shift time' : 'local solar time'}`;
     sunDot.style.left = pct(t);
     sunbar.setAttribute('aria-valuenow', String(Math.round((1 - Math.min(1, t)) * 100)));

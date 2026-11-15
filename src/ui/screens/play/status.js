@@ -3,7 +3,7 @@
 import { h } from '../../dom.js';
 import { seasonName, lightDelaySeconds } from '../../../engine/marsTime.js';
 import { MOON, RADIATION } from '../../../data/constants.js';
-import { KID_REASONS, dayWord, delayWords, skyWord, niceDate } from '../../kid/words.js';
+import { KID_REASONS, dayWord, delayWords, skyWord, niceDate, dayKey } from '../../kid/words.js';
 import { isExpertView } from '../../kid/view.js';
 
 const fmtDelay = (sec) => (sec < 60 ? `${sec.toFixed(1)} s` : `${Math.floor(sec / 60)} min ${Math.round(sec % 60)} s`);
@@ -60,7 +60,7 @@ export function telemetryItems(m, fc) {
   const delay = mars ? lightDelaySeconds(new Date(e.dateMs)) : MOON.lightSeconds;
   const { level } = missionStatus(m, fc);
   const ok = level === 'nominal';
-  const unit = dayWord(m.config.body, { plural: true });
+  const unit = dayWord(dayKey(m.config), { plural: true });
   const date = new Date(e.dateMs).toISOString().slice(0, 10);
   const battery = cap > 0 ? `${Math.round((100 * m.resources.batteryKwh) / cap)}%${expert ? ` · ${Math.round(m.resources.batteryKwh)} kWh` : ' full'}` : 'none';
   const blackout = m.modifiers?.blackout > 0;
@@ -68,7 +68,7 @@ export function telemetryItems(m, fc) {
   if (!expert) {
     const items = [
       { label: 'Status', value: ok ? 'All good' : 'Watch out', tone: ok ? 'good' : 'warn' },
-      { label: mars ? 'Mars day (sol)' : 'Day', value: `${m.sol} of ${m.config.targetSols}` },
+      { label: dayKey(m.config) === 'mars' ? 'Mars day (sol)' : 'Day', value: `${m.sol} of ${m.config.targetSols}` },
       { label: 'Date on Earth', value: niceDate(date) },
     ];
     if (mars) {
@@ -93,13 +93,13 @@ export function telemetryItems(m, fc) {
 
   const items = [
     { label: 'Status', value: ok ? 'NOMINAL (all good)' : 'CAUTION (watch out)', tone: ok ? 'good' : 'warn' },
-    { label: mars ? 'Sol' : 'Day', value: `${m.sol} / ${m.config.targetSols}` },
+    { label: dayWord(dayKey(m.config), { cap: true }), value: `${m.sol} / ${m.config.targetSols}` },
     { label: 'Earth date', value: date },
   ];
   if (mars) {
     items.push(
       { label: 'Season', value: `Ls ${Math.round(e.ls)}° ${seasonName(e.ls, m.site.lat >= 0)}` },
-      { label: 'Dust tau', value: `${e.tau}${e.storm ? ` · storm ${e.storm.solsLeft} sols` : ''}`, tone: e.storm || e.tau >= 2 ? 'warn' : null },
+      { label: 'Dust tau', value: `${e.tau}${e.storm ? ` · storm ${e.storm.solsLeft} ${dayWord(dayKey(m.config), { plural: true })}` : ''}`, tone: e.storm || e.tau >= 2 ? 'warn' : null },
       { label: 'Temperature', value: `${e.minC}° to ${e.maxC}°C` },
       { label: 'Pressure', value: `${e.pressurePa} Pa` });
   } else {
@@ -109,11 +109,11 @@ export function telemetryItems(m, fc) {
       { label: 'Pressure', value: '0 Pa (no air)' });
   }
   items.push(
-    { label: 'Light delay', value: blackout ? `no contact ${m.modifiers.blackout} sols` : fmtDelay(delay), tone: blackout ? 'warn' : null },
+    { label: 'Light delay', value: blackout ? `no contact ${m.modifiers.blackout} ${dayWord(dayKey(m.config), { plural: true })}` : fmtDelay(delay), tone: blackout ? 'warn' : null },
     { label: 'Battery', value: battery, tone: tone(fc?.energy, remaining) },
-    { label: 'Oxygen', value: daysLeft(fc?.o2, 'sols'), tone: tone(fc?.o2, remaining) },
-    { label: 'Water', value: daysLeft(fc?.water, 'sols'), tone: tone(fc?.water, remaining) },
-    { label: 'Food', value: daysLeft(fc?.food, 'sols'), tone: tone(fc?.food, remaining) },
+    { label: 'Oxygen', value: daysLeft(fc?.o2, dayWord(dayKey(m.config), { plural: true })), tone: tone(fc?.o2, remaining) },
+    { label: 'Water', value: daysLeft(fc?.water, dayWord(dayKey(m.config), { plural: true })), tone: tone(fc?.water, remaining) },
+    { label: 'Food', value: daysLeft(fc?.food, dayWord(dayKey(m.config), { plural: true })), tone: tone(fc?.food, remaining) },
     { label: 'Crew dose', value: `${Math.round(avgDose)} / ${RADIATION.careerLimitMsv} mSv`, tone: m.today?.sep ? 'warn' : null });
   return items;
 }

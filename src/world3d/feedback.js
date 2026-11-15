@@ -4,6 +4,7 @@ import { CAPCOM, STATION_INFO } from './facts.js';
 import { CAPTIONS } from './audio.js';
 import { O2_LOW, PENALTY } from './gameLogic.js';
 import { makeRng, hashString } from './rng.js';
+import { dayKey, daysText } from '../ui/kid/words.js';
 
 const PENALTY_TEXT = { night: 'caught outside after dark', o2: 'ran out of suit oxygen', radiation: 'took a radiation dose', cold: 'got too cold' };
 
@@ -150,7 +151,7 @@ export function applyEvents(rt, events) {
       case 'objectiveDone':
         hud.toast(`✓ Objective: ${e.label}`, 'good');
         rt.audio.sfx.success();
-        if (e.id === 'assignAll') radio.say(CAPCOM.allAssigned);
+        if (e.id === 'assignAll') radio.say(daysText(CAPCOM.allAssigned, dayKey(rt.mission.config)));
         break;
       case 'allObjectives':
         hud.toast('🏆 All objectives complete! +50 XP', 'good');

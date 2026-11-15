@@ -35,6 +35,7 @@ import { icon } from '../icons.js';
 import { isExpertView, setForceCadet } from '../kid/view.js';
 import { applyPlan, availablePlans, currentPlan, planById, previewPlan, simulateNextDay, meterStates } from '../kid/plans.js';
 import { dayEffects } from '../kid/effects.js';
+import { dayKey, dayWord, daysText } from '../kid/words.js';
 import { createTutorial, openRecap, TUTORIAL_ROUTE } from '../tutorial/tutorial.js';
 
 function noMission(root) {
@@ -154,7 +155,7 @@ export function render(root, route) {
   function afterRun(before) {
     const today = m.log.filter((l) => l.sol === m.sol);
     if (today.some((l) => l.type === 'danger' || l.type === 'fail')) play('bad');
-    announce(`${m.config.body === 'mars' ? 'Sol' : 'Day'} ${m.sol} complete. ${advise(m)[0]?.text ?? ''}`);
+    announce(`${dayWord(dayKey(m.config), { cap: true })} ${m.sol} complete. ${daysText(advise(m)[0]?.text ?? '', dayKey(m.config))}`);
     // Big results of the day as one popup (Cadet view; the coach does the talking during training).
     // When the mission has just ended, the end-of-mission card says it all.
     if (m.status !== 'active') clearEffects();
@@ -237,7 +238,7 @@ export function render(root, route) {
     mount(els.power, powerPanel(m, power));
     mount(els.rad, dosimeter(m));
     mount(els.crew, crewPanel(m, onTask));
-    mount(els.capcom, capcomPanel(advise(m), m.config.body));
+    mount(els.capcom, capcomPanel(advise(m), dayKey(m.config)));
     mount(els.mods, modulesPanel(m, power, onToggle));
     mount(els.log, logPanel(m));
     for (const key of ['head', 'meters', 'today', 'next', 'tools']) mount(els[key]);

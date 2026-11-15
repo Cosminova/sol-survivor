@@ -5,7 +5,7 @@ import { openTermPopover } from '../../components/termPopover.js';
 import { termButton } from '../../components/common.js';
 import { icon, MODULE_ICONS } from '../../icons.js';
 import { isExpertView, moreDetails } from '../../kid/view.js';
-import { KID_MODULES, plainify, dayWord } from '../../kid/words.js';
+import { KID_MODULES, plainify, dayWord, dayKey, daysText } from '../../kid/words.js';
 import { getState } from '../../../state/store.js';
 
 const LEVEL_ICON = { danger: 'alert', warn: 'alert', info: 'antenna', good: 'check' };
@@ -13,13 +13,13 @@ const LOG_ICON = { story: 'book', event: 'reticle', warn: 'alert', danger: 'aler
 
 // CAPCOM tips come from the advisor. Cadet view calls CAPCOM "Mission Control" and swaps the few
 // science words in each tip for plain ones (same advice, same thresholds).
-export function capcomPanel(tips, body = getState().savedMission?.config?.body ?? 'mars') {
+export function capcomPanel(tips, body = dayKey(getState().savedMission?.config) ?? 'mars') {
   const expert = isExpertView();
   return h('section', { class: 'panel play-capcom', 'aria-label': expert ? 'CAPCOM advice' : 'Advice from Mission Control', 'aria-live': 'polite' },
     h('h2', { class: 'panel-title' }, icon('antenna', { size: 18 }), expert ? 'CAPCOM' : 'Mission Control', h('span', { class: 'spacer' }), termButton('capcom', expert ? 'Who is CAPCOM?' : 'Your helper is called CAPCOM')),
     h('ul', { class: 'capcom-list' }, tips.map((tip) => h('li', { class: ['capcom-tip', tip.level] },
       h('span', { class: 'capcom-icon', 'aria-hidden': 'true' }, icon(LEVEL_ICON[tip.level] ?? 'antenna', { size: 18 })),
-      h('span', null, expert ? tip.text : plainify(tip.text, body), tip.term ? [' ', termButton(tip.term, expert ? 'Learn' : 'Learn why')] : null)))));
+      h('span', null, expert ? daysText(tip.text, body) : plainify(tip.text, body), tip.term ? [' ', termButton(tip.term, expert ? 'Learn' : 'Learn why')] : null)))));
 }
 
 function status(m, id, power) {
@@ -55,9 +55,9 @@ export function expertLog(m) {
   return h('section', { class: 'panel play-log', 'aria-label': 'Mission log' },
     h('h2', { class: 'panel-title' }, icon('log', { size: 18 }), 'Mission log'),
     h('ol', { class: 'log-list', reversed: true, tabindex: '0', 'aria-label': 'Mission log entries, newest first' }, recent.map((entry) => h('li', { class: ['log-entry', entry.type] },
-      h('span', { class: 'log-sol mono' }, `Sol ${entry.sol}`),
+      h('span', { class: 'log-sol mono' }, `${dayWord(dayKey(m.config), { cap: true })} ${entry.sol}`),
       h('span', { class: 'log-icon', 'aria-hidden': 'true' }, icon(LOG_ICON[entry.type] ?? 'info', { size: 16 })),
-      h('span', { class: 'log-text' }, richText(entry.text, openTermPopover))))));
+      h('span', { class: 'log-text' }, richText(daysText(entry.text, dayKey(m.config)), openTermPopover))))));
 }
 
 // ---- Cadet view ------------------------------------------------------------------------------------
@@ -81,7 +81,7 @@ export function cadetModules(m, power, onToggle) {
             h('span', { class: 'mod-icon', 'aria-hidden': 'true' }, icon(MODULE_ICONS[mod.id] ?? 'settings', { size: 22 })),
             h('span', { class: 'kid-mod-title' }, `${mod.name}${n > 1 ? ` ×${n}` : ''}`),
             h('span', { class: ['badge', st.cls] }, KID_STATUS[st.text] ?? st.text),
-            h('span', { class: 'kid-mod-why' }, KID_MODULES[mod.id] ?? mod.blurb)),
+            h('span', { class: 'kid-mod-why' }, KID_MODULES[mod.id] ?? daysText(mod.blurb, dayKey(m.config)))),
           h('input', { id: `mod-switch-${mod.id}`, type: 'checkbox', checked: Boolean(m.enabled[mod.id]), disabled: locked, onchange: () => onToggle(mod.id) })));
     })) : h('p', { class: 'faint' }, 'No machines to switch on this mission.'),
     h('p', { class: 'kid-spares' }, icon('wrench', { size: 18 }), `Spare kits: ${spares}. `, termButton('redundancy', 'Used to fix broken machines.')),
@@ -94,10 +94,10 @@ export function cadetModules(m, power, onToggle) {
 // The mission log is secondary detail in Cadet view: one line for the latest news, the full log in a disclosure.
 function cadetLog(m) {
   const last = m.log[m.log.length - 1];
-  const unit = dayWord(m.config.body, { cap: true });
+  const unit = dayWord(dayKey(m.config), { cap: true });
   return h('section', { class: 'panel play-log kid-log', 'aria-label': 'Mission log' },
     h('h2', { class: 'panel-title' }, icon('log', { size: 18 }), 'Latest news'),
-    last ? h('p', { class: 'kid-news' }, h('strong', null, `${unit} ${last.sol}: `), richText(plainify(last.text, m.config.body), openTermPopover)) : h('p', { class: 'faint' }, 'Nothing yet.'),
+    last ? h('p', { class: 'kid-news' }, h('strong', null, `${unit} ${last.sol}: `), richText(plainify(last.text, dayKey(m.config)), openTermPopover)) : h('p', { class: 'faint' }, 'Nothing yet.'),
     moreDetails('log', 'More details: full mission log', expertLog(m)));
 }
 

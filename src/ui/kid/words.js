@@ -76,10 +76,23 @@ export const KID_MODULE_GIVES = {
   iceDrill: 'Makes water', greenhouse: 'Grows food', rover: 'More science', relay: 'Happier crew',
 };
 
-export const dayWord =(body, { plural = false, cap = false } = {}) => {
-  const w = body === 'mars' ? (plural ? 'sols' : 'sol') : (plural ? 'days' : 'day');
+// "Sol" is NASA's word for a day on Mars only. Every other world (the Moon, Venus, Titan, exoplanets...) counts
+// in days. config.body is the code path a world borrows ('mars' for Venus and Titan too), so the unit has to be
+// chosen from the real world: config.worldId, falling back to body for older saves that have no worldId.
+export const dayKey = (config) => config?.worldId ?? config?.body;
+
+// key: a world id or body from dayKey(). Plain 'mars'/'moon' bodies keep working.
+export const dayWord = (key, { plural = false, cap = false } = {}) => {
+  const w = key === 'mars' ? (plural ? 'sols' : 'sol') : (plural ? 'days' : 'day');
   return cap ? w[0].toUpperCase() + w.slice(1) : w;
 };
+
+// Engine and event-card text is written for Mars; on any other world its sols become days.
+export function daysText(text, key) {
+  const s = String(text);
+  if (key === 'mars') return s;
+  return s.replace(/\bsols\b/g, 'days').replace(/\bsol\b/g, 'day').replace(/\bSols\b/g, 'Days').replace(/\bSol\b/g, 'Day');
+}
 
 const count = (n, body) => `${n} ${dayWord(body, { plural: n !== 1 })}`;
 
@@ -144,10 +157,7 @@ export function plainify(text, body = 'mars') {
     .replace(/\bhabitat\b/g, 'base')
     .replace(/\bHabitat\b/g, 'Base')
     .replace(/crew-days’ worth/g, 'days of water for one astronaut');
-  if (body !== 'mars') {
-    out = out.replace(/\bsols\b/g, 'days').replace(/\bsol\b/g, 'day').replace(/\bSols\b/g, 'Days').replace(/\bSol\b/g, 'Day');
-  }
-  return out;
+  return daysText(out, body);
 }
 
 // Kind, specific "what to try next time" for each way a mission can end early (mission.lostReason).

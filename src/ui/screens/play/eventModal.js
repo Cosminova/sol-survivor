@@ -12,7 +12,7 @@ import { speak, canSpeak } from '../../speech.js';
 import { noteEventSeen } from './finish.js';
 import { icon } from '../../icons.js';
 import { isExpertView, realDataLabel, moreDetails } from '../../kid/view.js';
-import { kidHint, dayWord, KID_MODULE_NAMES } from '../../kid/words.js';
+import { kidHint, dayWord, KID_MODULE_NAMES, dayKey, daysText } from '../../kid/words.js';
 import { kidEvent, KID_EVENT_ICONS } from '../../../data/kidText.js';
 
 // Solar storm cards where the engine applies the storm dose itself (replayed and live NASA storms).
@@ -98,10 +98,10 @@ function unavailableReason(choice) {
   return 'Not available';
 }
 
-function sciencePanel(card, vars) {
+function sciencePanel(card, vars, key) {
   return h('aside', { class: 'event-science', 'aria-label': 'Real science' },
     h('h3', null, icon('flask', { size: 18 }), 'Real science'),
-    h('p', null, richText(fillTemplate(card.science ?? '', vars), openTermPopover)),
+    h('p', null, richText(daysText(fillTemplate(card.science ?? '', vars), key), openTermPopover)),
     h('div', { class: 'row' },
       card.source === 'donki' && vars.eventDate ? realDataLabel(vars.eventDate, 'donki') : sourceBadge(card.source, { label: 'From NASA records' }),
       (card.terms ?? []).slice(0, 4).map((id) => (termById(id) ? h('button', { type: 'button', class: 'chip', onclick: (e) => openTermPopover(id, e.currentTarget) }, termById(id).term) : null))));
@@ -120,12 +120,14 @@ function wordsToKnow(card) {
 // The card's full story, real science and word list are one tap away under "More about this".
 function openKidEventModal(mission, card, { onChoose, onDone, onPicked }) {
   const vars = mission.pendingEvent.vars ?? {};
+  const key = dayKey(mission.config);
+  const say = (t) => daysText(fillTemplate(t, vars), key);
   const kid = kidEvent(card.id);
-  const title = fillTemplate(kid?.title ?? card.title, vars);
-  const line = fillTemplate(kid?.line ?? plainText(card.body), vars);
-  const body = fillTemplate(card.body, vars);
-  const labelOf = (i) => fillTemplate(kid?.choices?.[i] ?? card.choices[i].label, vars);
-  const unit = mission.config.body === 'mars' ? 'day' : dayWord(mission.config.body);
+  const title = say(kid?.title ?? card.title);
+  const line = say(kid?.line ?? plainText(card.body));
+  const body = say(card.body);
+  const labelOf = (i) => say(kid?.choices?.[i] ?? card.choices[i].label);
+  const unit = mission.config.body === 'mars' ? 'day' : dayWord(dayKey(mission.config));
   speak(`${title}. ${line}`);
   noteEventSeen(card.id);
   const firstAvailable = card.choices.findIndex((c) => choiceAvailable(mission, c));
@@ -143,10 +145,10 @@ function openKidEventModal(mission, card, { onChoose, onDone, onPicked }) {
         wrap.replaceChildren(
           h('div', { class: 'event-outcome', role: 'status' },
             h('p', { class: 'event-choice-made' }, `You chose: ${labelOf(i)}.`),
-            h('p', { class: 'event-outcome-text' }, choice.outcome),
+            h('p', { class: 'event-outcome-text' }, say(choice.outcome)),
             h('div', { class: 'event-rows' }, getCostRows(choice.effects, card.id, mission))),
           h('button', { type: 'button', class: 'btn btn-primary btn-lg btn-caps', 'data-autofocus': true, onclick: close }, `Keep going with ${unit} ${resolved?.sol ?? mission.sol}`, icon('arrow-right', { size: 18 })));
-        speak(choice.outcome);
+        speak(say(choice.outcome));
         wrap.querySelector('[data-autofocus]')?.focus({ preventScroll: true });
         wrap.closest('.modal')?.scrollTo({ top: 0 });
         onPicked?.(i);
@@ -172,7 +174,7 @@ function openKidEventModal(mission, card, { onChoose, onDone, onPicked }) {
         moreDetails(`event-${card.id}`, 'More about this',
           h('p', { class: 'event-full' }, richText(body, openTermPopover)),
           canSpeak() ? h('button', { type: 'button', class: 'btn btn-sm', onclick: () => speak(`${title}. ${plainText(body)}`, true) }, icon('volume', { size: 18 }), 'Read aloud') : null,
-          sciencePanel(card, vars),
+          sciencePanel(card, vars, key),
           wordsToKnow(card)),
       ].filter(Boolean));
       return wrap;
@@ -186,12 +188,14 @@ export function openEventModal(mission, { onChoose, onDone, onPicked }) {
   if (!card) { onDone(); return; }
   if (!isExpertView()) { openKidEventModal(mission, card, { onChoose, onDone, onPicked }); return; }
   const vars = mission.pendingEvent.vars ?? {};
-  const title = fillTemplate(card.title, vars);
-  const body = fillTemplate(card.body, vars);
+  const key = dayKey(mission.config);
+  const say = (t) => daysText(fillTemplate(t, vars), key);
+  const title = say(card.title);
+  const body = say(card.body);
   speak(`${title}. ${body}`);
   noteEventSeen(card.id);
   const expert = isExpertView();
-  const unit = dayWord(mission.config.body, { cap: true });
+  const unit = dayWord(dayKey(mission.config), { cap: true });
 
   openModal({
     title: `${card.icon} ${title}`,
@@ -204,12 +208,12 @@ export function openEventModal(mission, { onChoose, onDone, onPicked }) {
       const showOutcome = (choice, resolved) => {
         wrap.replaceChildren(
           h('div', { class: 'event-outcome', role: 'status' },
-            h('p', { class: 'event-choice-made' }, `You chose: ${choice.label}.`),
-            h('p', { class: 'event-outcome-text' }, choice.outcome),
+            h('p', { class: 'event-choice-made' }, `You chose: ${say(choice.label)}.`),
+            h('p', { class: 'event-outcome-text' }, say(choice.outcome)),
             h('div', { class: 'row' }, effectChips(choice.effects))),
-          sciencePanel(card, vars),
+          sciencePanel(card, vars, key),
           h('button', { type: 'button', class: 'btn btn-primary btn-lg', 'data-autofocus': true, onclick: close }, `Keep going with ${unit} ${resolved?.sol ?? mission.sol}`, icon('arrow-right', { size: 18 })));
-        speak(choice.outcome);
+        speak(say(choice.outcome));
         wrap.querySelector('[data-autofocus]')?.focus({ preventScroll: true });
         wrap.closest('.modal')?.scrollTo({ top: 0 });
       };
@@ -218,7 +222,7 @@ export function openEventModal(mission, { onChoose, onDone, onPicked }) {
         expert ? null : h('p', { class: 'event-help' }, 'Tap a blue word to see what it means.'),
         expert ? null : wordsToKnow(card),
         canSpeak() ? h('button', { type: 'button', class: 'btn btn-sm', onclick: () => speak(`${title}. ${plainText(body)}`, true) }, icon('volume', { size: 18 }), 'Read aloud') : null,
-        sciencePanel(card, vars),
+        sciencePanel(card, vars, key),
         h('h3', { class: 'event-q' }, 'What do you do, Commander?'),
         expert ? null : h('p', { class: 'event-help' }, 'Pick one. The small labels show what each choice does.'),
         h('div', { class: 'event-choices' }, card.choices.map((choice, i) => {
@@ -232,7 +236,7 @@ export function openEventModal(mission, { onChoose, onDone, onPicked }) {
             'data-autofocus': i === firstAvailable ? true : null,
             onclick: () => showOutcome(choice, onChoose(i)),
           },
-          h('span', { class: 'event-choice-label' }, h('span', { class: 'event-choice-key', 'aria-hidden': 'true' }, String.fromCharCode(65 + i)), choice.label),
+          h('span', { class: 'event-choice-label' }, h('span', { class: 'event-choice-key', 'aria-hidden': 'true' }, String.fromCharCode(65 + i)), say(choice.label)),
           ok ? h('span', { class: 'row' }, effectChips(choice.effects)) : h('span', { class: 'badge danger' }, icon('lock', { size: 14 }), unavailableReason(choice)));
         })),
       ].filter(Boolean));

@@ -2,6 +2,7 @@
 // Each action knows the engine task it assigns and the hands-on mini-game that goes with it.
 import { TASKS } from '../engine/sim.js';
 import { STATION_INFO } from './facts.js';
+import { dayKey, dayWord } from '../ui/kid/words.js';
 
 export const MINIGAMES = {
   wipe: { label: 'Wipe the dust', seconds: 12 },
@@ -38,7 +39,7 @@ function primaryActions(station, mission, extra) {
   if (broken && kind !== 'habitat') return [repairAction()];
   switch (kind) {
     case 'habitat': return [
-      { id: 'endSol', type: 'endSol', label: 'Enter airlock: End sol', icon: '🌙' },
+      { id: 'endSol', type: 'endSol', label: `Enter airlock: End ${dayWord(dayKey(mission?.config))}`, icon: '🌙' },
       task('rest', 'Rest inside'),
     ];
     case 'berm':
