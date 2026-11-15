@@ -392,6 +392,28 @@ export const SOURCES = {
     kind: 'dataset',
     use: 'Crew health facts on plants, muscle, bone, radiation and immunity, saved at build time from the study records (OSD-267, 476, 342, 396, 317, 689, 174).',
   },
+  // --- Cosminova night-sky world picker (src/ui/worldPicker/). Planet positions also use 'jpl-elements' above. ---
+  'sky-stars': {
+    title: 'Bright star catalogue: d3-celestial stars.6.json, from the HYG database (Hipparcos, Yale Bright Star, Gliese)',
+    org: 'Olaf Frohn (d3-celestial, BSD-3-Clause); David Nash (HYG)',
+    url: 'https://github.com/ofrohn/d3-celestial',
+    kind: 'dataset',
+    use: 'The 2,851 stars brighter than magnitude 5.5 in the Cosminova night sky, coloured by their B-V index. Saved at build time by scripts/fetch-sky.mjs.',
+  },
+  'meeus-moon': {
+    title: 'Astronomical Algorithms, chapter 47: position of the Moon (ELP-2000/82 main terms)',
+    org: 'Jean Meeus (Willmann-Bell, 2nd ed. 1998)',
+    url: 'https://www.willbell.com/math/mc1.htm',
+    kind: 'algorithm',
+    use: 'Where the Moon is in the night sky on the chosen date.',
+  },
+  cosminova: {
+    title: 'Cosminova: a real-scale solar system and night sky',
+    org: 'Cosminova',
+    url: 'https://github.com/Cosminova/info',
+    kind: 'reference',
+    use: 'The idea for the night-sky world picker: stand on Earth, look up at the real sky, and fly to a world.',
+  },
 };
 
 export const sourceById = (id) => SOURCES[id] ?? null;

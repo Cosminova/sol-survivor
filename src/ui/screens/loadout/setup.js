@@ -8,6 +8,7 @@ import { randomMissionCode } from '../../../engine/rng.js';
 import { mapView } from '../../mapView.js';
 import { globePicker, globeAvailable } from '../../outpost3d/host.js';
 import { termButton, meter } from '../../components/common.js';
+import { skyPanel } from '../../worldPicker/skyPanel.js';
 
 export const sanitizeCode = (v) => String(v).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
 export const sanitizeName = (v) => String(v).replace(/[<>]/g, '').slice(0, 16);
@@ -25,18 +26,42 @@ function sitePicker(fp, sites, onSelect) {
       flat));
 }
 
-export function freePlayPanel(fp, onChange) {
+// Destination bar: the Moon and Mars keep the globe picker; the third choice opens the Cosminova night sky,
+// where any world in src/data/worlds.js can be reached. fp.picker remembers which one is open.
+const DESTINATIONS = [
+  { id: 'moon', label: '🌕 The Moon' },
+  { id: 'mars', label: '🔴 Mars' },
+  { id: 'sky', label: 'Cosminova sky' },
+];
+
+const activePicker = (fp) => (fp.picker === 'sky' ? 'sky' : fp.body);
+
+function destinationTabs(fp, onChange) {
+  const active = activePicker(fp);
+  return h('div', { class: 'tabs', role: 'group', 'aria-label': 'Destination' },
+    DESTINATIONS.map((d) => h('button', {
+      type: 'button', class: ['chip', d.id === 'sky' && 'lo-sky-tab'], 'aria-pressed': String(active === d.id),
+      onclick: () => {
+        if (d.id === active) return;
+        onChange(d.id === 'sky' ? { picker: 'sky' } : { picker: d.id, body: d.id, worldId: null, siteId: sitesForBody(d.id)[0].id });
+      },
+    }, d.label)));
+}
+
+/**
+ * @param {object} fp free-play draft
+ * @param {(patch: object) => void} onChange
+ * @param {{ challenge?: Function, effects?: Function }} [worldHooks] engine callbacks for the sky picker's world cards
+ */
+export function freePlayPanel(fp, onChange, worldHooks = {}) {
+  const sky = activePicker(fp) === 'sky';
   const sites = sitesForBody(fp.body);
   const site = siteById(fp.siteId);
   return h('section', { class: 'panel lo-free' },
     h('h2', { class: 'panel-title' }, 'Design your mission'),
-    h('div', { class: 'tabs', role: 'group', 'aria-label': 'Destination' },
-      ['moon', 'mars'].map((body) => h('button', {
-        type: 'button', class: 'chip', 'aria-pressed': String(fp.body === body),
-        onclick: () => onChange({ body, siteId: sitesForBody(body)[0].id }),
-      }, body === 'mars' ? '🔴 Mars' : '🌕 The Moon'))),
-    sitePicker(fp, sites, (siteId) => onChange({ siteId })),
-    site ? h('div', { class: 'lo-site' },
+    destinationTabs(fp, onChange),
+    sky ? skyPanel(fp, onChange, worldHooks) : sitePicker(fp, sites, (siteId) => onChange({ siteId })),
+    site && !sky ? h('div', { class: 'lo-site' },
       h('h3', null, `📍 ${site.name}`),
       h('p', { class: 'muted' }, site.blurb),
       h('div', { class: 'lo-site-meters' },
@@ -49,7 +74,7 @@ export function freePlayPanel(fp, onChange) {
       h('label', { class: 'field' },
         h('span', null, 'Landing date (replays real 2024–25 solar storms)'),
         h('input', { class: 'input', type: 'date', min: '2024-01-01', max: '2025-12-31', value: fp.startDate, onchange: (e) => onChange({ startDate: e.target.value || '2024-05-01' }) }))),
-    fp.body === 'mars' ? h('label', { class: 'switch' },
+    fp.body === 'mars' && (!sky || fp.worldId === 'mars') ? h('label', { class: 'switch' },
       h('span', null, 'Include the 6-month trip’s radiation dose ', termButton('galactic-cosmic-rays', 'why?')),
       h('input', { type: 'checkbox', checked: fp.includeTransitDose, onchange: (e) => onChange({ includeTransitDose: e.target.checked }) })) : null);
 }

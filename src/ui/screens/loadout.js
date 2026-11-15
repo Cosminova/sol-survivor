@@ -33,9 +33,14 @@ function initialDraft(missionId) {
   };
 }
 
+// worldId comes from the Cosminova sky picker (body is then the world's analog); Moon/Mars tabs leave it null.
 const configFor = (missionId, draft) => (missionId === 'free-play'
-  ? freePlayConfig({ ...draft.free, difficulty: draft.difficulty })
+  ? { ...freePlayConfig({ ...draft.free, difficulty: draft.difficulty }), worldId: draft.free.worldId ?? draft.free.body }
   : missionById(missionId));
+
+// TODO(world-picker): once src/engine exports worldChallenge(world) / worldEffects(world), import them here and pass
+// { challenge: worldChallenge, effects: worldEffects } so the sky picker's world cards fill their effects slot.
+const WORLD_CARD_HOOKS = {};
 
 export function render(root, { params, query }) {
   const missionId = params[0] ?? 'artemis-dawn';
@@ -109,7 +114,7 @@ export function render(root, { params, query }) {
         h('a', { class: 'btn btn-ghost', href: '#/campaign' }, 'Back to missions')));
 
     mount(left,
-      missionId === 'free-play' ? freePlayPanel(draft.free, (patch) => setDraft({ free: { ...draft.free, ...patch } })) : null,
+      missionId === 'free-play' ? freePlayPanel(draft.free, (patch) => setDraft({ free: { ...draft.free, ...patch } }), WORLD_CARD_HOOKS) : null,
       h('section', { class: 'panel' },
         h('h2', { class: 'panel-title' }, 'Machines'),
         h('div', { class: 'lo-modules' }, modules.map((mod) => moduleCard(mod, draft.loadout.modules[mod.id] ?? 0, (n) => { play('click'); setModules(mod.id, n); })))),
