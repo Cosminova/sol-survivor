@@ -4,11 +4,11 @@ import * as THREE from 'three';
 import { makeRng, fbm2, clamp } from './rng.js';
 
 const PALETTE = {
-  mars: { dark: '#7c3f22', light: '#c07a4c', dust: '#d9a176', crater: '#6a3a24' },
-  moon: { dark: '#5d5b58', light: '#9a9792', dust: '#b4b0aa', crater: '#4e4c4a' },
+  mars: { dark: '#96532f', light: '#cf8a58', dust: '#e2b184', crater: '#7d4529' },
+  moon: { dark: '#75726e', light: '#b0ada7', dust: '#c8c4bd', crater: '#615f5c' },
 };
 
-function detailTexture(body, size = 512) {
+function detailTexture(body, size = 512, anisotropy = 8) {
   const canvas = document.createElement('canvas');
   canvas.width = size;
   canvas.height = size;
@@ -18,7 +18,7 @@ function detailTexture(body, size = 512) {
   for (let y = 0; y < size; y += 1) {
     for (let x = 0; x < size; x += 1) {
       const n = fbm2(x / 18, y / 18, 5, 3) * 26 + fbm2(x / 4, y / 4, 9, 2) * 14 + (rng.next() - 0.5) * 22;
-      const v = clamp(206 + n, 0, 255);
+      const v = clamp(226 + n, 0, 255);
       const i = (y * size + x) * 4;
       img.data[i] = v; img.data[i + 1] = v; img.data[i + 2] = v; img.data[i + 3] = 255;
     }
@@ -38,7 +38,7 @@ function detailTexture(body, size = 512) {
   tex.wrapS = THREE.RepeatWrapping;
   tex.wrapT = THREE.RepeatWrapping;
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 8;
+  tex.anisotropy = anisotropy;
   return tex;
 }
 
@@ -97,7 +97,7 @@ function sampleTrek(body, site, extentM) {
 function scatterRocks({ body, heightfield, layout, high }) {
   const rng = makeRng((layout.seed ^ 0xabcdef) >>> 0);
   const count = high ? 520 : 180;
-  const rockMat = new THREE.MeshStandardMaterial({ color: body === 'moon' ? '#8a8783' : '#7d4a32', roughness: 0.92, flatShading: true });
+  const rockMat = new THREE.MeshStandardMaterial({ color: body === 'moon' ? '#9c9994' : '#93573a', roughness: 0.92, flatShading: true });
   const rocks = new THREE.InstancedMesh(rockGeometry(layout.seed), rockMat, count);
   rocks.castShadow = high;
   rocks.receiveShadow = true;
@@ -132,7 +132,7 @@ function scatterRocks({ body, heightfield, layout, high }) {
 
 // Polar grid: rings grow geometrically so spacing is ~square everywhere, dense under the player's
 // feet and coarse out at the lidar horizon. One seamless mesh, no near/far stitching.
-function polarGeometry(heightAt, { segs, r0, rMax }) {
+export function polarGeometry(heightAt, { segs, r0, rMax }) {
   const ratio = 1 + (2 * Math.PI) / segs;
   const radii = [];
   for (let r = r0; r < rMax; r *= ratio) radii.push(r);
@@ -152,14 +152,15 @@ function polarGeometry(heightAt, { segs, r0, rMax }) {
     }
   });
   const index = [];
-  for (let s = 0; s < segs; s += 1) index.push(0, 1 + ((s + 1) % segs), 1 + s);
+  // Counter-clockwise seen from above (+y), so the ground faces up: normals point skyward and it is not back-face culled.
+  for (let s = 0; s < segs; s += 1) index.push(0, 1 + s, 1 + ((s + 1) % segs));
   for (let ri = 0; ri < radii.length - 1; ri += 1) {
     for (let s = 0; s < segs; s += 1) {
       const a = 1 + ri * segs + s;
       const b = 1 + ri * segs + ((s + 1) % segs);
       const c = a + segs;
       const d = b + segs;
-      index.push(a, b, c, b, d, c);
+      index.push(a, c, b, b, c, d);
     }
   }
   const geo = new THREE.BufferGeometry();
@@ -194,8 +195,11 @@ export function createTerrain({ body, site, heightfield, layout, high }) {
   const baseColors = colors.slice();
   geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-  const detail = detailTexture(body, high ? 512 : 256);
-  const material = new THREE.MeshStandardMaterial({ vertexColors: true, map: detail, bumpMap: detail, bumpScale: high ? 1.6 : 1, roughness: 0.97, metalness: 0 });
+  const detail = detailTexture(body, high ? 512 : 256, high ? 8 : 1); // anisotropic filtering is slow on weak / software GPUs
+  // The ground fills most of the frame, so weak GPUs get a plain diffuse material (no bump map, no reflections).
+  const material = high
+    ? new THREE.MeshStandardMaterial({ vertexColors: true, map: detail, bumpMap: detail, bumpScale: 1.6, roughness: 0.97, metalness: 0 })
+    : new THREE.MeshLambertMaterial({ vertexColors: true, map: detail });
   const ground = new THREE.Mesh(geo, material);
   ground.receiveShadow = true;
   ground.name = 'ground';

@@ -5,6 +5,14 @@ import { fallChancePerSecond } from './gaits.js';
 
 const GRAVITY = { mars: 0.38, moon: 0.17 };
 
+// Player ground speeds in m/s. SPEED_BOOST is the 5% pace bump; the stride animation is driven by the real
+// speed (gaitParams cadence), so the legs speed up with it. Stumble odds keep using the un-boosted speed.
+export const SPEED_BOOST = 1.05;
+export const WALK_SPEED = 2.5 * SPEED_BOOST; // was 2.5
+export const RUN_SPEED = 4.4 * SPEED_BOOST; // was 4.4
+export const LOW_G_FACTOR = 0.9; // Moon: 2.25 -> 2.3625 walking, 3.96 -> 4.158 loping/hopping
+export const ROVER_SPEED = 7 * SPEED_BOOST; // was 7
+
 export function createPlayer({ world, rig, audio }) {
   let member = null;
   let vel = { x: 0, z: 0 };
@@ -62,7 +70,7 @@ export function createPlayer({ world, rig, audio }) {
 
   function updateRover(dt, input) {
     const p = parts();
-    rover.speed += (input.y * 7 - rover.speed) * Math.min(1, dt * 1.5);
+    rover.speed += (input.y * ROVER_SPEED - rover.speed) * Math.min(1, dt * 1.5);
     rover.heading -= input.x * dt * 1.4 * Math.sign(rover.speed || 1) * Math.min(1, Math.abs(rover.speed) / 2 + 0.2);
     const own = rover.station.colliders[0];
     const others = p.colliders.filter((c) => c !== own);
@@ -88,7 +96,7 @@ export function createPlayer({ world, rig, audio }) {
     const b = rig.basis();
     const run = input.run;
     const g = gravity();
-    const maxSpeed = (run ? 4.4 : 2.5) * (g < 0.25 ? 0.9 : 1);
+    const maxSpeed = (run ? RUN_SPEED : WALK_SPEED) * (g < 0.25 ? LOW_G_FACTOR : 1);
     const wish = frozen ? { x: 0, z: 0 } : { x: b.fx * input.y + b.rx * input.x, z: b.fz * input.y + b.rz * input.x };
     // Low gravity means less grip: slower to start and stop, especially on the Moon.
     const grip = g < 0.25 ? 3 : 6;
@@ -101,7 +109,7 @@ export function createPlayer({ world, rig, audio }) {
     }
     // Rare stumble when moving fast in low gravity or shoved by a dust devil (Apollo 16/17 crews fell too).
     const shove = Math.hypot(push.x, push.z);
-    const fell = !member.astro.falling && !frozen && (Math.random() < fallChancePerSecond(g, speed) * dt || (shove > 3.5 && Math.random() < dt * 0.5));
+    const fell = !member.astro.falling && !frozen && (Math.random() < fallChancePerSecond(g, speed / SPEED_BOOST) * dt || (shove > 3.5 && Math.random() < dt * 0.5));
     if (member.astro.falling || fell) { vel.x *= 0.9; vel.z *= 0.9; }
     member.pos = resolveCollisions({ x: member.pos.x + vel.x * dt, z: member.pos.z + vel.z * dt }, p.colliders);
     member.heading = heading;

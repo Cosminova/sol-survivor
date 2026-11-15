@@ -54,7 +54,13 @@ export function mountOutpost3D(container, options = {}) {
   const touch = matchMedia?.('(pointer: coarse)').matches || 'ontouchstart' in window;
 
   const stage = createStage(host, { quality });
-  const labels = createLabels(host);
+  // Name tags are buttons: the play screen listens for 'sol:crew-select' and opens that astronaut's stats popup.
+  const labels = createLabels(host, {
+    onTag: (crewId, anchor) => {
+      rt.controls?.release();
+      document.dispatchEvent(new CustomEvent('sol:crew-select', { detail: { crewId, anchor } }));
+    },
+  });
   const audio = createAudio({ muted: Boolean(options.muted) });
   const rt = {
     opts: options, host, stage, audio, reducedMotion,
@@ -112,7 +118,7 @@ export function mountOutpost3D(container, options = {}) {
     rt.modals.open({
       title: won ? '🏆 Mission complete!' : '🚨 Mission over',
       body: [el('p', null, won ? 'Your crew made it. Mission Control is celebrating!' : 'The crew had to evacuate. Every mission teaches us something. Try again!')],
-      buttons: options.onExit ? [{ label: 'Back to dashboard', primary: true, onClick: () => options.onExit() }] : [{ label: 'Look around', primary: true }],
+      buttons: options.onExit ? [{ label: 'Back to base', primary: true, onClick: () => options.onExit() }] : [{ label: 'Look around', primary: true }],
       dismiss: () => {},
     });
   }
@@ -138,7 +144,7 @@ export function mountOutpost3D(container, options = {}) {
       { label: rt.assist ? '🎯 Easy mode: ON' : '🎯 Easy mode: OFF', onClick: () => { rt.assist = !rt.assist; rt.tuning = tuningFor(options.difficulty ?? rt.mission.config?.difficulty ?? 'cadet', { daySeconds: options.daySeconds, assist: rt.assist }); rt.gs = { ...rt.gs, tuning: rt.tuning }; openPause(); } },
       { label: 'Controls', onClick: () => rt.modals.open({ title: 'Controls', body: controlsTable(), buttons: [{ label: 'Back', primary: true, onClick: openPause }], dismiss: openPause }) },
     ];
-    if (options.onExit) buttons.push({ label: '⬅ Back to 2D dashboard', onClick: () => options.onExit() });
+    if (options.onExit) buttons.push({ label: '⬅ Back to base', onClick: () => options.onExit() });
     buttons.push({ label: '▶ Resume', primary: true });
     rt.modals.open({ title: '⏸ Paused', body: [el('p', null, `Rank: ${rankFor(rt.gs.progress.xp).rank.label} · ${rt.gs.progress.xp} XP · Artifacts: ${rt.gs.progress.collected.length}`)], buttons, dismiss: () => {} });
   }
@@ -231,7 +237,7 @@ export function mountOutpost3D(container, options = {}) {
     raf = requestAnimationFrame(frame);
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
-    if (stage.isLost() || !host.isConnected) return;
+    if (stage.isLost() || !host.isConnected || !host.clientWidth) return; // nothing to draw while the walk view is hidden
     rt.time += dt;
     const input = controls.read();
     const p = world.parts;
@@ -257,6 +263,16 @@ export function mountOutpost3D(container, options = {}) {
         const alert = (rt.mission.broken?.[l.station.moduleId] ?? 0) > 0 || rt.gs.damaged[l.station.moduleId] != null;
         l.show(near || alert);
         l.obj.element.dataset.alert = String(alert);
+      }
+      // Name tags: hidden off screen, behind the camera or where a HUD panel sits; faded with distance.
+      const hb = host.getBoundingClientRect();
+      const panels = [...hud.layer.parentElement.querySelectorAll('.w3d-panel, .w3d-roster, .w3d-btns')].map((n) => n.getBoundingClientRect()).filter((r) => r.width > 0);
+      for (const m of p.crew.all()) {
+        const ndc = rt.tmpV.copy(m.astro.root.position).setY(m.astro.root.position.y + 2.45).project(stage.camera);
+        const sx = hb.left + (ndc.x * 0.5 + 0.5) * hb.width;
+        const sy = hb.top + (0.5 - ndc.y * 0.5) * hb.height;
+        const covered = panels.some((r) => sx > r.left - 36 && sx < r.right + 36 && sy > r.top - 18 && sy < r.bottom + 18);
+        m.label.place({ visible: ndc.z < 1 && Math.abs(ndc.x) < 1.02 && Math.abs(ndc.y) < 1.02 && !covered, distance: stage.camera.position.distanceTo(m.astro.root.position) });
       }
       labelT = 0.25;
     }

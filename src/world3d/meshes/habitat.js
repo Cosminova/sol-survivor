@@ -52,7 +52,7 @@ export function buildHabitat({ body, high }) {
     g.add(cyl(0.07, 0.09, 4.2, M.grey(), { x, y: 2.1, z: 6.6 }, 8));
     g.add(box(0.6, 0.3, 0.3, lampMat, { x, y: 4.2, z: 6.7, rx: 0.5 }));
   }
-  const flood = new THREE.SpotLight('#fff1d6', 0, 46, 0.9, 0.6, 1.2);
+  const flood = new THREE.SpotLight('#fff1d6', 0, 70, 1.1, 0.7, 1.2);
   flood.position.set(0, 4.4, 6.8);
   flood.target.position.set(0, 0, 18);
   g.add(flood, flood.target);
@@ -69,7 +69,7 @@ export function buildHabitat({ body, high }) {
     }
     M.window().emissiveIntensity = night ? 1.8 : 0.15;
     lampMat.emissiveIntensity = night ? 4 : 0;
-    flood.intensity = night ? 60 : 0;
+    flood.intensity = night ? 32 : 0;
     doorLight.scale.setScalar(1 + 0.15 * Math.sin(time * 3));
   }
 

@@ -81,7 +81,7 @@ function starField(count, seed) {
   const pos = new Float32Array(count * 3);
   const col = new Float32Array(count * 3);
   for (let i = 0; i < count; i += 1) {
-    const u = rng.range(-1, 1);
+    const u = rng.range(0.015, 1); // upper hemisphere only: stars never show below the horizon line
     const a = rng.range(0, Math.PI * 2);
     const r = Math.sqrt(1 - u * u);
     pos.set([Math.cos(a) * r * SKY_R, u * SKY_R, Math.sin(a) * r * SKY_R], i * 3);
@@ -173,7 +173,8 @@ const PAL = {
     duskZenith: C('#2e2430'), duskHorizon: C('#c08560'), nightZenith: C('#04050b'), nightHorizon: C('#110c0c'),
     ground: C('#5e3826'), halo: C('#86a9dc'), storm: C('#9a6438'),
   },
-  moon: { black: C('#000000'), ground: C('#020202') },
+  // Below the horizon the dome is painted like distant regolith, so any gap past the terrain edge reads as ground, not space.
+  moon: { black: C('#000000'), ground: C('#6d6a66'), groundNight: C('#191c24') },
 };
 
 const sstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
@@ -182,14 +183,20 @@ const sstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a)
 export function skyLook({ body, sunElev, tau = 0.5, lit = true, stormActive = false }) {
   if (body === 'moon') {
     const up = lit && sunElev > -1 ? 1 : 0;
+    // A grazing polar Sun barely lights flat ground, so sunlit slopes bouncing light back in do the filling;
+    // near noon the Sun does the work and both are eased down so the regolith does not burn out to white.
+    const high = sstep(8, 55, sunElev);
     return {
-      zenith: PAL.moon.black.clone(), horizon: PAL.moon.black.clone(), ground: PAL.moon.ground.clone(), halo: C('#000'),
+      zenith: PAL.moon.black.clone(), horizon: PAL.moon.black.clone(), ground: (up ? PAL.moon.ground : PAL.moon.groundNight).clone(), halo: C('#000'),
       haloStrength: 0, sunGlow: up ? 0.6 : 0, dust: 0, stars: up ? 0.5 : 1,
-      sunIntensity: up ? 4.4 : 0, sunColor: C('#ffffff'), hemiSky: C('#2a3040'), hemiGround: C('#6a6762'),
-      hemiIntensity: up ? 0.22 : 0.06, fogColor: C('#000000'), fogDensity: 0, exposure: up ? 0.95 : 1.25, fill: up ? 0 : 0.18,
+      sunIntensity: up ? 4.4 - 1.9 * high : 0, sunColor: C('#ffffff'),
+      // Night keeps the Sun off: blue-white earthshine (about 40x a full Moon on Earth) plus the lamps light the base.
+      hemiSky: up ? C('#9a9da6') : C('#6f83ad'), hemiGround: C('#6a6762'),
+      hemiIntensity: up ? 2.1 - 1.55 * high : 0.4, fogColor: C('#000000'), fogDensity: 0,
+      exposure: up ? 1.35 - 0.2 * high : 1.3, fill: up ? 0.8 - 0.65 * high : 0.7, fillColor: C('#9fb8ff'),
     };
   }
-  const day = sstep(-6, 10, sunElev);
+  const day = sstep(-8, 5, sunElev); // dusty Mars air keeps the sky bright through a long twilight
   const low = 1 - sstep(4, 30, sunElev);
   const dustK = Math.min(1, Math.max(0, (tau - 0.5) / 2.5)) + (stormActive ? 0.7 : 0);
   const d = Math.min(1, dustK);
@@ -205,11 +212,11 @@ export function skyLook({ body, sunElev, tau = 0.5, lit = true, stormActive = fa
     zenith, horizon, ground: PAL.mars.ground.clone().multiplyScalar(0.3 + 0.7 * day),
     halo: PAL.mars.halo.clone(), haloStrength: (0.35 + low * 1.4) * day * (1 - d * 0.7),
     sunGlow: day * (1 - d * 0.6), dust: d, stars: (1 - day) * 0.9,
-    sunIntensity: 3.4 * transmission * sstep(-2, 6, sunElev), sunColor: C('#fff0da').lerp(C('#ffb27a'), low * 0.6),
+    sunIntensity: 3.2 * transmission * sstep(-3, 5, sunElev), sunColor: C('#fff0da').lerp(C('#ffb27a'), low * 0.6),
     hemiSky: zenith.clone().lerp(horizon, 0.5).multiplyScalar(1.6), hemiGround: C('#5a3220'),
-    hemiIntensity: 0.15 + day * (0.55 + d * 0.5), fogColor,
+    hemiIntensity: 0.4 + day * (0.7 + d * 0.5), fogColor,
     // Exp2 haze tuned so tau 0.5 still shows crater rims ~20 km away; a storm cuts it to ~1 km.
     fogDensity: (0.00004 + 0.000025 * tau) * (stormActive ? 22 : 1) + (1 - day) * 0.00002,
-    exposure: 1 + (1 - day) * 0.35, fill: (1 - day) * 0.12,
+    exposure: 1 + (1 - day) * 0.3, fill: 0.15 + (1 - day) * 0.4, fillColor: C('#ffd9b4').lerp(C('#aebbe0'), 1 - day),
   };
 }

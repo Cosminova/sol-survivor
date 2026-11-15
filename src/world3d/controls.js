@@ -32,7 +32,8 @@ export function createControls(container, canvas, { onAction }) {
     if (e.repeat) return;
     const onButton = e.target?.tagName === 'BUTTON' && (e.code === 'Enter' || e.code === 'Space');
     if (['KeyE', 'Enter', 'Space', 'NumpadEnter'].includes(e.code) && !onButton) { onAction('interact'); e.preventDefault(); }
-    else if (e.code === 'Tab' && !e.target?.closest?.('.w3d-modal')) { onAction('switch', e.shiftKey ? -1 : 1); e.preventDefault(); }
+    else if (e.code === 'KeyC') onAction('switch', e.shiftKey ? -1 : 1); // Tab is left alone so it can reach name tags and buttons
+    else if (e.code === 'KeyP') onAction('pause');
     else if (/^Digit[1-4]$/.test(e.code)) onAction('select', Number(e.code.slice(5)) - 1);
     else if (e.code === 'KeyH') onAction('help');
     else if (e.code === 'KeyM') onAction('mute');
@@ -110,6 +111,9 @@ export function createControls(container, canvas, { onAction }) {
   }
 
   function read() {
+    // Focus somewhere else on the page (a stats popup, a dictionary card): let go of any held walking keys.
+    const a = document.activeElement;
+    if (keys.size && a && a !== document.body && !container.contains(a)) keys.clear();
     let x = joy.x;
     let y = joy.y;
     if (enabled && !capture) {
@@ -130,6 +134,7 @@ export function createControls(container, canvas, { onAction }) {
   return {
     read,
     attachJoystick,
+    release() { keys.clear(); drag = null; },
     setCapture(handler) { capture = handler; keys.clear(); },
     setEnabled(v) { enabled = v; if (!v) keys.clear(); },
     dispose() {
