@@ -1,11 +1,13 @@
 // Ticker: a read-only marquee along the bottom of the viewport. On the play screen it shows the player's
 // own mission values ("Your mission"); elsewhere it shows facts from the bundled, archived NASA datasets
-// and is labelled "From NASA records" so nothing reads as a live feed. Holds no game state. Static (no scrolling) when motion is reduced.
+// ("From NASA records") plus, only when NASA answered in this browser, one item that is labelled live.
+// Holds no game state. Static (no scrolling) when motion is reduced.
 import { h } from '../dom.js';
 import { icon } from '../icons.js';
 import { MARS, MOON, RADIATION } from '../../data/constants.js';
 import { marsTime, seasonName, lightDelaySeconds } from '../../engine/marsTime.js';
 import { loadRems, loadDonki } from '../../state/nasaData.js';
+import { onLive, liveTickerItem } from '../../live/liveData.js';
 
 const SECONDS_PER_ITEM = 5;
 // Off the play screen every readout comes from saved NASA datasets or simple calendar math: say so.
@@ -14,6 +16,7 @@ const MISSION_TAG = 'Your mission';
 let els = null;
 let override = null;
 let datasetItems = [];
+let liveItem = null;
 let signature = '';
 
 const fmtDelay = (sec) => (sec < 60 ? `${sec.toFixed(1)} s` : `${Math.floor(sec / 60)} min ${Math.round(sec % 60)} s`);
@@ -65,7 +68,7 @@ const group = (items, hidden) => h('ul', { class: 'ticker-group', 'aria-hidden':
 
 function render() {
   if (!els) return;
-  const items = override ?? [...liveItems(), ...datasetItems];
+  const items = override ?? [...(liveItem ? [liveItem] : []), ...liveItems(), ...datasetItems];
   const next = items.map((it) => `${it.label}=${it.value}|${it.tone ?? ''}`).join(';');
   if (next === signature) return;
   const sameShape = items.length * 2 === els.track.querySelectorAll('.ticker-item').length
@@ -99,6 +102,12 @@ export function createTicker() {
       ...(rems.status === 'fulfilled' ? remsItems(rems.value) : []),
       ...(donki.status === 'fulfilled' ? donkiItems(donki.value) : []),
     ];
+    render();
+  });
+  // One real-time readout from NASA DONKI; absent (not faked) when the network is down.
+  onLive((live) => {
+    const item = liveTickerItem(live);
+    liveItem = item ? { ...item, tone: 'live' } : null;
     render();
   });
   return root;

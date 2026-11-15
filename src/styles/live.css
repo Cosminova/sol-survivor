@@ -1,0 +1,108 @@
+/* Live NASA cards (src/ui/live/liveSun.js) and the Data Lab "Live from NASA" section.
+   They sit on the shared chamfered .card frame; this file only adds the live-specific parts. */
+.live-card {
+  --live-tone: var(--cyan);
+  --live-body: var(--font-body, 'Atkinson Hyperlegible', Verdana, system-ui, sans-serif);
+  display: grid;
+  gap: var(--s-3);
+  padding: var(--s-4) var(--s-5);
+  min-width: 0;
+}
+.live-card.is-busy { --live-tone: var(--warn); }
+.live-card.is-stormy { --live-tone: var(--danger); --frame-line: rgba(255, 122, 122, 0.55); --bracket: var(--danger); }
+.live-card.src-archive { --frame-line: var(--line-soft); --bracket: var(--text-faint); }
+
+.live-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3); }
+.live-kicker { font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 600; letter-spacing: var(--track); text-transform: uppercase; color: var(--text-dim); }
+.live-level { margin-left: auto; padding: 2px var(--s-2); border: 1px solid currentColor; font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--good); }
+.live-level.is-busy { color: var(--warn); }
+.live-level.is-stormy { color: var(--danger); }
+.live-level.is-mars { color: var(--mars); }
+.live-level.is-health { color: var(--cyan-bright); }
+
+.live-tag { display: inline-flex; align-items: center; gap: 6px; padding: 2px var(--s-2); border: 1px solid currentColor; font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; }
+.live-tag.is-live { color: var(--good); background: var(--good-bg); }
+.live-tag.is-archive { color: var(--warn); background: var(--warn-bg); }
+.live-dot { position: relative; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.live-dot::after { content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 1px solid currentColor; opacity: 0; animation: live-ping 1.8s ease-out infinite; }
+@keyframes live-ping { 0% { transform: scale(0.5); opacity: 0.9; } 100% { transform: scale(1.5); opacity: 0; } }
+:root[data-motion='reduced'] .live-dot::after { animation: none; opacity: 0.5; transform: none; }
+@media (prefers-reduced-motion: reduce) { .live-dot::after { animation: none; opacity: 0.5; transform: none; } }
+
+.live-main { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s-4); align-items: start; }
+.live-body { display: grid; gap: var(--s-2); min-width: 0; }
+.live-sun-icon { color: var(--live-tone); flex: none; }
+.live-sun-icon.is-calm { color: var(--gold); }
+.live-headline { margin: 0; font-family: var(--font-display); font-size: var(--fs-lg); font-weight: 700; letter-spacing: 0.04em; line-height: 1.25; color: var(--text); text-wrap: balance; }
+.live-line { margin: 0; font-family: var(--live-body); font-size: var(--fs-md); line-height: 1.5; color: var(--text); max-width: 68ch; }
+.live-meaning { color: var(--cyan-bright); }
+.live-kid { font-size: var(--fs-lg); }
+.live-setting { margin: 0; font-family: var(--live-body); font-size: var(--fs-md); color: var(--text-dim); }
+.live-stamp { margin: 0; font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.04em; color: var(--text-dim); }
+.live-stamp.is-archive { color: var(--warn); }
+.live-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-2) var(--s-4); padding-top: var(--s-2); border-top: 1px solid var(--line-soft); }
+.live-link { display: inline-flex; align-items: center; min-height: 44px; font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--cyan-bright); text-decoration: underline; text-underline-offset: 4px; }
+.live-link:hover { color: #fff; }
+
+.live-risk { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim); }
+.live-risk strong { color: var(--live-tone); }
+.live-risk-pips { display: inline-flex; gap: 3px; }
+.live-risk-pips i { width: 18px; height: 8px; border: 1px solid var(--line); background: transparent; }
+.live-risk-pips i.on { background: var(--live-tone); border-color: var(--live-tone); }
+
+.live-events { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-2); }
+.live-events li { display: grid; grid-template-columns: 9.5rem minmax(0, 1fr) auto; gap: var(--s-3); align-items: center; padding: var(--s-2) 0; border-top: 1px solid var(--line-soft); }
+.live-event-line { font-family: var(--live-body); font-size: var(--fs-md); line-height: 1.45; }
+.live-kind { font-family: var(--font-mono); font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--cyan-bright); }
+.live-kind.k-flare { color: var(--gold); }
+.live-kind.k-cme { color: var(--violet); }
+.live-kind.k-sep { color: var(--rad); }
+.live-kind.k-storm { color: var(--mars); }
+.live-kind.k-alert { color: var(--text-dim); }
+
+/* Compact strip: icon, text, risk in one row; wraps on phones. */
+.live-sun.compact { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--s-3) var(--s-4); padding: var(--s-3) var(--s-4); }
+.live-sun.compact .live-headline { font-size: var(--fs-md); }
+.live-sun.compact .live-level { margin-left: 0; }
+
+.live-cells { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: var(--s-2); }
+.live-cell { display: grid; gap: 2px; padding: var(--s-2) var(--s-3); border: 1px solid var(--line-soft); background: rgba(3, 7, 14, 0.5); }
+.live-cell span { font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-dim); }
+.live-cell strong { font-family: var(--font-mono); font-size: var(--fs-lg); color: var(--text); }
+
+/* Live storm cards in the event modal match the archived storm card's frame. */
+.event-modal.event-sun_live_sep, .event-modal.event-sun_live_flare, .event-modal.event-sun_forecast { --frame-line: var(--rad); --bracket: var(--rad); }
+.event-modal.event-sun_live_sep > h2, .event-modal.event-sun_live_flare > h2, .event-modal.event-sun_forecast > h2 { color: var(--rad); }
+
+/* ---- Data Lab: Live from NASA ---- */
+.dl-live { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-5); min-width: 0; max-width: 100%; }
+.dl-live > * { min-width: 0; }
+.dl-live-status { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3) var(--s-4); padding: var(--s-3) var(--s-4); border: 1px solid var(--line); background: rgba(3, 7, 14, 0.55); }
+.dl-live-status p { margin: 0; font-family: var(--live-body, var(--font-body)); font-size: var(--fs-md); flex: 1 1 280px; }
+.dl-live-grid { display: grid; gap: var(--s-4); grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr)); align-items: start; }
+.dl-live h3 { margin: 0 0 var(--s-2); font-size: var(--fs-lg); }
+.dl-live-filters { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-bottom: var(--s-3); }
+.dl-live-tablewrap { position: relative; max-width: 100%; overflow-x: auto; border: 1px solid var(--line-soft); }
+.dl-live-table { width: 100%; border-collapse: collapse; min-width: 640px; }
+.dl-live-table th, .dl-live-table td { padding: var(--s-2) var(--s-3); text-align: left; vertical-align: top; border-bottom: 1px solid var(--line-soft); }
+.dl-live-table th { background: var(--surface-solid); font-family: var(--font-mono); font-size: var(--fs-xs); letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); }
+.dl-live-table td { font-family: var(--live-body, var(--font-body)); font-size: var(--fs-md); line-height: 1.45; }
+.dl-live-table td.mono { font-family: var(--font-mono); font-size: var(--fs-sm); white-space: nowrap; color: var(--text-dim); }
+.dl-live-table tr.is-future td { background: rgba(251, 191, 36, 0.05); }
+.dl-live-req { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; font-family: var(--font-mono); font-size: var(--fs-sm); color: var(--text-dim); }
+.dl-live-req li { display: grid; grid-template-columns: 11rem 6rem minmax(0, 1fr); gap: var(--s-3); padding: 4px 0; border-top: 1px solid var(--line-soft); }
+.dl-live-req .ok { color: var(--good); }
+.dl-live-req .bad { color: var(--warn); }
+.dl-live-health { display: grid; gap: var(--s-3); grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr)); }
+.dl-live-mission { display: grid; gap: var(--s-3); }
+.dl-live-mission .row { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center; }
+
+@media (max-width: 640px) {
+  .live-card { padding: var(--s-3) var(--s-4); }
+  .live-main { grid-template-columns: 1fr; }
+  .live-sun.compact { grid-template-columns: auto minmax(0, 1fr); }
+  .live-sun.compact .live-risk { grid-column: 1 / -1; }
+  .live-events li { grid-template-columns: 1fr; gap: 2px; }
+  .live-level { margin-left: 0; }
+  .dl-live-req li { grid-template-columns: 1fr; }
+}

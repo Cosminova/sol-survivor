@@ -88,3 +88,17 @@ export function freePlayConfig({ body, siteId, targetSols, difficulty, startDate
     recommended: null,
   };
 }
+
+// "Today's real Sun" (src/live/liveMission.js): free play on the real calendar, driven by live NASA DONKI events.
+// Kept under the 'free-play' id so saving, scoring and the debrief treat it like any other free-play mission.
+export function liveFreePlayConfig({ body, siteId, targetSols, difficulty, startDate, budgetKg, recommended = null }) {
+  return {
+    ...freePlayConfig({ body, siteId, targetSols, difficulty, startDate, includeTransitDose: false }),
+    title: 'Today’s Real Sun',
+    lesson: 'Shielding against the real Sun, read live from NASA.',
+    win: 'You kept your crew safe from the real Sun. NASA’s space weather forecasters watch it the same way, every single day.',
+    ...(budgetKg ? { budgetKg } : {}),
+    recommended,
+    liveSun: true,
+  };
+}
