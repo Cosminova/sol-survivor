@@ -24,46 +24,141 @@ async function page(t, route, ms, focus = '#view .panel, #view h1') {
   await t.hold(ms);
 }
 
+// Captions for the training mission's coach steps, saying which part of the challenge each one shows.
+const TRAINING_CAPTIONS = {
+  welcome: 'Training mission on the Moon: keep four astronauts alive for three days, with just three core resources: Air, Power and Shield.',
+  meters: 'Air, Power and Shield. Tap any one to see the real numbers behind it.',
+  explore: 'Each day the crew follows one plan. Exploring finds science, but walking outside burns extra oxygen. No choice is free.',
+  'air-cost': 'Each day the crew follows one plan. Exploring finds science, but walking outside burns extra oxygen. No choice is free.',
+  'next-1': 'Each day the crew follows one plan. Exploring finds science, but walking outside burns extra oxygen. No choice is free.',
+  shield: 'Building the radiation shield protects the crew, but costs a whole day of science.',
+  'shield-cost': 'Building the radiation shield protects the crew, but costs a whole day of science.',
+  'next-2': 'Building the radiation shield protects the crew, but costs a whole day of science.',
+  'real-sun': 'The game links to the real Sun today, live from NASA’s DONKI space weather service.',
+  storm: 'A real solar storm from 9 October 2024, from NASA DONKI. Shelter, partial cover or keep working: every option costs something.',
+  'keep-going': 'A real solar storm from 9 October 2024, from NASA DONKI. Shelter, partial cover or keep working: every option costs something.',
+  switch: 'Night falls: not enough power for every machine. Switching one off saves power but stops what it makes. That is power budgeting.',
+  'power-cost': 'Night falls: not enough power for every machine. Switching one off saves power but stops what it makes. That is power budgeting.',
+  'next-3': 'Last day of training.',
+};
+
+// Drives the real training walkthrough: reads the coach's current step and does what it asks.
+async function playTraining(t, setCaption) {
+  const coach = () => document.querySelector('.coach');
+  await t.waitFor('.coach', { timeout: 15000 });
+  for (let guard = 0; guard < 40 && coach(); guard += 1) {
+    const { step, kind, target } = coach().dataset;
+    setCaption(TRAINING_CAPTIONS[step] ?? '');
+    if (kind === 'read') {
+      if (step === 'real-sun') { await t.click('.coach-more'); await t.hold(4500); } else await t.hold(3000);
+      await t.click('.coach-next');
+    } else {
+      await t.hold(2000);
+      if (step === 'storm') await t.click('.event-modal .event-choice:not([disabled])');
+      else if (step === 'keep-going') await t.click('.event-modal [data-autofocus]');
+      else if (step === 'switch') await t.click('#kid-switchboard .kid-switch.on:not([disabled])');
+      else await t.click(target);
+    }
+    // wait for the coach to move on (or finish)
+    for (let i = 0; i < 40 && coach()?.dataset.step === step; i += 1) await t.hold(200);
+  }
+}
+
 /**
- * The demo script: every main screen, with time spent only on the key features. About two minutes.
- * Each step drives the app, then holds while its caption is read. Exported for tests.
+ * The demo script, built around the NASA Space Apps challenge: real trade-offs (air, power, shielding, food,
+ * communication delay), real NASA data (DONKI, OSDR, Curiosity, lidar) with attribution, plain language, the
+ * Cadet and Expert views, classroom use, replayability and worlds beyond the Moon and Mars. About two and a half
+ * minutes. Exported for tests.
  */
 export const DEMO_STEPS = [
   {
-    id: 'home', caption: 'Sol Survivor: a Moon and Mars outpost game for young astronauts, built on real NASA data. This is today’s real Sun, live from NASA DONKI.',
+    id: 'home', caption: 'Sol Survivor: a Moon and Mars outpost game for ages 7 to 12. Free in the browser, no download or account. This is today’s real Sun, live from NASA DONKI.',
     async run(t) {
       navigate('home');
       await t.waitFor('.hero-sun .live-sun:not(.is-loading)', { timeout: 6000 }).catch(() => null);
       const card = await t.waitFor('.hero-sun');
       card.scrollIntoView({ block: 'center' });
       t.spot(card);
-      await t.hold(6000);
+      await t.hold(5500);
     },
   },
   {
-    id: 'campaign', caption: 'The campaign: chapters on the Moon and Mars, each one replaying real solar storms and real Mars weather.',
-    async run(t) { await page(t, 'campaign', 5000, '.camp-node-btn'); },
+    id: 'training', caption: TRAINING_CAPTIONS.welcome,
+    async run(t, setCaption) {
+      t.spot(null);
+      navigate('play?tutorial=1');
+      await playTraining(t, setCaption);
+      setCaption('The debrief sums up the trade-offs. Failing is fine: every mission can be replayed, and events change between playthroughs.');
+      t.spot(await t.waitFor('.tutorial-recap', { timeout: 8000 }));
+      await t.hold(5000);
+    },
   },
   {
-    id: 'sky', caption: 'Choose your world from a real night sky (inspired by Cosminova). Rings mark stars with rocky planets from NASA’s Exoplanet Archive.',
+    id: 'osdr', caption: 'Data Lab: live NASA DONKI events and Curiosity weather, plus real astronaut-health findings from NASA’s OSDR, each labelled live or saved.',
+    async run(t) {
+      navigate('datalab');
+      const health = await t.waitFor('.dl-live-health', { timeout: 15000 });
+      health.scrollIntoView({ block: 'center' });
+      t.spot(health);
+      await t.hold(7000);
+    },
+  },
+  {
+    id: 'live-mission', caption: 'Today’s Real Sun: a Mars mission whose storm forecast comes from NASA’s live data. Radio messages to Earth take minutes from Mars.',
+    async run(t, setCaption) {
+      const launch = await t.waitFor('#dl-live-launch-mars');
+      launch.scrollIntoView({ block: 'center' });
+      t.spot(launch);
+      await t.hold(2500);
+      launch.click();
+      await t.waitFor('#next-sol', { timeout: 20000 });
+      t.spot(await t.waitFor('.ticker'));
+      await t.hold(5000);
+      setCaption('Food production: the greenhouse grows food but uses power and water. A Grow food day speeds it up, at the cost of science.');
+      t.spot(await t.waitFor('#plan-grow, #kid-plans, .kid-today', { timeout: 4000 }).catch(() => null));
+      await t.hold(4500);
+    },
+  },
+  {
+    id: 'walk', caption: 'Walk 3D: go outside and do jobs by hand. The Mars ground is built from NASA laser-altimeter data around the landing site.',
+    async run(t) {
+      await t.click('.view-toggle [data-view="walk"]');
+      t.spot(await t.waitFor('.walk-world canvas', { timeout: 15000 }));
+      await t.hold(9000);
+      await t.click('.walk-back');
+    },
+  },
+  {
+    id: 'views', caption: 'The same base as a flat Map 2D, and as Outpost 3D zoomed out to the whole camp.',
+    async run(t) {
+      await t.click('.view-toggle [data-view="map"]');
+      t.spot(await t.waitFor('.play-stage'));
+      await t.hold(3000);
+      await t.click('.view-toggle [data-view="outpost"]');
+      await t.click('[aria-label="Zoom out to see the whole camp"]');
+      await t.hold(3500);
+    },
+  },
+  {
+    id: 'expert', caption: 'Expert view for older siblings, parents and classes: every number, the full power budget and radiation dose in millisieverts.',
+    async run(t) {
+      await t.click('#view-switch');
+      t.spot(await t.waitFor('#view'));
+      await t.hold(5000);
+      await t.click('#view-switch');
+    },
+  },
+  {
+    id: 'sky', caption: 'Beyond the Moon and Mars: pick any rocky world from a real night sky (with our partner project Cosminova), from NASA’s Exoplanet Archive.',
     async run(t) {
       navigate('loadout/free-play');
       await t.click('button', 'Cosminova sky');
       const sky = await t.waitFor('.wp-stage');
       sky.scrollIntoView({ block: 'center' });
       t.spot(sky);
-      await t.hold(5000);
-    },
-  },
-  {
-    id: 'trappist', caption: 'Fly to TRAPPIST-1: seven rocky planets. Every fact says Real (NASA) or Generated (a game guess where nobody has measured it).',
-    async run(t) {
+      await t.hold(4000);
       await t.click('.wp-target[data-target="star:TRAPPIST-1"]');
-      const strip = await t.waitFor('.wp-system-portrait', { timeout: 10000 });
-      strip.scrollIntoView({ block: 'start' });
-      t.spot(strip);
-      await t.hold(5000);
-      await t.click('button', 'Visit TRAPPIST-1 e');
+      await t.click('button', 'Visit TRAPPIST-1 e', { timeout: 10000 });
       const globe = await t.waitFor('.wp-planet-grid');
       globe.scrollIntoView({ block: 'start' });
       t.spot(globe);
@@ -71,84 +166,19 @@ export const DEMO_STEPS = [
     },
   },
   {
-    id: 'titan', caption: 'Or Titan: thick air, methane lakes, −179 °C. The engine changes power, heat, radiation and events on every world.',
+    id: 'words', caption: 'Plain language: every science word, like sol or radiation dose, has a short kid-friendly explanation, plus flashcards and quizzes.',
     async run(t) {
-      await t.click('.wp-back');
-      await t.click('.wp-back');
-      await t.click('.wp-target[data-target="saturn"]');
-      await t.click('button', 'Visit Titan', { timeout: 10000 });
-      const card = await t.waitFor('.wp-planet-grid');
-      card.scrollIntoView({ block: 'start' });
-      t.spot(card);
-      await t.hold(5000);
+      await page(t, 'dictionary', 3000);
+      await page(t, 'academy', 3000);
     },
   },
   {
-    id: 'pack', caption: 'Pack the lander under a weight limit. Mission Control’s pack uses the engine’s own numbers.',
-    async run(t) {
-      await t.click('button', 'Use recommended');
-      const launch = await t.waitFor('.lo-launch');
-      t.spot(launch);
-      await t.hold(3500);
-      await t.click('.lo-launch');
-      await t.waitFor('#next-sol', { timeout: 20000 });
-    },
-  },
-  {
-    id: 'play', caption: 'Each day: keep Air, Power and Shield safe, pick one plan, and see the trade-off before you commit.',
-    async run(t) {
-      t.spot(await t.waitFor('.kid-meters'));
-      await t.hold(4500);
-      await t.click('#plan-explore');
-      t.spot(await t.waitFor('#plan-preview'));
-      await t.hold(4500);
-      await t.nextDay();
-      t.spot(await t.waitFor('.kid-meters'));
-      await t.hold(3500);
-    },
-  },
-  {
-    id: 'walk', caption: 'Walk 3D: go outside as an astronaut and do jobs by hand. Every world gets its own generated ground and sky.',
-    async run(t) {
-      await t.click('.view-toggle [data-view="walk"]');
-      t.spot(await t.waitFor('.walk-world canvas', { timeout: 15000 }));
-      await t.hold(14000);
-      await t.click('.walk-back');
-    },
-  },
-  {
-    id: 'views', caption: 'Three views of the same base: the flat Map 2D, and Outpost 3D zoomed out to the whole camp.',
-    async run(t) {
-      await t.click('.view-toggle [data-view="map"]');
-      t.spot(await t.waitFor('.play-stage'));
-      await t.hold(5000);
-      await t.click('.view-toggle [data-view="outpost"]');
-      await t.click('[aria-label="Zoom out to see the whole camp"]');
-      await t.hold(6000);
-    },
-  },
-  {
-    id: 'datalab', caption: 'Data Lab: the real NASA records behind the game. Solar flares, storms and Curiosity’s Mars weather, with sources.',
-    async run(t) { await page(t, 'datalab', 6000, '.dl-tabs, #view .panel'); },
-  },
-  {
-    id: 'dictionary', caption: 'Astronaut Dictionary: every space word in plain language, with flashcards.',
-    async run(t) { await page(t, 'dictionary', 4000); },
-  },
-  {
-    id: 'academy', caption: 'Academy: quizzes on survival and science, at three difficulty levels.',
-    async run(t) { await page(t, 'academy', 4000); },
-  },
-  {
-    id: 'badges', caption: 'Badges and a mission patch designer reward kids for what they learn.',
-    async run(t) {
-      await page(t, 'badges', 3000);
-      await page(t, 'patch', 3000);
-    },
-  },
-  {
-    id: 'educators', caption: 'For educators: lesson plans, classroom guides and standards links, so teachers can run it in class.',
+    id: 'educators', caption: 'For classrooms: printable lessons, NGSS links, and one mission code so the whole class plays the same mission.',
     async run(t) { await page(t, 'educators', 4500); },
+  },
+  {
+    id: 'sources', caption: 'Every dataset is credited inside the game: DONKI, OSDR, Curiosity REMS, NASA Trek imagery, LRO and MGS lidar, and the Exoplanet Archive.',
+    async run(t) { await page(t, 'datalab/methodology', 6000); },
   },
 ];
 
@@ -273,7 +303,7 @@ function runDemo(snapshot) {
       caption.textContent = step.caption;
       announce(step.caption);
       try {
-        await step.run(t);
+        await step.run(t, (text) => { caption.textContent = text; });
       } catch (err) {
         if (err instanceof DemoStopped) return;
         if (!(err instanceof StepSkipped)) console.warn('[demo] step skipped:', step.id, err.message);
