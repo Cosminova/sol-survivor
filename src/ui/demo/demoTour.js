@@ -207,10 +207,11 @@ function runDemo(snapshot) {
     // Next day, answering any event card with its first available choice so the tour keeps moving.
     async nextDay() {
       await t.click('#next-sol');
+      const stepCaption = caption.textContent;
       for (let i = 0; i < 2; i += 1) {
         await t.hold(600);
         const card = document.querySelector('.event-modal');
-        if (!visible(card)) return;
+        if (!visible(card)) break;
         caption.textContent = 'An event! Many are real NASA records, like solar storms from 2024. The crew has to choose.';
         t.spot(card);
         await t.hold(5000);
@@ -218,6 +219,7 @@ function runDemo(snapshot) {
         await t.hold(3000);
         await t.click('.event-modal [data-autofocus]');
       }
+      caption.textContent = stepCaption;
     },
   };
 
