@@ -4,11 +4,16 @@
 // pop-ups and tours are switched off for the demo only. Escape or Exit demo ends it at any time.
 import { h, announce } from '../dom.js';
 import { navigate } from '../router.js';
+import { walkAndWork } from './walkDemo.js';
 
 const POLL_MS = 200;
 const WAIT_MS = 15000;
 const SAVE_PREFIX = 'sol-survivor';
 const QUIET_FLAGS = ['howto-seen', 'tutorial-done', 'tour-outpost', 'tour-map', 'tour-walk', 'walk-switch-learned'];
+// Pop-ups the tour does not open on purpose (day results, found artifacts, rock facts) get this long on screen,
+// then the tour closes them, so nothing is ever left waiting for a click.
+const STRAY_MS = 3000;
+const STRAY = ['.effect-pop .effect-pop-close', '.w3d-modal:not(.w3d-summary):not(.w3d-mg-modal) .w3d-primary'];
 
 class DemoStopped extends Error {}
 class StepSkipped extends Error {}
@@ -50,11 +55,11 @@ async function playTraining(t, setCaption) {
     const { step, kind, target } = coach().dataset;
     setCaption(TRAINING_CAPTIONS[step] ?? '');
     if (kind === 'read') {
-      if (step === 'real-sun') { await t.click('.coach-more'); await t.hold(4500); } else await t.hold(3000);
+      if (step === 'real-sun') { await t.click('.coach-more'); await t.hold(5200); } else await t.hold(3800);
       await t.click('.coach-next');
     } else {
       // the storm choice and the night switch-off are the heart of the trade-off: give them time to be read
-      await t.hold(step === 'storm' || step === 'switch' ? 4500 : 2000);
+      await t.hold(step === 'storm' || step === 'switch' ? 5200 : 2600);
       if (step === 'storm') await t.click('.event-modal .event-choice:not([disabled])');
       else if (step === 'keep-going') await t.click('.event-modal [data-autofocus]');
       else if (step === 'switch') await t.click('#kid-switchboard .kid-switch.on:not([disabled])');
@@ -112,23 +117,27 @@ export const DEMO_STEPS = [
       const launch = await t.waitFor('#dl-live-launch-mars');
       launch.scrollIntoView({ block: 'center' });
       t.spot(launch);
-      await t.hold(2500);
+      await t.hold(3200);
       launch.click();
       await t.waitFor('#next-sol', { timeout: 20000 });
       t.spot(await t.waitFor('.ticker'));
       await t.hold(5000);
       setCaption('Food production: the greenhouse grows food but uses power and water. A Grow food day speeds it up, at the cost of science.');
       t.spot(await t.waitFor('#plan-grow, #kid-plans, .kid-today', { timeout: 4000 }).catch(() => null));
-      await t.hold(4500);
+      await t.hold(5200);
     },
   },
   {
     id: 'walk', caption: 'Walk 3D: go outside and do jobs by hand. The Mars ground is built from NASA laser-altimeter data around the landing site.',
-    async run(t) {
+    async run(t, setCaption) {
       await t.click('.view-toggle [data-view="walk"]');
       t.spot(await t.waitFor('.walk-world canvas', { timeout: 15000 }));
-      await t.hold(9000);
-      await t.click('.walk-back');
+      try {
+        await walkAndWork(t, setCaption);
+      } finally {
+        await t.closeWalkDialogs();
+        await t.click('.walk-back', null, { timeout: 4000 }).catch(() => null);
+      }
     },
   },
   {
@@ -136,10 +145,10 @@ export const DEMO_STEPS = [
     async run(t) {
       await t.click('.view-toggle [data-view="map"]');
       t.spot(await t.waitFor('.play-stage'));
-      await t.hold(3000);
+      await t.hold(3800);
       await t.click('.view-toggle [data-view="outpost"]');
       await t.click('[aria-label="Zoom out to see the whole camp"]');
-      await t.hold(3500);
+      await t.hold(4300);
     },
   },
   {
@@ -147,7 +156,7 @@ export const DEMO_STEPS = [
     async run(t) {
       await t.click('#view-switch');
       t.spot(await t.waitFor('#view'));
-      await t.hold(5000);
+      await t.hold(5800);
       await t.click('#view-switch');
     },
   },
@@ -159,7 +168,7 @@ export const DEMO_STEPS = [
       const sky = await t.waitFor('.wp-stage');
       sky.scrollIntoView({ block: 'center' });
       t.spot(sky);
-      await t.hold(4000);
+      await t.hold(4700);
       await t.click('.wp-target[data-target="star:TRAPPIST-1"]');
       await t.click('button', 'Visit TRAPPIST-1 e', { timeout: 10000 });
       const globe = await t.waitFor('.wp-planet-grid');
@@ -235,11 +244,23 @@ function runDemo(snapshot) {
   const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); end(); } };
   document.addEventListener('keydown', onKey, true);
 
-  // The caption bar sits bottom-left; if that would cover what the tour points at, it moves bottom-right.
-  const overlaps = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+  // The caption bar sits bottom-left. If that covers what the tour points at, it tries bottom-right, then the top
+  // corners, and keeps whichever covers the least (a centred dialog fills both bottom corners).
+  const PLACES = [[], ['demo-bar-right'], ['demo-bar-top', 'demo-bar-right'], ['demo-bar-top']];
+  const ALL_PLACE_CLASSES = ['demo-bar-right', 'demo-bar-top'];
+  const overlapArea = (a, b) => Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
   function dodge() {
-    bar.classList.remove('demo-bar-right');
-    if (spotted && overlaps(bar.getBoundingClientRect(), spotted.getBoundingClientRect())) bar.classList.add('demo-bar-right');
+    const target = spotted?.getBoundingClientRect();
+    let best = { place: PLACES[0], area: Infinity };
+    for (const place of PLACES) {
+      bar.classList.remove(...ALL_PLACE_CLASSES);
+      bar.classList.add(...place);
+      const area = target ? overlapArea(bar.getBoundingClientRect(), target) : 0;
+      if (area < best.area) best = { place, area };
+      if (area === 0) break;
+    }
+    bar.classList.remove(...ALL_PLACE_CLASSES);
+    bar.classList.add(...best.place);
   }
 
   const check = () => {
@@ -248,13 +269,26 @@ function runDemo(snapshot) {
   };
   const tick = () => new Promise((r) => window.setTimeout(r, POLL_MS));
 
+  // Closes pop-ups the tour did not open on purpose once they have been on screen for STRAY_MS.
+  const strayFirstSeen = new WeakMap();
+  function sweepStray() {
+    const now = Date.now();
+    for (const sel of STRAY) {
+      for (const btn of document.querySelectorAll(sel)) {
+        if (!visible(btn)) continue;
+        if (!strayFirstSeen.has(btn)) strayFirstSeen.set(btn, now);
+        else if (now - strayFirstSeen.get(btn) >= STRAY_MS) btn.click();
+      }
+    }
+  }
+
   const t = {
     async hold(ms) {
       let left = ms;
       while (left > 0) {
         check();
         await tick();
-        if (!paused) left -= POLL_MS;
+        if (!paused) { left -= POLL_MS; sweepStray(); }
       }
     },
     async waitFor(selector, { text = null, timeout = WAIT_MS } = {}) {
@@ -281,21 +315,37 @@ function runDemo(snapshot) {
       window.setTimeout(dodge, 450); // after the smooth scroll settles
     },
     // Next day, answering any event card with its first available choice so the tour keeps moving.
-    async nextDay() {
-      await t.click('#next-sol');
+    // Answers any event card that opens (first available choice) so the tour keeps moving.
+    async answerEvents() {
       const stepCaption = caption.textContent;
       for (let i = 0; i < 2; i += 1) {
-        await t.hold(600);
+        await t.hold(800);
         const card = document.querySelector('.event-modal');
         if (!visible(card)) break;
         caption.textContent = 'An event! Many are real NASA records, like solar storms from 2024. The crew has to choose.';
         t.spot(card);
-        await t.hold(5000);
+        await t.hold(5500);
         await t.click('.event-modal .event-choice:not([disabled])');
-        await t.hold(3000);
+        await t.hold(3500);
         await t.click('.event-modal [data-autofocus]');
       }
+      t.spot(null);
       caption.textContent = stepCaption;
+    },
+    // Next day, answering any event card with its first available choice so the tour keeps moving.
+    async nextDay() {
+      await t.click('#next-sol');
+      await t.answerEvents();
+    },
+    // Closes any open Walk 3D dialog (after showing it for showMs), using its own main button.
+    async closeWalkDialogs(showMs = 0) {
+      for (let i = 0; i < 3; i += 1) {
+        const btn = document.querySelector('.w3d-modal:not(.w3d-mg-modal) .w3d-primary');
+        if (!visible(btn)) return;
+        if (showMs) await t.hold(showMs);
+        btn.click();
+        await tick();
+      }
     },
   };
 

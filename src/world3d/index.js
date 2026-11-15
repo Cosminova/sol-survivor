@@ -7,6 +7,7 @@ import { createFollowCamera } from './camera.js';
 import { createControls } from './controls.js';
 import { createHud, el } from './hud.js';
 import { dayKey, dayWord } from '../ui/kid/words.js';
+import { createDemoPilot } from './demoPilot.js';
 import { createMinimap } from './minimap.js';
 import { createModals, helpBody, controlsTable, factCard } from './menus.js';
 import { createLabels } from './labels.js';
@@ -95,6 +96,8 @@ export function mountOutpost3D(container, options = {}) {
   rt.rig = rig;
   const player = createPlayer({ world, rig, audio });
   rt.player = player;
+  const pilot = createDemoPilot(rt);
+  host.w3dPilot = pilot.api; // the demo tour finds Walk 3D through its host element
   hud.setMuted(audio.muted);
   rt.gs = { progress: normalizeProgress(options.progress) };
 
@@ -251,7 +254,7 @@ export function mountOutpost3D(container, options = {}) {
     last = now;
     if (stage.isLost() || !host.isConnected || !host.clientWidth) return; // nothing to draw while the walk view is hidden
     rt.time += dt;
-    const input = controls.read();
+    const input = pilot.steer(controls.read(), dt);
     const p = world.parts;
     const paused = rt.paused || rt.introPlaying || document.hidden || rt.ending;
     if (!paused) lastZones = step(dt, input);
@@ -386,9 +389,12 @@ export function mountOutpost3D(container, options = {}) {
     setPlayer,
     resize,
     debug: () => rt, // dev/test hook (harness + browser checks)
+    pilot: pilot.api, // demo tour autopilot (src/world3d/demoPilot.js)
     dispose() {
       if (disposed) return;
       disposed = true;
+      pilot.api.stop();
+      delete host.w3dPilot;
       cancelAnimationFrame(raf);
       clearTimeout(rt.autoEndTimer);
       ro.disconnect();

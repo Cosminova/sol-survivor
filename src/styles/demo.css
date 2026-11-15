@@ -7,6 +7,7 @@
   color: var(--text); font-family: var(--font-body);
 }
 .demo-bar.demo-bar-right { left: auto; right: 16px; }
+.demo-bar.demo-bar-top { top: 12px; bottom: auto; } /* when a centred dialog fills both bottom corners */
 .demo-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .demo-badge { padding: 1px 8px; background: #ffe066; color: #06131d; font-family: var(--font-mono); font-size: 0.75rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
 .demo-count { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-faint); }
