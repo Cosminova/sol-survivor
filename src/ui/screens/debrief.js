@@ -85,7 +85,7 @@ export function render(root) {
     actions(mission),
     badgesPanel(newBadges),
     h('div', { class: 'db-grid' }, scoreBreakdown(report.score), radiationPanel(report, mission)),
-    lessonsPanel(report),
+    lessonsPanel(report, mission.config.body),
     historyCharts(mission),
     certificate({ mission, report, commander, date }),
     h('p', { class: 'db-sources faint no-print' }, 'Real NASA data, saved from NASA records (not live): the weather in this mission was measured by ', sourceBadge('rems', { label: 'Curiosity REMS' }), ' and the solar storms were recorded in ', sourceBadge('donki', { label: 'NASA DONKI' }), '.')));

@@ -13,9 +13,8 @@ const LOG_ICON = { story: 'book', event: 'reticle', warn: 'alert', danger: 'aler
 
 // CAPCOM tips come from the advisor. Cadet view calls CAPCOM "Mission Control" and swaps the few
 // science words in each tip for plain ones (same advice, same thresholds).
-export function capcomPanel(tips) {
+export function capcomPanel(tips, body = getState().savedMission?.config?.body ?? 'mars') {
   const expert = isExpertView();
-  const body = getState().savedMission?.config?.body ?? 'mars';
   return h('section', { class: 'panel play-capcom', 'aria-label': expert ? 'CAPCOM advice' : 'Advice from Mission Control', 'aria-live': 'polite' },
     h('h2', { class: 'panel-title' }, icon('antenna', { size: 18 }), expert ? 'CAPCOM' : 'Mission Control', h('span', { class: 'spacer' }), termButton('capcom', expert ? 'Who is CAPCOM?' : 'Your helper is called CAPCOM')),
     h('ul', { class: 'capcom-list' }, tips.map((tip) => h('li', { class: ['capcom-tip', tip.level] },
@@ -51,7 +50,7 @@ function expertModules(m, power, onToggle) {
     passive.length ? h('p', { class: 'mod-passive' }, 'Always on: ', passive.map((mod) => h('span', { class: 'badge' }, `${mod.icon} ${mod.name}${m.modules[mod.id] > 1 ? ` ×${m.modules[mod.id]}` : ''}`))) : null);
 }
 
-function expertLog(m) {
+export function expertLog(m) {
   const recent = m.log.slice(-40).reverse();
   return h('section', { class: 'panel play-log', 'aria-label': 'Mission log' },
     h('h2', { class: 'panel-title' }, icon('log', { size: 18 }), 'Mission log'),
@@ -65,7 +64,7 @@ function expertLog(m) {
 
 const KID_STATUS = { Broken: 'Broken. Needs fixing', Offline: 'Being repaired', Off: 'Switched off', 'No power': 'Not enough power', Running: 'Working' };
 
-function cadetModules(m, power, onToggle) {
+export function cadetModules(m, power, onToggle) {
   const switchable = MODULES.filter((mod) => mod.id in m.enabled);
   const passive = Object.keys(m.modules).filter((id) => !(id in m.enabled)).map(moduleById).filter(Boolean);
   const locked = m.status !== 'active' || m.phase === 'event';

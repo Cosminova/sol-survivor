@@ -11,6 +11,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
   highContrast: false,
   unlockAll: false,
   expertView: false, // false = Cadet view (simple, ages 7-12); true = every number and chart
+  musicOn: true,
+  musicVolume: 0.35, // 0..1
 });
 
 function safeParse(raw) {

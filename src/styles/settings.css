@@ -10,3 +10,9 @@
 .set-size:nth-child(3) { font-size: 1.15rem; }
 .set-tests { margin-top: 0.8rem; align-items: center; }
 .set-tests .faint { font-size: var(--fs-sm); }
+
+/* Music volume slider */
+.set-volume .row { align-items: center; gap: 0.75rem; flex-wrap: nowrap; }
+.set-volume input[type='range'] { flex: 1; min-width: 0; min-height: 44px; accent-color: var(--cyan, #38bdf8); cursor: pointer; }
+.set-volume input[type='range']:disabled { opacity: 0.5; cursor: not-allowed; }
+.set-volume-value { min-width: 3.5ch; text-align: right; font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }

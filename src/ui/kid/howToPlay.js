@@ -9,8 +9,8 @@ const FLAG = 'sol-survivor:howto-seen';
 
 export const STEPS = [
   { icon: 'package', title: 'Pack your lander.', text: 'Choose the machines and supplies your crew will need.' },
-  { icon: 'user', title: 'Each day, choose what your crew does and press Next Day.', text: 'Rest, explore, fix things or build a shield.' },
-  { icon: 'shield', title: 'Keep Air, Power and Shielding out of the red.', text: 'Green is good. Yellow means watch out. Red means danger.' },
+  { icon: 'user', title: 'Each day, pick one plan for your crew and press Next day.', text: 'Explore, build a shield, or rest and fix things.' },
+  { icon: 'shield', title: 'Keep Air, Power and Shield out of Danger.', text: 'Good is fine. Low means watch out. Danger means act now.' },
 ];
 
 const seen = () => {
@@ -34,6 +34,7 @@ export function openHowToPlay() {
       h('p', { class: 'howto-note' }, 'If a mission ends early, that is okay. You can always try again.'),
       h('div', { class: 'row howto-actions' },
         h('button', { type: 'button', class: 'btn btn-primary btn-lg btn-caps', 'data-autofocus': true, onclick: close }, icon('play', { size: 18 }), 'Got it'),
+        h('a', { class: 'btn', href: '#/play?tutorial=1', onclick: close }, icon('lightbulb', { size: 18 }), 'Show me how (tutorial)'),
         canSpeak() ? h('button', { type: 'button', class: 'btn', onclick: () => speak(spoken, true) }, icon('volume', { size: 18 }), 'Read aloud') : null,
         h('button', { type: 'button', class: 'btn btn-ghost', onclick: close }, 'Skip'))),
   });
@@ -41,13 +42,14 @@ export function openHowToPlay() {
 
 // Called by the app shell on every route change.
 export function maybeShowHowToPlay(routeName) {
-  if (routeName !== 'home' && routeName !== 'play') return;
-  if (seen()) return;
+  // Home leads with "Start training" instead; the card only greets players who jump straight into a mission.
+  if (routeName !== 'play') return;
+  if (seen() || /[?&]tutorial=1/.test(location.hash)) return;
   // Wait for the screen to draw; never stack on top of another dialog (for example an event card).
   setTimeout(() => {
     if (seen() || document.querySelector('.modal-backdrop')) return;
     const now = (location.hash.replace(/^#\/?/, '').split(/[/?]/)[0]) || 'home';
-    if (now === 'home' || now === 'play') openHowToPlay();
+    if (now === 'play' && !/[?&]tutorial=1/.test(location.hash) && !document.querySelector('.coach')) openHowToPlay();
   }, 500);
 }
 

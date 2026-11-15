@@ -3,6 +3,7 @@ import { createMission, setTask } from '../src/engine/sim.js';
 import { CAMPAIGN } from '../src/data/missions.js';
 import { buildLayout, padsFor, nearestStation, scatterPoints, layoutSignature, WORLD_LIMIT, AIRLOCK } from '../src/world3d/layout.js';
 import { makeHeightfield } from '../src/world3d/heightfield.js';
+import { polarGeometry } from '../src/world3d/terrain.js';
 import { stationActions, promptText, verbFor } from '../src/world3d/actions.js';
 import { dayClock, tuningFor, suitO2Step, doseRatePerHour, sunDirection, earthDirection, formatClock } from '../src/world3d/gameLogic.js';
 import { rankFor, addXp, xpForTask, nextCombo, generateObjectives, applyObjective, normalizeProgress, remainingCollectibles } from '../src/world3d/progression.js';
@@ -52,6 +53,15 @@ describe('world3d layout', () => {
     const pts = scatterPoints(layout, 7, 5);
     expect(pts.length).toBe(5);
     expect(layoutSignature(mars())).toBe(layoutSignature(mars()));
+  });
+
+  it('builds the ground facing up so it is drawn, not back-face culled (no space showing through)', () => {
+    const hf = makeHeightfield({ seed: 7, body: 'moon' });
+    const geo = polarGeometry(hf.heightAt, { segs: 24, r0: 1.2, rMax: 200 });
+    const n = geo.attributes.normal;
+    let up = 0;
+    for (let i = 0; i < n.count; i += 1) if (n.getY(i) > 0.3) up += 1;
+    expect(up).toBe(n.count);
   });
 
   it('flattens terrain under building pads', () => {

@@ -1,6 +1,7 @@
 // Data Lab: explore the real NASA data behind Sol Survivor. Tabs persist in #/datalab?tab=…
 import '../../styles/datalab.css';
 import { h, mount, announce } from '../dom.js';
+import { renderLive } from './datalab/live.js';
 import { renderWeather } from './datalab/weather.js';
 import { renderStorms } from './datalab/storms.js';
 import { renderRadiation } from './datalab/radiation.js';
@@ -11,6 +12,7 @@ import { renderCompare } from './datalab/compare.js';
 import { renderMethodology } from './datalab/methodology.js';
 
 const TABS = [
+  { id: 'live', icon: '📡', label: 'Live from NASA', render: renderLive },
   { id: 'weather', icon: '🌡️', label: 'Mars Weather', render: renderWeather },
   { id: 'storms', icon: '☀️', label: 'Space Weather', render: renderStorms },
   { id: 'radiation', icon: '☢️', label: 'Radiation', render: renderRadiation },
@@ -22,6 +24,12 @@ const TABS = [
 ];
 
 const tabById = (id) => TABS.find((t) => t.id === id) ?? TABS[0];
+// Links like #/datalab/methodology (header "Data sources", footer) name the tab in the path.
+const TAB_ALIASES = { methodology: 'sources', credits: 'sources' };
+const tabFromRoute = (route) => {
+  const fromPath = route?.params?.[0];
+  return route?.query?.tab ?? TAB_ALIASES[fromPath] ?? fromPath;
+};
 
 function rememberTab(id) {
   const next = `#/datalab?tab=${encodeURIComponent(id)}`;
@@ -29,7 +37,7 @@ function rememberTab(id) {
 }
 
 export function render(root, route) {
-  let active = tabById(route?.query?.tab).id;
+  let active = tabById(tabFromRoute(route)).id;
   let sectionCleanup = null;
   const panel = h('section', { class: 'dl-panel', id: 'dl-panel', tabindex: '-1' });
   const tabs = h('div', { class: 'tabs dl-tabs', role: 'group', 'aria-label': 'Data Lab sections' });
@@ -63,7 +71,7 @@ export function render(root, route) {
         h('div', null,
           h('span', { class: 'kicker' }, '📊 Real NASA data'),
           h('h1', null, 'Data Lab'),
-          h('p', null, 'Everything in Sol Survivor comes from real missions. Dig into the same weather, solar storms, maps and photos that NASA scientists use.')),
+          h('p', null, 'Everything in Sol Survivor comes from real missions. See what the Sun is doing right now, live from NASA, then dig into the same weather, solar storms, maps and photos that NASA scientists use.')),
         h('div', { class: 'dl-hero-chips', 'aria-hidden': 'true' },
           h('span', null, '🛰️ REMS'), h('span', null, '☀️ DONKI'), h('span', null, '☢️ RAD'), h('span', null, '🗺️ Trek'), h('span', null, '📷 Images'))),
       tabs,

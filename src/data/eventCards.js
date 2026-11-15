@@ -229,6 +229,40 @@ export const EVENT_CARDS = [
       { label: 'Tape it and keep working', effects: { health: -6, science: 3 }, outcome: 'Ouch. Healing will be slower.' },
     ],
   },
+  // ---- "Today's real Sun" missions only (src/live/liveMission.js). Never drawn from the random deck (weight 0). ----
+  {
+    id: 'sun_live_sep', icon: '☀️', title: 'Live Solar Radiation Storm!', bodies: ['mars', 'moon'], weight: 0,
+    body: 'This one is real. NASA is tracking a burst of [[sep|solar energetic particles]] after a {flareClass} [[solar-flare|solar flare]]. Particles arrive within hours. Do you take cover?',
+    science: 'This is a live event, not an old replay. NASA’s DONKI space weather database recorded it on {eventDate}, {liveAge}. The game read it straight from NASA when you launched.',
+    source: 'donki', terms: ['sep', 'solar-flare', 'sievert', 'storm-shelter'],
+    choices: [
+      { label: 'Everyone into the storm shelter', requires: { module: 'shelter' }, effects: { shelter: true, morale: -2 }, outcome: 'The crew squeezes into the shelter and waits while particles slam into the walls outside.' },
+      { label: 'Huddle behind the water tanks and supplies', effects: { shelter: 'partial', morale: -1 }, outcome: 'Water is great shielding. The crew camps out in the middle of the habitat, surrounded by tanks.' },
+      { label: 'Keep working, the schedule matters', effects: { science: 4 }, outcome: 'Work continues… but every crew member soaks up the full dose.' },
+    ],
+  },
+  {
+    id: 'sun_live_flare', icon: '☀️', title: 'Real Solar Flare: Storm Watch', bodies: ['mars', 'moon'], weight: 0,
+    body: 'The real Sun fired a {flareClass} [[solar-flare|solar flare]]. Flares this size can be followed by a burst of [[sep|solar energetic particles]], so Mission Control calls a storm watch. Do you take cover?',
+    science: 'The flare is a live event: NASA’s DONKI database recorded it on {eventDate}, {liveAge}. NASA did not record a radiation storm after this flare. In the game it counts as a small storm so you can practice the shielding choice.',
+    source: 'donki', terms: ['solar-flare', 'sep', 'storm-shelter', 'radiation-shielding'],
+    choices: [
+      { label: 'Everyone into the storm shelter', requires: { module: 'shelter' }, effects: { shelter: true, morale: -2 }, outcome: 'The crew squeezes into the shelter and waits while particles slam into the walls outside.' },
+      { label: 'Huddle behind the water tanks and supplies', effects: { shelter: 'partial', morale: -1 }, outcome: 'Water is great shielding. The crew camps out in the middle of the habitat, surrounded by tanks.' },
+      { label: 'Keep working, the schedule matters', effects: { science: 4 }, outcome: 'Work continues… but every crew member soaks up the full dose.' },
+    ],
+  },
+  {
+    id: 'sun_forecast', icon: '☀️', title: 'Space Weather Forecast: Storm Risk', bodies: ['mars', 'moon'], weight: 0,
+    body: 'This day has not happened yet on the real calendar, so there is no recorded Sun data for it. Mission Control’s forecast says a [[sep|radiation storm]] could reach {bodyName} today. How do you get ready?',
+    science: 'This is a forecast drill, not a recorded event. The chance came from what the real Sun was doing on the day you launched, read live from NASA’s DONKI database. NASA’s Moon to Mars Space Weather Analysis Office watches the Sun like this for real missions.',
+    source: 'donki-live', terms: ['sep', 'storm-shelter', 'radiation-shielding', 'sievert'],
+    choices: [
+      { label: 'Everyone into the storm shelter', requires: { module: 'shelter' }, effects: { morale: -2 }, outcome: 'The crew waits in the shelter. In this drill a burst of particles sweeps past, and nobody picks up extra dose.' },
+      { label: 'Huddle behind the water tanks and supplies', effects: { dose: 0.6, morale: -1 }, outcome: 'In this drill the storm arrives. The water tanks soak up most of it, and the crew picks up a little extra dose.' },
+      { label: 'Keep working, the schedule matters', effects: { dose: 1.5, science: 4 }, outcome: 'In this drill the storm arrives while everyone is working, and every crew member soaks up the full dose.' },
+    ],
+  },
 ];
 
 function avgMorale(m) {

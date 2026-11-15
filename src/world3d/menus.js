@@ -49,10 +49,12 @@ export const CONTROL_ROWS = [
   ['Mouse wheel', 'Zoom camera'],
   ['E · Enter · Space', 'Use / start a job'],
   ['Q', 'Why this matters (dictionary)'],
-  ['Tab or 1–4', 'Switch astronaut'],
+  ['C or 1–4', 'Switch astronaut'],
+  ['Tab, then Enter', 'Pick a name tag to see that astronaut’s stats'],
   ['H', 'This help'],
   ['M', 'Sound on/off'],
-  ['Esc', 'Pause menu'],
+  ['P', 'Pause menu'],
+  ['Esc', 'Back to base'],
   ['Touch', 'Left stick to walk, drag to look, E button to use'],
 ];
 

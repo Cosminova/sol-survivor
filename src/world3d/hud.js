@@ -74,7 +74,7 @@ export function createHud(container, { onSelectCrew, onButton, onWhy, touch }) {
   const btns = el('div', { class: 'w3d-btns w3d-hide-cine' },
     muteBtn,
     el('button', { class: 'w3d-btn', 'aria-label': 'Controls help (H)', onclick: () => onButton('help') }, '❓'),
-    el('button', { class: 'w3d-btn', 'aria-label': 'Pause menu (Esc)', onclick: () => onButton('pause') }, '⏸'));
+    el('button', { class: 'w3d-btn', 'aria-label': 'Pause menu (P)', onclick: () => onButton('pause') }, '⏸'));
 
   const knob = el('i');
   const joy = el('div', { class: 'w3d-joy', 'aria-hidden': 'true' }, knob);

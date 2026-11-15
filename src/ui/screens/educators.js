@@ -25,7 +25,7 @@ function scrollToEl(el) {
 
 function guidePanel() {
   return h('section', { class: 'panel edu-guide', 'aria-labelledby': 'edu-guide-title' },
-    h('h2', { id: 'edu-guide-title', class: 'panel-title' }, 'How to run Sol Survivor in class'),
+    h('h2', { id: 'edu-guide-title', class: 'panel-title' }, 'How to use Sol Survivor with your class'),
     h('ul', { class: 'edu-guide-grid', role: 'list' }, GUIDE.map(([icon, title, text]) => h('li', { class: 'edu-tip' },
       h('span', { class: 'edu-tip-icon', 'aria-hidden': 'true' }, icon),
       h('div', null, h('h3', null, title), h('p', null, text))))),
@@ -69,7 +69,7 @@ function alignmentPanel(onJump) {
   const { head, rows } = alignmentRows(onJump);
   if (!rows.length) return null;
   return h('section', { class: 'panel edu-ngss', 'aria-labelledby': 'edu-ngss-title' },
-    h('h2', { id: 'edu-ngss-title', class: 'panel-title mars' }, 'NGSS alignment'),
+    h('h2', { id: 'edu-ngss-title', class: 'panel-title mars' }, 'Which science standards each lesson covers (NGSS)'),
     h('div', { class: 'table-wrap' },
       h('table', { class: 'table edu-table' },
         h('thead', null, h('tr', null, head.map((c) => h('th', { scope: 'col' }, c)))),
@@ -88,7 +88,7 @@ function progressPanel() {
     ['🎴', 'Science cards seen', sum.eventsSeen, 'Real Science panels read'],
   ];
   return h('section', { class: 'panel edu-progress', 'aria-labelledby': 'edu-progress-title' },
-    h('h2', { id: 'edu-progress-title', class: 'panel-title' }, 'Learning progress on this device', h('span', { class: 'spacer' }), sum.name ? h('span', { class: 'faint' }, sum.name) : null),
+    h('h2', { id: 'edu-progress-title', class: 'panel-title' }, 'What players on this device have learned', h('span', { class: 'spacer' }), sum.name ? h('span', { class: 'faint' }, sum.name) : null),
     h('ul', { class: 'edu-stats', role: 'list' }, stats.map(([icon, label, value, note]) => h('li', { class: 'edu-stat' },
       h('span', { class: 'edu-stat-icon', 'aria-hidden': 'true' }, icon),
       h('span', { class: 'edu-stat-value mono' }, String(value)),
@@ -152,9 +152,11 @@ export function render(root, route) {
     h('header', { class: 'screen-head' },
       h('div', null,
         h('span', { class: 'kicker' }, '🍎 For Educators'),
-        h('h1', null, 'Teach with Sol Survivor'),
-        h('p', null, `Ready-to-print lesson plans for grades 4–9, each tied to a campaign chapter, real NASA data and NGSS performance expectations.`)),
-      LESSONS.length ? h('button', { type: 'button', class: 'btn btn-primary no-print', onclick: printAll }, '🖨️ Print all lessons') : null),
+        h('h1', null, 'For teachers and parents'),
+        h('p', null, 'Lesson plans you can print, for ages 9 to 15 (grades 4 to 9). Each one goes with a mission in the game and uses real NASA data. New here? Play the three-minute training mission first: it teaches the whole game.')),
+      h('div', { class: 'row no-print' },
+        h('a', { class: 'btn', href: '#/play?tutorial=1' }, 'Try the training mission'),
+        LESSONS.length ? h('button', { type: 'button', class: 'btn btn-primary', onclick: printAll }, '🖨️ Print all lessons') : null)),
     guidePanel(),
     progressPanel(),
     LESSONS.length ? lessonIndex(jump) : null,

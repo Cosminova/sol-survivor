@@ -371,6 +371,27 @@ export const SOURCES = {
     kind: 'reference',
     use: 'First crewed Artemis flight around the Moon, launched 1 April 2026.',
   },
+  'donki-live': {
+    title: 'DONKI web service, read live (flares, CMEs, SEPs, geomagnetic storms, notifications)',
+    org: 'NASA Community Coordinated Modeling Center (CCMC)',
+    url: 'https://ccmc.gsfc.nasa.gov/tools/DONKI/',
+    kind: 'dataset',
+    use: 'Fetched in your browser: the last 30 days of real Sun activity drive the “real Sun right now” card, the pre-launch radiation briefing and the “Today’s Real Sun” mission.',
+  },
+  'rems-live': {
+    title: 'Curiosity REMS weather feed, read live (latest sol)',
+    org: 'NASA/JPL-Caltech, Centro de Astrobiología',
+    url: 'https://mars.nasa.gov/rss/api/?feed=weather&category=msl&feedtype=json',
+    kind: 'dataset',
+    use: 'Fetched in your browser: the newest Curiosity weather reading, always shown with the date it was recorded.',
+  },
+  osdr: {
+    title: 'Open Science Data Repository (OSDR) space biology studies',
+    org: 'NASA Ames Research Center',
+    url: 'https://osdr.nasa.gov/bio/repo/',
+    kind: 'dataset',
+    use: 'Crew health facts on plants, muscle, bone, radiation and immunity, saved at build time from the study records (OSD-267, 476, 342, 396, 317, 689, 174).',
+  },
 };
 
 export const sourceById = (id) => SOURCES[id] ?? null;

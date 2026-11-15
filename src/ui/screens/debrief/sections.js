@@ -6,6 +6,8 @@ import { stars, sourceBadge, termButton } from '../../components/common.js';
 import { compareDose } from '../../../engine/dataLab.js';
 import { RADIATION } from '../../../data/constants.js';
 import { logo } from '../../logo.js';
+import { isExpertView } from '../../kid/view.js';
+import { plainify } from '../../kid/words.js';
 
 const PARTS = [
   { key: 'survival', icon: '🫁', label: 'Survival', max: 400, color: 'var(--cyan)', tip: 'How many of the planned days the crew lasted.' },
@@ -29,9 +31,11 @@ export function scoreBreakdown(score) {
     h('p', { class: 'db-star-rules faint' }, 'How to earn 3 stars: finish the mission, reach the science goal, and keep the crew healthy (health 70 or more, radiation under the limit).'));
 }
 
-export function lessonsPanel(report) {
+// Cadet view reads the engine's lessons through the kid words layer (same facts and numbers, plainer words).
+export function lessonsPanel(report, body = 'mars') {
+  const say = (t) => (isExpertView() ? t : plainify(t, body));
   const list = (items, cls, empty) => (items.length
-    ? h('ul', { class: ['db-list', cls] }, items.map((t) => h('li', null, t)))
+    ? h('ul', { class: ['db-list', cls] }, items.map((t) => h('li', null, say(t))))
     : h('p', { class: 'faint' }, empty));
   return h('section', { class: 'db-lessons' },
     h('div', { class: 'panel db-went' },
@@ -50,7 +54,7 @@ export function radiationPanel(report, mission) {
     h('span', null, h('span', { class: 'faint' }, `${label}: `), d.label, h('strong', { class: 'mono' }, ` ${d.msv} mSv`))) : null);
   return h('section', { class: 'panel db-rad', 'aria-label': 'Radiation report' },
     h('h2', { class: 'panel-title mars' }, '☢️ Radiation report', h('span', { class: 'spacer' }), termButton('sievert', 'What is a millisievert?')),
-    h('p', null, report.radiation),
+    h('p', null, isExpertView() ? report.radiation : plainify(report.radiation, mission.config.body)),
     h('div', { class: 'db-rad-stats' },
       h('div', { class: 'db-stat' }, h('span', { class: 'db-stat-num mono' }, c.msv.toFixed(1)), h('span', null, 'mSv each')),
       h('div', { class: 'db-stat' }, h('span', { class: 'db-stat-num mono' }, c.chestXrays.toLocaleString()), h('span', null, 'chest X-rays')),

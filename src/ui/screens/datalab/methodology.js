@@ -4,6 +4,7 @@ import { sourceBadge } from '../../components/common.js';
 import { SOURCES } from '../../../data/sources.js';
 import { loadRems, loadDonki, loadGallery } from '../../../state/nasaData.js';
 import { sectionHead, fmtDate } from './shared.js';
+import { TRACKS, MUSIC_CREDIT } from '../../../audio/tracks.js';
 
 const KINDS = [
   ['dataset', '🛰️ Datasets'],
@@ -56,6 +57,22 @@ function snapshotNote() {
     list);
 }
 
+const fmtLength = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+
+function musicCredits() {
+  const { source, license, note } = MUSIC_CREDIT;
+  return h('section', { class: 'dl-source-group', 'aria-labelledby': 'dl-music-title' },
+    h('h3', { id: 'dl-music-title', class: 'panel-title' }, `🎵 Music (${Object.keys(TRACKS).length} tracks)`),
+    h('p', { class: 'muted' }, 'The background music is not NASA data. It changes with each screen: one track for menus, one for packing the lander, one each for the Moon and Mars, one for solar and dust storms, and one for the debrief.'),
+    h('ul', { class: 'dl-source-list' }, Object.values(TRACKS).map((t) => h('li', { class: 'dl-source' },
+      h('span', { class: 'dl-source-title' }, t.title),
+      h('span', { class: 'faint dl-small' }, `${t.file} · ${fmtLength(t.seconds)}`)))),
+    h('p', { class: 'dl-small' },
+      source ? h('span', null, h('strong', null, 'Source: '), source, '. ') : null,
+      license ? h('span', null, h('strong', null, 'License: '), license, '. ') : null,
+      source && license ? null : note));
+}
+
 export function renderMethodology(container) {
   const groups = groupByKind();
   const total = groups.reduce((n, g) => n + g.items.length, 0);
@@ -74,5 +91,6 @@ export function renderMethodology(container) {
       snapshotNote()),
     groups.map((g) => h('section', { class: 'dl-source-group', 'aria-labelledby': `dl-kind-${g.kind}` },
       h('h3', { id: `dl-kind-${g.kind}`, class: 'panel-title' }, `${g.label} (${g.items.length})`),
-      h('ul', { class: 'dl-source-list' }, g.items.map(sourceItem)))));
+      h('ul', { class: 'dl-source-list' }, g.items.map(sourceItem)))),
+    musicCredits());
 }

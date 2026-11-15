@@ -3,6 +3,7 @@ import '../../styles/settings.css';
 import { h, mount, announce } from '../dom.js';
 import { getState, subscribe, setSettings, setProfile, resetAll } from '../../state/store.js';
 import { play } from '../audio.js';
+import { setVolume as previewMusicVolume } from '../../audio/music.js';
 import { speak, canSpeak } from '../speech.js';
 import { openModal } from '../components/modal.js';
 import { toast } from '../components/common.js';
@@ -20,6 +21,30 @@ function toggle(id, label, hint, checked, onChange) {
   return h('label', { class: 'switch set-switch', for: id },
     h('span', { class: 'set-label' }, h('strong', null, label), h('span', { class: 'faint' }, hint)),
     h('input', { id, type: 'checkbox', checked, onchange: (e) => onChange(e.currentTarget.checked) }));
+}
+
+// Volume slider: moves the music live while dragging, saves when released
+// (saving re-renders this screen, which would interrupt a drag).
+function musicVolumeSlider(settings) {
+  const pct = Math.round((settings.musicVolume ?? 0.35) * 100);
+  const out = h('output', { id: 'set-music-volume-value', for: 'set-music-volume', class: 'set-volume-value' }, `${pct}%`);
+  const input = h('input', {
+    id: 'set-music-volume', type: 'range', min: 0, max: 100, step: 5, value: pct,
+    disabled: !settings.musicOn,
+    'aria-valuetext': `${pct} percent`,
+    oninput: (e) => {
+      const v = Number(e.currentTarget.value);
+      out.textContent = `${v}%`;
+      e.currentTarget.setAttribute('aria-valuetext', `${v} percent`);
+      previewMusicVolume(v / 100);
+    },
+    onchange: (e) => setSettings({ musicVolume: Number(e.currentTarget.value) / 100 }),
+  });
+  return h('div', { class: 'set-row set-volume' },
+    h('label', { class: 'set-label', for: 'set-music-volume' },
+      h('strong', null, 'Music volume'),
+      h('span', { class: 'faint' }, settings.musicOn ? 'How loud the background music plays' : 'Turn Music on to change the volume')),
+    h('div', { class: 'row' }, input, out));
 }
 
 function confirmReset() {
@@ -55,6 +80,8 @@ function view() {
         h('div', { class: 'row set-tests' }, howToPlayButton(), h('span', { class: 'faint' }, 'Shows the three steps again.'))),
       h('section', { class: 'panel', 'aria-labelledby': 'set-sound' },
         h('h2', { class: 'panel-title', id: 'set-sound' }, '🔊 Sound and voice'),
+        toggle('set-music', 'Music', 'Background music that changes with each screen. It starts after your first click.', settings.musicOn, (v) => setSettings({ musicOn: v })),
+        musicVolumeSlider(settings),
         toggle('set-sfx', 'Sound effects', 'Beeps for new days, alerts and wins', settings.sound, (v) => { setSettings({ sound: v }); if (v) setTimeout(() => play('good'), 50); }),
         toggle('set-read', 'Read aloud', canSpeak() ? 'Reads stories and mission news out loud' : 'This browser cannot read aloud', settings.readAloud, (v) => { setSettings({ readAloud: v }); if (v) speak('Read aloud is on, Commander.', true); }),
         h('div', { class: 'row set-tests' },

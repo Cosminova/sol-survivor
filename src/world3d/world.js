@@ -101,6 +101,7 @@ export function createWorld(stage, { high, reducedMotion, labels }) {
     stage.hemi.groundColor.copy(look.hemiGround);
     stage.hemi.intensity = look.hemiIntensity;
     stage.fill.intensity = look.fill;
+    stage.fill.color.copy(look.fillColor);
     if (p.body === 'moon') {
       const e = earthDirection(mission.site);
       stage.fill.position.set(e.x * 100, e.y * 100, e.z * 100);
@@ -118,6 +119,8 @@ export function createWorld(stage, { high, reducedMotion, labels }) {
       bakeTimer = high ? 4 : 10;
     }
     const night = sun.elevationDeg < 2 || look.sunIntensity < 0.4;
+    stage.lamp.position.set(focus.x, (focus.y ?? 0) + 2.8, focus.z);
+    stage.lamp.intensity = night ? 3 : 0;
     return { sun, look, night };
   }
 
