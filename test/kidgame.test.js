@@ -267,7 +267,7 @@ describe('training mission', () => {
     }
     const text = (id) => TUTORIAL_STEPS.find((s) => s.id === id).text;
     expect(text('air-cost')).toMatch(/science.*air/i);
-    expect(text('real-sun')).toBe('Real NASA scientists watch the Sun like this every day. Here is the real Sun today:');
+    expect(text('real-sun')).toBe('Real NASA scientists watch the Sun every day. Want to see the real Sun today?');
     expect(text('power-cost')).toMatch(/trade-off/);
     expect(RECAP).toHaveLength(3);
   });
