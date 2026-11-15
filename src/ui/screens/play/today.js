@@ -6,7 +6,7 @@ import { icon, MODULE_ICONS } from '../../icons.js';
 import { MODULES } from '../../../data/modules.js';
 import { SHIELDING } from '../../../data/constants.js';
 import { availablePlans, planChips, planById } from '../../kid/plans.js';
-import { KID_MODULE_NAMES, KID_MODULE_GIVES, dayWord } from '../../kid/words.js';
+import { KID_MODULE_NAMES, KID_MODULE_GIVES } from '../../kid/words.js';
 
 const fmt = (v) => (Math.round(Math.abs(v) * 10) / 10).toString();
 
@@ -51,13 +51,15 @@ function effect(name, iconName, delta, text, { goodWhenUp = true } = {}) {
 function preview(mission, sim, planId) {
   if (!sim) return null;
   const plan = planById(planId);
+  // Nothing chosen yet: one short nudge instead of numbers for a mix of jobs nobody picked.
+  if (!plan) return h('p', { id: 'plan-preview', class: 'plan-hint', role: 'status' }, 'Tap a plan to see what it will do.');
   const hasBattery = mission.capacity.batteryKwh > 0;
   const shieldPct = Math.round((100 * sim.shieldWork) / SHIELDING.bermWorkPerLevel);
   const powerText = sim.cold ? 'too little to stay warm' : sim.shed.length ? 'not enough for every machine'
     : hasBattery ? (sim.batteryPct === 0 ? 'battery stays the same' : `battery ${fmt(sim.batteryPct)}% ${sim.batteryPct > 0 ? 'fuller' : 'emptier'}`) : 'enough';
   const powerDelta = sim.cold || sim.shed.length ? -1 : hasBattery ? sim.batteryPct : 0;
   return h('div', { id: 'plan-preview', class: 'plan-preview', role: 'status' },
-    h('p', { class: 'plan-preview-title' }, plan ? `${plan.short}: what should happen next` : 'Mixed jobs: what should happen next'),
+    h('p', { class: 'plan-preview-title' }, `${plan.short}: what should happen next`),
     h('ul', { class: 'plan-effects' },
       effect('Air', 'bubbles', sim.air, `${fmt(sim.air)} kg ${sim.air < 0 ? 'used' : 'more'}`),
       effect('Power', 'zap', powerDelta, powerText),
@@ -99,20 +101,24 @@ function switchboard(mission, sim, { locked, onToggle }) {
 /**
  * @param {object} mission
  * @param {{ sims: Record<string, object|null>, sim: object|null, selected: string|null, busy: boolean,
- *           onPlan: (id: string) => void, onNext: () => void, onToggle: (id: string) => void }} opts
+ *           onPlan: (id: string) => void, onToggle: (id: string) => void }} opts
  */
-export function todayPanel(mission, { sims, sim, selected, busy, onPlan, onNext, onToggle }) {
+export function todayPanel(mission, { sims, sim, selected, busy, onPlan, onToggle }) {
   const active = mission.status === 'active';
   const locked = !active || mission.phase === 'event' || busy;
   const plans = availablePlans(mission);
   const tired = mission.crew.some((c) => c.health <= 30 || c.morale < 35);
-  const unit = dayWord(mission.config.body);
   return h('section', { id: 'kid-today', class: 'kid-today', 'aria-labelledby': 'kid-today-title' },
     h('h2', { id: 'kid-today-title', class: 'kid-today-title' }, 'Today', h('span', null, active ? 'Pick one plan for your crew.' : 'The mission is over.')),
     h('div', { class: ['plan-cards', `n${plans.length}`], role: 'group', 'aria-label': 'Plans for today' },
       plans.map((plan) => planCard(plan, { sim: sims[plan.id], inside: sims.fix, selected: selected === plan.id, locked, tired, onPlan }))),
     active ? preview(mission, sim, selected) : null,
-    active ? switchboard(mission, sim, { locked, onToggle }) : null,
-    h('button', { type: 'button', id: 'next-sol', class: 'btn btn-primary btn-lg btn-caps kid-next', disabled: !active || busy, onclick: onNext, 'aria-keyshortcuts': 'N' },
-      icon('play', { size: 22 }), active ? `Next ${unit === 'sol' ? 'day' : unit}` : 'Mission over'));
+    active ? switchboard(mission, sim, { locked, onToggle }) : null);
+}
+
+/** The one big button. It lives in the sidebar's fixed foot, so it is always on screen. */
+export function nextButton(mission, { busy, onNext }) {
+  const active = mission.status === 'active';
+  return h('button', { type: 'button', id: 'next-sol', class: 'btn btn-primary btn-lg btn-caps kid-next', disabled: !active || busy, onclick: onNext, 'aria-keyshortcuts': 'N' },
+    icon('play', { size: 22 }), active ? 'Next day' : 'Mission over');
 }

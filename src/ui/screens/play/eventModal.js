@@ -15,6 +15,9 @@ import { isExpertView, realDataLabel, moreDetails } from '../../kid/view.js';
 import { kidHint, dayWord, KID_MODULE_NAMES } from '../../kid/words.js';
 import { kidEvent, KID_EVENT_ICONS } from '../../../data/kidText.js';
 
+// Solar storm cards where the engine applies the storm dose itself (replayed and live NASA storms).
+const STORM_CARDS = ['sep_alert', 'sun_live_sep', 'sun_live_flare'];
+
 const sign = (v) => (v > 0 ? `+${v}` : `${v}`);
 
 // Cadet view: the same effects in plain words (numbers kept, jargon dropped).
@@ -36,7 +39,7 @@ function kidEffectChips(effects = {}, cardId = null, mission = null) {
   // Engine rules that are not in the effects list: a sheltering crew does no work that day, and a crew that
   // keeps working in a solar storm takes the whole dose.
   if (effects.shelter) add('warn', 'No work or science today');
-  if (cardId === 'sep_alert' && !effects.shelter) add('danger', 'Crew gets the full radiation');
+  if (STORM_CARDS.includes(cardId) && !effects.shelter) add('danger', 'Crew gets the full radiation');
   if (effects.dust < 0) add('good', 'Cleaner solar panels');
   if (effects.storm) add('warn', 'Dust storm: less solar power');
   // Only machines this base really has can be switched off (and save power).

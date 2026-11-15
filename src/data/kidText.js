@@ -8,6 +8,22 @@ export const KID_EVENTS = {
     line: 'The Sun just threw out a burst of radiation, and it will reach your base in a few hours.',
     choices: ['Hide in the storm shelter', 'Hide behind the water tanks', 'Keep working'],
   },
+  // Live-data cards (added to eventCards.js by the live NASA data work). Same three choices as sep_alert.
+  sun_live_sep: {
+    title: 'Real solar storm',
+    line: 'This one is real: NASA is tracking a burst of radiation from the Sun right now, and it arrives in a few hours.',
+    choices: ['Hide in the storm shelter', 'Hide behind the water tanks', 'Keep working'],
+  },
+  sun_live_flare: {
+    title: 'Real solar flare: storm watch',
+    line: 'The real Sun just fired a big flash, and flashes this size can be followed by a radiation storm.',
+    choices: ['Hide in the storm shelter', 'Hide behind the water tanks', 'Keep working'],
+  },
+  sun_forecast: {
+    title: 'Space weather forecast: storm risk',
+    line: 'Mission Control says a radiation storm could reach {bodyName} today, so this is a practice drill.',
+    choices: ['Hide in the storm shelter', 'Hide behind the water tanks', 'Keep working'],
+  },
   dust_storm: {
     title: 'A dust storm is coming',
     line: 'Dust will darken the sky, so your solar panels will make much less power.',
@@ -129,7 +145,7 @@ export const kidEvent = (cardId) => KID_EVENTS[cardId] ?? null;
 
 // Picture for each card (an icon name from src/ui/icons.js).
 export const KID_EVENT_ICONS = {
-  sep_alert: 'sun', dust_storm: 'wind', global_storm: 'wind', dust_devil: 'wind', perchlorate: 'alert', ice_found: 'snowflake',
+  sep_alert: 'sun', sun_live_sep: 'sun', sun_live_flare: 'sun', sun_forecast: 'sun', dust_storm: 'wind', global_storm: 'wind', dust_devil: 'wind', perchlorate: 'alert', ice_found: 'snowflake',
   meteorite: 'mountain', micrometeoroid: 'alert', moonquake: 'alert', conjunction: 'antenna', birthday: 'star', homesick: 'user',
   blue_sunset: 'sun', earthrise: 'orbit', frost: 'snowflake', rover_stuck: 'rover', filter_clog: 'recycle', harvest: 'sprout',
   lava_tube: 'mountain', aurora: 'star', phobos: 'moon', lunar_night: 'moon', supply_drop: 'package', medical: 'user',

@@ -371,7 +371,7 @@ body .kid-mod-row .mod-name .badge { grid-column: 2; justify-self: start; white-
 /* ---- Crew popup: one astronaut's stats, only when asked for ------------------------------------- */
 .crew-pop {
   position: fixed;
-  z-index: 300;
+  z-index: 1500; /* above the full-screen 3D walk view, which opens it from a name tag */
   width: min(360px, calc(100vw - 24px));
   max-height: calc(100dvh - 24px);
   overflow-y: auto;

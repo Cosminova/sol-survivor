@@ -13,7 +13,8 @@ const MAX_ITEMS = 4;
 const RANK = { good: 0, low: 1, danger: 2 };
 
 const fmt = (v) => (Math.round(v * 10) / 10).toString();
-const nameOf = (id) => KID_MODULE_NAMES[id] ?? moduleById(id)?.name ?? id;
+const POWER_NAMES = { solar: 'A solar panel', fission: 'The nuclear power unit', battery: 'The battery' };
+const nameOf = (id) => KID_MODULE_NAMES[id] ?? POWER_NAMES[id] ?? moduleById(id)?.name ?? id;
 const list = (ids) => ids.map(nameOf).join(', ');
 
 /**

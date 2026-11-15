@@ -34,25 +34,25 @@ function realSunNow() {
  */
 export const TUTORIAL_STEPS = [
   { id: 'welcome', kind: 'read', target: '.play-stage', text: 'This is your Moon base. Keep four astronauts safe for three days.' },
-  { id: 'meters', kind: 'do', target: '#meter-air', text: 'Three meters show Air, Power and Shield. Tap Air to see the number.', on: (type, v) => type === 'meter' && v === 'air' },
-  { id: 'explore', kind: 'do', target: '#plan-explore', text: 'Every day you pick one plan. Tap Explore outside.', on: (type, v) => type === 'plan' && v === 'explore' },
-  { id: 'air-cost', kind: 'read', target: '#plan-preview', text: 'Exploring finds science, but the crew uses more air outside. No choice is free!' },
+  { id: 'meters', kind: 'do', target: '#meter-air', text: 'Tap Air to see how much is left.', why: 'Air, Power and Shield keep your crew alive. Watch all three.', on: (type, v) => type === 'meter' && v === 'air' },
+  { id: 'explore', kind: 'do', target: '#plan-explore', text: 'Pick one plan each day. Tap Explore outside.', on: (type, v) => type === 'plan' && v === 'explore' },
+  { id: 'air-cost', kind: 'read', target: '#plan-preview', text: 'Exploring finds science but uses more air. No choice is free!', why: 'Astronauts breathe harder when they work outside in a spacesuit.' },
   { id: 'next-1', kind: 'do', target: '#next-sol', text: 'Now press Next day.', on: (type) => type === 'day-end' },
-  { id: 'shield', kind: 'do', target: '#plan-shield', text: 'A storm from the Sun could hit any day. Tap Build the shield.', on: (type, v) => type === 'plan' && v === 'shield' },
-  { id: 'shield-cost', kind: 'read', target: '#plan-preview', text: 'The shield grows, but nobody finds science today. And tonight the Sun sets, so the battery drains.' },
+  { id: 'shield', kind: 'do', target: '#plan-shield', text: 'A solar storm could hit any day. Tap Build the shield.', on: (type, v) => type === 'plan' && v === 'shield' },
+  { id: 'shield-cost', kind: 'read', target: '#plan-preview', text: 'The shield grows, but nobody finds science today.', why: 'Power drops too: tonight the Sun sets, so the battery drains.' },
   { id: 'next-2', kind: 'do', target: '#next-sol', text: 'Press Next day.', on: (type) => type === 'event-open' || type === 'day-end' },
   { id: 'real-sun', kind: 'read', target: '.kid-event-story', text: 'Real NASA scientists watch the Sun like this every day. Here is the real Sun today:', extra: realSunNow },
   { id: 'storm', kind: 'do', target: '.event-choices', text: 'A real solar storm from 2024! Pick how to keep your crew safe.', on: (type) => type === 'event-pick' },
   { id: 'keep-going', kind: 'do', target: '.event-modal [data-autofocus]', text: 'Read what happened. Then press Keep going.', on: (type) => type === 'event-close' },
-  { id: 'switch', kind: 'do', target: '#kid-switchboard', text: 'It is night, so there is no solar power. Switch off one machine to save power.', on: (type) => type === 'switch' },
-  { id: 'power-cost', kind: 'read', target: '#kid-switchboard', text: 'You saved power, but lost what that machine makes. That is called a trade-off.' },
+  { id: 'switch', kind: 'do', target: '#kid-switchboard', text: 'Night: no solar power. Switch off one machine to save power.', on: (type) => type === 'switch' },
+  { id: 'power-cost', kind: 'read', target: '#kid-switchboard', text: 'You saved power but lost what that machine makes. That is a trade-off.' },
   { id: 'next-3', kind: 'do', target: '#next-sol', text: 'Press Next day to finish your training.', on: (type) => type === 'mission-over' },
 ];
 
 export const RECAP = [
   { icon: 'telescope', text: 'Exploring gets science, but uses more air.' },
-  { icon: 'shield', text: 'A shield or a shelter blocks radiation, but costs a day of science.' },
-  { icon: 'zap', text: 'At night power is short. Saving power means switching something off.' },
+  { icon: 'shield', text: 'A shield blocks radiation, but costs a day of science.' },
+  { icon: 'zap', text: 'At night power is short, so something must be switched off.' },
 ];
 
 /** The end-of-training card. onAction('mission' | 'again' | 'stay'). */
@@ -64,8 +64,8 @@ export function openRecap({ onAction }) {
     className: 'tutorial-recap',
     onClose: () => onAction(picked),
     content: (close) => h('div', { class: 'recap' },
-      h('p', { class: 'recap-lead' }, 'Your crew is safe. You learned what real mission planners know:'),
-      h('ul', { class: 'recap-list' }, RECAP.map((r) => h('li', null, h('span', { class: 'recap-icon', 'aria-hidden': 'true' }, icon(r.icon, { size: 30 })), h('span', null, r.text)))),
+      h('p', { class: 'recap-lead' }, 'Your crew is safe. You learned:'),
+      h('ul', { class: 'recap-list' }, RECAP.map((r) => h('li', null, h('span', { class: 'recap-icon', 'aria-hidden': 'true' }, icon(r.icon, { size: 24 })), h('span', null, r.text)))),
       h('div', { class: 'row recap-actions' },
         h('button', { type: 'button', id: 'recap-start', class: 'btn btn-primary btn-lg btn-caps', 'data-autofocus': true, onclick: () => { picked = 'mission'; close(); } }, icon('play', { size: 20 }), 'Start your first real mission'),
         h('button', { type: 'button', id: 'recap-again', class: 'btn', onclick: () => { picked = 'again'; close(); } }, 'Play training again'))),

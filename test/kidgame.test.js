@@ -13,6 +13,7 @@ import { dayEffects } from '../src/ui/kid/effects.js';
 import { KID_MODULE_NAMES, KID_MODULE_GIVES, plainify } from '../src/ui/kid/words.js';
 import { MODULES } from '../src/data/modules.js';
 import { TUTORIAL_STEPS, RECAP } from '../src/ui/tutorial/tutorial.js';
+import { placeBubble } from '../src/ui/tutorial/coach.js';
 import { crewStatusLine } from '../src/ui/components/crewPopup.js';
 
 const donki = JSON.parse(fs.readFileSync(new URL('../public/data/donki.json', import.meta.url), 'utf8'));
@@ -133,7 +134,9 @@ describe('plan previews are the engine', () => {
 
 describe('plain event text', () => {
   it('covers every event card and every choice', () => {
-    expect(Object.keys(KID_EVENTS).sort()).toEqual(EVENT_CARDS.map((c) => c.id).sort());
+    // Every card in the deck has plain text. (kidText may also carry cards that another branch adds.)
+    for (const card of EVENT_CARDS) expect(KID_EVENTS[card.id], card.id).toBeTruthy();
+    for (const id of ['sun_live_sep', 'sun_live_flare', 'sun_forecast']) expect(KID_EVENTS[id].choices, id).toHaveLength(3);
     for (const card of EVENT_CARDS) {
       const kid = KID_EVENTS[card.id];
       expect(kid.title, card.id).toBeTruthy();
@@ -258,7 +261,8 @@ describe('training mission', () => {
     for (const step of TUTORIAL_STEPS) {
       expect(['do', 'read']).toContain(step.kind);
       if (step.kind === 'do') expect(typeof step.on, step.id).toBe('function');
-      expect(step.text.split(/\s+/).length, step.id).toBeLessThanOrEqual(18);
+      expect(step.text.split(/\s+/).length, step.id).toBeLessThanOrEqual(step.id === 'real-sun' ? 16 : 15);
+      if (step.why) expect(step.why.split(/\s+/).length, step.id).toBeLessThanOrEqual(15);
       expect(step.target, step.id).toBeTruthy();
     }
     const text = (id) => TUTORIAL_STEPS.find((s) => s.id === id).text;
@@ -266,6 +270,52 @@ describe('training mission', () => {
     expect(text('real-sun')).toBe('Real NASA scientists watch the Sun like this every day. Here is the real Sun today:');
     expect(text('power-cost')).toMatch(/trade-off/);
     expect(RECAP).toHaveLength(3);
+  });
+});
+
+describe('coach bubble placement', () => {
+  const size = { w: 280, h: 150 };
+  const desktop = { vw: 1280, vh: 800, top: 102, bottom: 34 };
+  const phone = { vw: 390, vh: 844, top: 100, bottom: 34 };
+  const overlaps = (pos, box, s = size) => pos.left < box.right && pos.left + s.w > box.left && pos.top < box.bottom && pos.top + s.h > box.top;
+  const inside = (pos, view, s = size) => pos.left >= 0 && pos.top >= (view.top ?? 0) && pos.left + s.w <= view.vw && pos.top + s.h <= view.vh - (view.bottom ?? 0);
+
+  it('sits beside a sidebar control, over the outpost, never on the control', () => {
+    const next = { left: 807, top: 673, right: 1225, bottom: 743 };
+    const pos = placeBubble(next, size, desktop);
+    expect(pos.side).toBe('left');
+    expect(overlaps(pos, next)).toBe(false);
+    expect(inside(pos, desktop)).toBe(true);
+  });
+
+  it('flips to whichever side has room and stays on screen', () => {
+    const boxes = [
+      { left: 38, top: 112, right: 787, bottom: 756 }, // the outpost window
+      { left: 807, top: 224, right: 950, bottom: 305 }, // a meter
+      { left: 180, top: 160, right: 1100, bottom: 270 }, // the story row of an event card
+      { left: 500, top: 300, right: 700, bottom: 360 }, // a button in the middle
+      { left: 10, top: 110, right: 200, bottom: 160 }, // top-left corner
+    ];
+    for (const box of boxes) {
+      const pos = placeBubble(box, size, desktop);
+      expect(pos.side, JSON.stringify(box)).not.toBe('corner');
+      expect(overlaps(pos, box), JSON.stringify(box)).toBe(false);
+      expect(inside(pos, desktop), JSON.stringify(box)).toBe(true);
+    }
+  });
+
+  it('becomes a bar on the far edge on phones', () => {
+    const bar = { w: 358, h: 120 };
+    const low = placeBubble({ left: 15, top: 630, right: 375, bottom: 696 }, bar, phone);
+    expect(low.side).toBe('bar-top');
+    expect(low.top).toBe(108);
+    const high = placeBubble({ left: 2, top: 104, right: 388, bottom: 386 }, bar, phone);
+    expect(high.side).toBe('bar-bottom');
+    expect(high.top + bar.h).toBe(844 - 34 - 8);
+  });
+
+  it('tucks into a corner only when the target fills the screen', () => {
+    expect(placeBubble({ left: 0, top: 0, right: 1280, bottom: 800 }, size, desktop).side).toBe('corner');
   });
 });
 

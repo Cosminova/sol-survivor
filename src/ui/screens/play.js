@@ -26,7 +26,7 @@ import { finishMission } from './play/finish.js';
 import { viewToggle } from './play/view3d.js';
 import { telemetryItems } from './play/status.js';
 import { metersPanel } from './play/meters.js';
-import { todayPanel } from './play/today.js';
+import { todayPanel, nextButton } from './play/today.js';
 import { sideHead, sideTools } from './play/sidebar.js';
 import { createDrawer, drawerContent } from './play/drawer.js';
 import { setTickerItems } from '../components/ticker.js';
@@ -91,7 +91,7 @@ export function render(root, route) {
       scene = null;
     }
   };
-  const els = Object.fromEntries(['hud', 'overlay', 'res', 'power', 'rad', 'crew', 'capcom', 'mods', 'log', 'head', 'meters', 'today', 'tools'].map((k) => [k, h('div', { class: `slot-${k}` })]));
+  const els = Object.fromEntries(['hud', 'overlay', 'res', 'power', 'rad', 'crew', 'capcom', 'mods', 'log', 'head', 'meters', 'today', 'next', 'tools'].map((k) => [k, h('div', { class: `slot-${k}` })]));
   const commit = (next) => { m = next; if (!tutorialMode) setMission(m); draw(); };
   const onTask = (crewId, task) => { play('click'); commit(setTask(m, crewId, task)); document.getElementById(`task-${crewId}-${task}`)?.focus(); };
   const onToggle = (id) => {
@@ -116,6 +116,7 @@ export function render(root, route) {
   };
   const onPlan = (id) => {
     play('click');
+    openMeter = null; // make room for the plan preview
     commit(applyPlan(m, id));
     document.getElementById(`plan-${id}`)?.focus();
     announce(`Plan chosen: ${planById(id)?.title ?? id}.`);
@@ -151,7 +152,9 @@ export function render(root, route) {
     if (today.some((l) => l.type === 'danger' || l.type === 'fail')) play('bad');
     announce(`${m.config.body === 'mars' ? 'Sol' : 'Day'} ${m.sol} complete. ${advise(m)[0]?.text ?? ''}`);
     // Big results of the day as one popup (Cadet view; the coach does the talking during training).
-    if (!isExpertView() && !tutorial?.active()) showEffect(dayEffects(before, m, ctx ?? {}));
+    // When the mission has just ended, the end-of-mission card says it all.
+    if (m.status !== 'active') clearEffects();
+    else if (!isExpertView() && !tutorial?.active()) showEffect(dayEffects(before, m, ctx ?? {}));
     tutorial?.emit('day-end');
     if (tutorialMode) {
       if (m.status !== 'active') { if (tutorial.active()) tutorial.emit('mission-over'); else showRecap(); }
@@ -226,8 +229,9 @@ export function render(root, route) {
     mount(els.capcom, capcomPanel(advise(m), m.config.body));
     mount(els.mods, modulesPanel(m, power, onToggle));
     mount(els.log, logPanel(m));
-    for (const key of ['head', 'meters', 'today', 'tools']) mount(els[key]);
+    for (const key of ['head', 'meters', 'today', 'next', 'tools']) mount(els[key]);
     drawer.close();
+    clearEffects();
   }
 
   // Cadet view: the outpost, three picture meters and one decision. Previews run the engine on a copy.
@@ -239,7 +243,8 @@ export function render(root, route) {
     for (const key of ['hud', 'res', 'power', 'rad', 'crew', 'capcom', 'mods', 'log']) mount(els[key]);
     mount(els.head, sideHead(m, { live, sheetOpen, onSheet }));
     mount(els.meters, metersPanel(m, meterStates(m, sim), { sim, open: openMeter, onToggle: onMeter }));
-    mount(els.today, todayPanel(m, { sims, sim, selected: currentPlan(m), busy, onPlan, onNext: nextSol, onToggle }));
+    mount(els.today, todayPanel(m, { sims, sim, selected: currentPlan(m), busy, onPlan, onToggle }));
+    mount(els.next, nextButton(m, { busy, onNext: nextSol }));
     mount(els.tools, sideTools({ tutorial: tutorialMode, onCrew, onDetails: () => { drawer.open(); draw(); }, onTutorial: restartTutorial }));
     if (drawer.isOpen()) drawer.render(drawerContent(m, { power, onToggle }));
   }
@@ -273,7 +278,9 @@ export function render(root, route) {
 
   const grid = h('div', { class: 'play-grid' },
     h('div', { class: ['play-stage', m.config.body] }, outpost.layer, canvas, view3d.mount, outpost.overlay, els.overlay, view3d.toggle),
-    h('aside', { class: 'kid-side', 'aria-label': 'Mission controls' }, els.head, els.meters, els.today, els.tools),
+    h('aside', { class: 'kid-side', 'aria-label': 'Mission controls' },
+      h('div', { class: 'kid-side-scroll' }, els.head, els.meters, els.today),
+      h('div', { class: 'kid-side-foot' }, els.next, els.tools)),
     h('div', { class: 'play-side' }, els.capcom, els.power),
     h('div', { class: 'play-left' }, els.res, els.rad),
     h('div', { class: 'play-mid' }, els.crew),

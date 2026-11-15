@@ -384,17 +384,17 @@ body[data-route='play']:has(.play-stage) .hud-backdrop { display: none; }
   gap: var(--s-2);
   min-height: 0;
   padding: var(--s-3) var(--s-4);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-width: thin;
-  scrollbar-color: var(--line-strong) transparent;
+  overflow: hidden;
   border: 1px solid var(--line);
   background: var(--surface);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   font-family: var(--font-body);
 }
-.kid-side > div:empty { display: none; }
+.kid-side div:empty { display: none; }
+/* Everything above the button scrolls if it has to; the Next day button and the tools never move. */
+.kid-side-scroll { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: var(--s-2); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; padding: 2px; margin: -2px; }
+.kid-side-foot { flex: none; display: grid; gap: var(--s-2); }
 
 /* Head: mission name, day count, sky, science */
 .kid-side-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px var(--s-2); }
@@ -441,7 +441,7 @@ body[data-route='play']:has(.play-stage) .hud-backdrop { display: none; }
 .kid-meter-art .art-empty { fill: rgba(148, 197, 233, 0.16); }
 .kid-meter-art .art-bubble { fill: none; stroke: rgba(3, 7, 14, 0.6); stroke-width: 1.5; }
 .kid-meter-name { align-self: end; font-family: var(--font-display); font-size: 0.9375rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
-.kid-meter-state { align-self: start; display: inline-flex; align-items: center; gap: 4px; font-size: 1rem; font-weight: 700; color: var(--lv); line-height: 1.15; }
+.kid-meter-state { align-self: start; display: inline-flex; align-items: center; gap: 3px; font-size: 0.9375rem; font-weight: 700; color: var(--lv); line-height: 1.15; }
 .kid-meter-detail { grid-column: 1 / -1; order: 9; padding: var(--s-2) var(--s-3); border: 1px solid var(--line-strong); border-left: 4px solid var(--cyan-bright); background: rgba(3, 7, 14, 0.7); }
 .kid-meter-detail[hidden] { display: none; }
 .kid-meter-facts { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; font-size: 1rem; }
@@ -494,6 +494,7 @@ body[data-route='play']:has(.play-stage) .hud-backdrop { display: none; }
 /* Preview of the chosen plan on the three meters */
 .plan-preview { display: grid; gap: 4px; padding: var(--s-2) var(--s-3); border: 1px solid var(--line-strong); border-left: 4px solid var(--cyan-bright); background: rgba(3, 7, 14, 0.6); }
 .plan-preview-title { margin: 0; font-weight: 700; color: #fff; }
+.plan-hint { margin: 0; padding: 6px var(--s-3); border: 1px dashed var(--line-strong); color: var(--text-dim); }
 .plan-effects { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px var(--s-3); }
 .plan-effect { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; font-size: 0.9375rem; line-height: 1.25; }
 .plan-effect .icon { color: var(--cyan); }
@@ -529,12 +530,12 @@ body[data-route='play']:has(.play-stage) .hud-backdrop { display: none; }
 .kid-switch.off .kid-switch-name { text-decoration: line-through; color: var(--text-dim); }
 .kid-switch.off .kid-switch-state { background: var(--text-faint); color: #03121c; }
 
-.btn.kid-next { width: 100%; min-height: 58px; font-size: 1.25rem; position: sticky; bottom: 0; z-index: 2; box-shadow: 0 0 0 6px var(--surface-solid); }
+.btn.kid-next { width: 100%; min-height: 56px; font-size: 1.25rem; }
 
 /* Small tools at the foot of the sidebar */
 .kid-side-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
-.slot-tools { margin-top: auto; padding-top: var(--s-2); border-top: 1px solid var(--line-soft); }
-.kid-tool { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 var(--s-2); border: 1px solid var(--line-soft); background: rgba(3, 7, 14, 0.5); color: var(--text); font-family: var(--font-body); font-size: 0.9375rem; text-decoration: none; }
+.slot-tools { min-width: 0; }
+.kid-tool { display: inline-flex; flex: 1 1 auto; justify-content: center; align-items: center; gap: 6px; min-height: 44px; padding: 0 var(--s-2); border: 1px solid var(--line-soft); background: rgba(3, 7, 14, 0.5); color: var(--text); font-family: var(--font-body); font-size: 0.9375rem; text-decoration: none; }
 .kid-tool:hover { border-color: var(--cyan-bright); color: #fff; background: var(--surface-2); }
 .kid-tool:focus-visible { outline: 3px solid var(--focus-color); outline-offset: 2px; }
 .kid-tool .icon { color: var(--cyan); }
@@ -542,7 +543,8 @@ body[data-route='play']:has(.play-stage) .hud-backdrop { display: none; }
 .real-sun-level { padding: 0 6px; background: var(--good); color: #02130d; font-size: 0.8125rem; }
 .real-sun-chip.busy .real-sun-level { background: var(--warn); color: #201400; }
 .real-sun-chip.stormy .real-sun-level { background: var(--danger); color: #2a0000; }
-.kid-side-tools .view-switch { min-height: 44px; padding: 0 var(--s-2); }
+.kid-side-tools .view-switch { flex: 1 1 auto; justify-content: center; min-height: 44px; padding: 0 var(--s-2); }
+.kid-side-head .real-sun-chip { flex: none; }
 
 /* Mission details drawer */
 .kid-drawer-backdrop { position: fixed; inset: 0; z-index: 150; display: flex; justify-content: flex-end; background: rgba(2, 5, 10, 0.6); }
@@ -580,6 +582,7 @@ body[data-route='play']:has(.play-stage) .hud-backdrop { display: none; }
   .play-grid.is-cadet, .play-grid.is-cadet:has(.play-3d-mount:not([hidden])) { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'stage' 'side'; grid-template-rows: clamp(240px, 38dvh, 420px) auto; }
   .play-grid.is-cadet:has(.play-3d-mount:not([hidden])) { grid-template-rows: clamp(360px, 60dvh, 640px) auto; }
   .kid-side { overflow: visible; }
+  .kid-side-scroll { overflow: visible; }
 }
 /* ---- Phones: the page is one screen. Outpost on top, the sidebar becomes a bottom sheet that folds away. ---- */
 @media (max-width: 640px) {
@@ -590,7 +593,13 @@ body[data-route='play']:has(.play-stage) .hud-backdrop { display: none; }
     gap: var(--s-2);
     grid-template-rows: minmax(150px, 1fr) auto;
   }
-  .kid-side { max-height: max(50dvh, calc(var(--play-h) - 280px)); overflow-y: auto; gap: var(--s-2); padding: var(--s-2) var(--s-3); }
+  .kid-side { max-height: max(50dvh, calc(var(--play-h) - 280px)); overflow: hidden; gap: 6px; padding: var(--s-2) var(--s-3); }
+  .kid-side-scroll { overflow-y: auto; gap: 6px; }
+  .kid-side-foot { gap: 6px; }
+  .kid-day-meter { display: none; }
+  .kid-side-tools { flex-wrap: nowrap; overflow-x: auto; gap: 4px; }
+  .kid-side-tools .kid-tool, .kid-side-tools .view-switch { flex: 0 0 auto; min-height: 44px; font-size: 0.875rem; padding: 0 6px; }
+  .kid-side-tools .view-switch-track { display: none; }
   /* Cards shrink to a picture and a name; what a plan gets and costs shows in the preview once it is tapped. */
   .plan-card-chips { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   .plan-card { grid-template-areas: 'art title'; }
@@ -626,15 +635,20 @@ body[data-route='play']:has(.play-stage) .hud-backdrop { display: none; }
   .plan-preview { padding: 6px var(--s-2); }
   .kid-today-title { font-size: 0.9375rem; }
   .btn.kid-next { min-height: 54px; }
-  .kid-side-tools { flex-wrap: nowrap; overflow-x: auto; }
-  .kid-tool { flex: none; }
-  .play-grid.is-cadet.sheet-closed :is(.plan-cards, .plan-preview, .kid-today-title, .kid-side-tools) { display: none; }
+  .play-grid.is-cadet.sheet-closed :is(.slot-today, .slot-tools) { display: none; }
   .play-grid.is-cadet .view-toggle { left: auto; right: 6px; bottom: 6px; }
   .play-grid.is-cadet .view-toggle .chip { flex: none; min-height: 36px; font-size: 0.75rem; }
   .play-grid.is-cadet .outpost3d-hud { display: none; }
   .kid-event .kid-event-story { grid-template-columns: 1fr; }
   .kid-event-art { width: 64px; height: 64px; }
   .kid-event-art .icon { width: 40px; height: 40px; }
+}
+/* End of mission: nothing may sit on top of the button that leads to the debrief. */
+.play-stage:has(.scene-end) .view-toggle { display: none; }
+@media (max-width: 640px) {
+  .play-grid.is-cadet .scene-end { gap: var(--s-2); padding: var(--s-3); }
+  .play-grid.is-cadet .scene-end-cheer, .play-grid.is-cadet .scene-end-kicker { display: none; }
+  .play-grid.is-cadet .scene-end-why { font-size: 1rem; line-height: 1.35; }
 }
 @media (prefers-reduced-motion: reduce) {
   .kid-meter, .plan-card { transition: none; }

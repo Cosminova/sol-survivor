@@ -1,56 +1,78 @@
-/* Tutorial coach marks: four dim panels leave a hole over ONE thing, a ring lights it up, and a bright
-   speech bubble with an arrow says one sentence. Sits above dialogs so it can coach an event card too. */
+/* Tutorial coach marks. Small on purpose: a glowing ring around ONE thing, a light dim on the rest (the
+   outpost and the sidebar stay visible), and one compact speech bubble with an arrow. Sits above dialogs
+   so it can coach an event card too. On phones the bubble is a short bar pinned to the top or bottom edge. */
 .coach { position: fixed; inset: 0; z-index: 600; pointer-events: none; }
-.coach-dim { position: fixed; background: rgba(2, 5, 10, 0.74); pointer-events: auto; }
-.coach-cover { position: fixed; pointer-events: auto; }
-.coach-cover[hidden], .coach-ring[hidden] { display: none; }
+.coach-dim { position: fixed; background: rgba(0, 0, 0, 0.35); pointer-events: auto; }
+.coach-ring[hidden] { display: none; }
 .coach-ring {
   position: fixed;
   pointer-events: none;
   border: 3px solid #ffe066;
-  box-shadow: 0 0 0 3px rgba(2, 5, 10, 0.85), 0 0 22px 4px rgba(255, 224, 102, 0.55);
+  box-shadow: 0 0 0 2px rgba(2, 5, 10, 0.9), 0 0 16px 3px rgba(255, 224, 102, 0.6);
   animation: coach-pulse 1.4s ease-in-out infinite;
 }
-@keyframes coach-pulse { 50% { box-shadow: 0 0 0 3px rgba(2, 5, 10, 0.85), 0 0 34px 10px rgba(255, 224, 102, 0.8); } }
+@keyframes coach-pulse { 50% { box-shadow: 0 0 0 2px rgba(2, 5, 10, 0.9), 0 0 26px 8px rgba(255, 224, 102, 0.85); } }
 
 .coach-bubble {
   position: fixed;
-  width: min(380px, calc(100vw - 16px));
-  padding: var(--s-4);
+  width: min(280px, calc(100vw - 32px));
+  padding: 10px 12px;
   display: grid;
-  gap: var(--s-2);
+  gap: 6px;
   background: #f4fbff;
   color: #06131d;
-  border: 3px solid #ffe066;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
+  border: 2px solid #ffe066;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
   pointer-events: auto;
   font-family: var(--font-body);
 }
-.coach-arrow { position: absolute; width: 18px; height: 18px; margin-left: -9px; background: #f4fbff; border: 3px solid #ffe066; border-right: 0; border-bottom: 0; }
-.coach-bubble[data-side='below'] .coach-arrow { top: -12px; transform: rotate(45deg); }
-.coach-bubble[data-side='above'] .coach-arrow { bottom: -12px; transform: rotate(225deg); }
-.coach-bubble[data-side='over'] .coach-arrow { display: none; }
-.coach-count { margin: 0; font-family: var(--font-mono); font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #36566b; }
-.coach-text { margin: 0; font-size: 1.25rem; font-weight: 700; line-height: 1.4; color: #06131d; }
+.coach-arrow { position: absolute; width: 14px; height: 14px; background: #f4fbff; border: 2px solid #ffe066; border-right: 0; border-bottom: 0; }
+.coach-bubble[data-side='below'] .coach-arrow, .coach-bubble[data-side='bar-bottom'] .coach-arrow { top: -9px; margin-left: -7px; transform: rotate(45deg); }
+.coach-bubble[data-side='above'] .coach-arrow, .coach-bubble[data-side='bar-top'] .coach-arrow { bottom: -9px; margin-left: -7px; transform: rotate(225deg); }
+.coach-bubble[data-side='left'] .coach-arrow { right: -9px; margin-top: -7px; transform: rotate(135deg); }
+.coach-bubble[data-side='right'] .coach-arrow { left: -9px; margin-top: -7px; transform: rotate(-45deg); }
+.coach-bubble[data-side='corner'] .coach-arrow { display: none; }
+.coach-top { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); }
+.coach-count { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #36566b; }
+.coach-text { margin: 0; font-size: 1.0625rem; font-weight: 700; line-height: 1.35; color: #06131d; }
+.coach-why-text { margin: 0; padding-left: 8px; border-left: 3px solid #ffe066; font-size: 0.9375rem; line-height: 1.35; color: #1c3442; }
+.coach-why-text[hidden], .coach-why[hidden], .coach-next[hidden] { display: none; }
 .coach-extra:empty { display: none; }
-.coach-sun { padding: var(--s-2) var(--s-3); background: #06131d; color: var(--text); border-left: 4px solid var(--warn); }
+.coach-sun { padding: 4px 8px; background: #06131d; color: var(--text); border-left: 3px solid var(--warn); font-size: 0.9375rem; line-height: 1.3; }
 .coach-sun p { margin: 0; }
-.coach-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-2); margin-top: var(--s-1); }
-.coach-bubble .coach-next { min-height: 48px; background-color: #06131d; color: #fff; }
-.coach-bubble .coach-next:hover:not(:disabled) { background-color: #12344a; color: #fff; }
-.coach-bubble .coach-next[hidden] { display: none; }
-.coach-bubble .coach-skip { margin-left: auto; color: #06131d; text-decoration: underline; background: none; }
-.coach-bubble .coach-skip:hover:not(:disabled) { color: #06131d; background: rgba(6, 19, 29, 0.1); }
-.coach-bubble .btn:focus-visible { outline: 3px solid #0b62a8; outline-offset: 2px; box-shadow: none; }
+.coach-actions { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); }
+.coach-actions:not(:has(> :not([hidden]))) { display: none; }
+.coach-bubble button { font-family: var(--font-body); font-size: 0.9375rem; font-weight: 700; cursor: pointer; }
+.coach-next { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; margin-left: auto; padding: 0 14px; border: 0; background: #06131d; color: #fff; }
+.coach-next:hover { background: #12344a; }
+.coach-skip, .coach-why { min-height: 32px; padding: 0 6px; border: 0; background: none; color: #06131d; text-decoration: underline; }
+.coach-skip { margin: -4px -6px -4px 0; font-weight: 400 !important; }
+.coach-skip:hover, .coach-why:hover { background: rgba(6, 19, 29, 0.1); }
+.coach-bubble button:focus-visible { outline: 3px solid #0b62a8; outline-offset: 2px; }
+
+@media (max-width: 640px) {
+  .coach-bubble { width: calc(100vw - 32px); max-height: 25vh; overflow-y: auto; padding: 8px 10px; gap: 4px; }
+  .coach-text { font-size: 1rem; line-height: 1.3; }
+  .coach-next { min-height: 36px; }
+}
 
 .coach.still .coach-ring { animation: none; }
 :root[data-motion='reduced'] .coach-ring { animation: none; }
 @media (prefers-reduced-motion: reduce) { .coach-ring { animation: none; } }
 
-/* End-of-training card */
-.tutorial-recap .recap { display: grid; gap: var(--s-4); }
-.recap-lead { margin: 0; font-size: 1.1875rem; }
-.recap-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-3); }
-.recap-list li { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: var(--s-3); padding: var(--s-3) var(--s-4); border: 1px solid var(--line-soft); border-left: 4px solid var(--good); background: rgba(3, 7, 14, 0.5); font-size: 1.1875rem; font-weight: 700; line-height: 1.35; }
+/* End-of-training card: a little larger than a step, but the outpost stays visible behind it. */
+.modal-backdrop:has(.tutorial-recap) { background: rgba(0, 0, 0, 0.35); -webkit-backdrop-filter: none; backdrop-filter: none; }
+.modal.tutorial-recap { width: min(520px, 100%); padding: var(--s-4); }
+.tutorial-recap > h2 { font-size: 1.25rem; }
+.tutorial-recap .recap { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-3); }
+.tutorial-recap .recap-actions .btn { white-space: normal; height: auto; min-height: 48px; padding-block: 6px; text-align: center; }
+.recap-lead { margin: 0; }
+.recap-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-2); }
+.recap-list li { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: var(--s-3); padding: 6px var(--s-3); border: 1px solid var(--line-soft); border-left: 4px solid var(--good); background: rgba(3, 7, 14, 0.5); font-weight: 700; line-height: 1.3; }
 .recap-icon { display: inline-flex; color: var(--cyan-bright); }
-.recap-actions { gap: var(--s-3); }
+.recap-icon .icon { width: 24px; height: 24px; }
+.recap-actions { gap: var(--s-2); }
+@media (max-width: 640px) {
+  .modal.tutorial-recap { padding: var(--s-3); }
+  .recap-actions .btn { width: 100%; }
+}
