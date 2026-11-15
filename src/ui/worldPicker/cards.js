@@ -19,7 +19,7 @@ const factItem = (r) => h('div', { class: 'wp-fact', dataset: { fact: r.key }, t
  *   challenge?: (world: object) => (string|Node|null), effects?: (world: object) => (Node|Node[]|string|null) }} [opts]
  *   challenge/effects are the engine's worldChallenge/worldEffects, passed in by the loadout once they exist.
  */
-export function worldCard(world, { onChoose, selected = false, challenge, effects } = {}) {
+export function worldCard(world, { onChoose, chooseLabel = null, selected = false, challenge, effects } = {}) {
   const titleId = `wp-card-${world.id}`;
   const rows = factRows(world);
   const more = effects ? effects(world) : null;
@@ -40,7 +40,7 @@ export function worldCard(world, { onChoose, selected = false, challenge, effect
     onChoose ? h('button', {
       type: 'button', class: ['btn', selected ? 'btn-cyan' : 'btn-primary', 'wp-choose'], 'aria-pressed': String(selected),
       onclick: () => onChoose(world),
-    }, selected ? `${world.name} chosen` : `Land on ${world.name}`) : null);
+    }, chooseLabel ?? (selected ? `${world.name} chosen` : `Land on ${world.name}`)) : null);
 }
 
 /** Card for a moon a gateway promises but that has no world profile yet. */

@@ -155,15 +155,23 @@ function watchGlobe() {
 export const globeAvailable = () => !globe.failed && webglAvailable();
 
 /**
- * @param {{ body: 'mars'|'moon', selectedId: string|null, onSelect: (siteId: string) => void }} opts
+ * @param {{ body: 'mars'|'moon', worldId?: string|null, worldName?: string, selectedId: string|null, onSelect: (siteId: string) => void }} opts
+ *   worldId: any world from src/data/worlds.js (the Cosminova sky picker); it wears the game's own painted map.
  * @returns {HTMLElement} a slot holding the (persistent) 3D globe
  */
-export function globePicker({ body, selectedId, onSelect }) {
-  const slot = el(`globe3d globe3d-${body}`, { role: 'group', 'aria-label': `${body === 'mars' ? 'Mars' : 'Moon'} globe from NASA Trek mosaics. Tap a pin to choose a landing site.` });
+export function globePicker({ body, worldId = null, worldName = null, selectedId, onSelect }) {
+  const other = worldId && worldId !== 'moon' && worldId !== 'mars';
+  const name = other ? (worldName ?? 'This world') : body === 'mars' ? 'Mars' : 'Moon';
+  const slot = el(`globe3d globe3d-${other ? 'world' : body}`, {
+    role: 'group',
+    'aria-label': other
+      ? `${name} globe, drawn by the game from NASA numbers. Drag to turn it. Tap a pin to choose a landing site.`
+      : `${name} globe from NASA Trek mosaics. Tap a pin to choose a landing site.`,
+  });
   const credit = el('globe3d-credit');
-  credit.textContent = body === 'mars' ? 'Viking MDIM 2.1 · NASA Mars Trek' : 'LRO WAC · NASA Moon Trek';
+  credit.textContent = other ? 'Game drawing from NASA numbers · not a photo' : body === 'mars' ? 'Viking MDIM 2.1 · NASA Mars Trek' : 'LRO WAC · NASA Moon Trek';
   globe.onSelect = onSelect;
-  globe.sel = { body, siteId: selectedId };
+  globe.sel = { body, worldId: other ? worldId : null, siteId: selectedId };
   if (!globe.wrap) {
     const wrap = el('globe3d-wrap');
     wrap.addEventListener('select-site', (ev) => globe.onSelect?.(ev.detail.siteId));

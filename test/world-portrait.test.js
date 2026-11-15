@@ -36,6 +36,13 @@ describe('noiseField', () => {
   });
 });
 
+describe('globe map', () => {
+  it('wraps east to west with no seam, so the 3D globe has no visible join', () => {
+    const f = noiseField('trappist-1-b', 18, { wrapX: true });
+    for (const v of [0.1, 0.5, 0.9]) expect(f(1, v)).toBeCloseTo(f(0, v), 10);
+  });
+});
+
 describe('systemLayout', () => {
   it('places TRAPPIST-1 planets left to right by orbit size, inside the strip', () => {
     const worlds = worldsInSystem(worldById('trappist-1-e')?.system ?? 'TRAPPIST-1');

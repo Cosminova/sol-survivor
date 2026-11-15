@@ -33,10 +33,11 @@ export function seeded(name) {
 }
 
 /** Smooth value noise on a grid, in 0..1. Exported for tests. */
-export function noiseField(seedName, cells = NOISE_CELLS) {
+export function noiseField(seedName, cells = NOISE_CELLS, { wrapX = false } = {}) {
   const rand = seeded(seedName);
   const grid = Array.from({ length: (cells + 1) * (cells + 1) }, rand);
-  const at = (x, y) => grid[y * (cells + 1) + x];
+  // wrapX: the last column repeats the first, so a map wrapped round a globe has no seam.
+  const at = (x, y) => grid[y * (cells + 1) + (wrapX && x === cells ? 0 : x)];
   return (u, v) => {
     const x = clamp01(u) * cells;
     const y = clamp01(v) * cells;
@@ -180,4 +181,42 @@ export function systemPortrait(target, worlds) {
   }
   return h('figure', { class: 'wp-system-portrait' }, el,
     h('figcaption', { class: 'wp-portrait-caption' }, `${target.name} in its real colour. ${PORTRAIT_CAPTION}`));
+}
+
+const MAP_W = 1024;
+const MAP_H = 512;
+
+/**
+ * Our own equirectangular map of a world (longitude across, latitude down), for wrapping the 3D globe.
+ * Same colours and rules as the card drawing; noise wraps east-west so the globe has no seam.
+ */
+export function worldMapCanvas(world, width = MAP_W, height = MAP_H) {
+  const look = portraitLook(world);
+  const noise = noiseField(world.id, NOISE_CELLS * 2, { wrapX: true });
+  const detail = noiseField(`${world.id}:detail`, NOISE_CELLS * 6, { wrapX: true });
+  const cols = {
+    ground: rgb(look.ground), rock: rgb(look.rock), ice: rgb(look.ice),
+    liquid: look.liquid ? rgb(look.liquid) : null, cloud: look.glow ? rgb(look.glow) : null,
+  };
+  const el = document.createElement('canvas');
+  el.width = width;
+  el.height = height;
+  const ctx = el.getContext('2d');
+  const img = ctx.createImageData(width, height);
+  for (let y = 0; y < height; y += 1) {
+    const v = y / (height - 1);
+    const polar = Math.abs(1 - 2 * v);
+    for (let x = 0; x < width; x += 1) {
+      const u = x / width;
+      const fine = detail(u, v);
+      const c = surfaceColour(look, cols, 0.65 * noise(u, v) + 0.35 * fine, fine, polar);
+      const o = 4 * (y * width + x);
+      img.data[o] = c[0];
+      img.data[o + 1] = c[1];
+      img.data[o + 2] = c[2];
+      img.data[o + 3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  return el;
 }

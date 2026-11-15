@@ -117,3 +117,13 @@
   .wp-fact { grid-template-columns: 1fr; gap: 0.1rem; }
 }
 .wp-target-list.is-stars { max-height: 24rem; overflow-y: auto; padding-right: 4px; }
+
+/* Planet up close: the draggable 3D globe on the left, its facts and landing sites on the right. */
+.wp-planet-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(16rem, 1fr); gap: 1rem; align-items: start; }
+.wp-planet-globe { min-width: 0; }
+.wp-planet-side { display: grid; gap: 0.6rem; min-width: 0; }
+.wp-planet-title { margin: 0; }
+.wp-sites-title { margin: 0.4rem 0 0; }
+@media (max-width: 860px) {
+  .wp-planet-grid { grid-template-columns: 1fr; }
+}

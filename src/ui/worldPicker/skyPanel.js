@@ -6,6 +6,7 @@ import { OBSERVERS, observerById, skyTargets, worldsForTarget, whereInSky } from
 import { systemPortrait } from './portrait.js';
 import { worldCard, missingCard, siteList } from './cards.js';
 import { skyStage, skyAvailable, skyScene, loadSkyAssets } from './skyHost.js';
+import { globePicker, globeAvailable } from '../outpost3d/host.js';
 import { eveningInstant, resolveSites } from './worldSites.js';
 
 const todayIso = () => {
@@ -14,7 +15,7 @@ const todayIso = () => {
 };
 
 // Picker state that must survive the loadout rebuilding its panels on every change.
-const ui = { view: 'sky', targetId: null, observerId: OBSERVERS[0].id, night: todayIso(), stars: null, loadError: null, flying: false, lastSkyKey: null };
+const ui = { view: 'sky', targetId: null, planetId: null, observerId: OBSERVERS[0].id, night: todayIso(), stars: null, loadError: null, flying: false, lastSkyKey: null };
 
 const currentTargets = () => {
   const observer = observerById(ui.observerId);
@@ -117,16 +118,19 @@ export function skyPanel(fp, onChange, hooks = {}) {
     } finally {
       ui.flying = false;
     }
-    ui.view = 'system';
     skyScene()?.setPaused(true);
     status.textContent = '';
     announce(`Arrived at ${target.name}.`);
+    const { worlds } = worldsForTarget(target, WORLDS);
+    if (target.kind === 'body' && !target.gateway && worlds.length === 1) { visitWorld(worlds[0]); return; }
+    ui.view = 'system';
     paint();
     root.querySelector('.wp-system-title')?.focus();
   }
 
   function backToSky() {
     ui.view = 'sky';
+    ui.planetId = null;
     const scene = skyScene();
     scene?.resetView();
     scene?.setPaused(false);
@@ -140,21 +144,55 @@ export function skyPanel(fp, onChange, hooks = {}) {
     onChange({ picker: 'sky', body: world.analog, worldId: world.id, siteId: sites[0]?.id ?? fp.siteId });
   };
 
+  // Land on a world: its 3D globe (drag to turn, tap a pin) with its facts and landing sites at the side.
+  function visitWorld(world) {
+    ui.planetId = world.id;
+    ui.view = 'planet';
+    chooseWorld(world);
+    paint();
+    root.querySelector('.wp-planet-title')?.focus();
+  }
+
+  function backToSystem() {
+    const target = currentTargets().find((t) => t.id === ui.targetId);
+    if (!target || (target.kind === 'body' && !target.gateway)) { backToSky(); return; }
+    ui.view = 'system';
+    ui.planetId = null;
+    paint();
+    root.querySelector('.wp-system-title')?.focus();
+  }
+
+  function planetView(world, target) {
+    const sites = resolveSites(world);
+    const pickSite = (siteId) => onChange({ picker: 'sky', body: world.analog, worldId: world.id, siteId });
+    const single = target.kind === 'body' && !target.gateway;
+    return h('section', { class: 'wp-planet', 'aria-label': `${world.name} up close` },
+      h('div', { class: 'wp-system-head' },
+        h('h3', { class: 'wp-planet-title', tabindex: '-1' }, world.name),
+        h('button', { type: 'button', class: 'btn btn-ghost wp-back', onclick: backToSystem }, single ? 'Back to the night sky' : `Back to ${target.name}`)),
+      h('div', { class: 'wp-planet-grid' },
+        globeAvailable() && !sites.practice
+          ? h('div', { class: 'wp-planet-globe' },
+            globePicker({ body: world.analog, worldId: world.id, worldName: world.name, selectedId: fp.siteId, onSelect: pickSite }),
+            h('p', { class: 'wp-stage-hint' }, 'Drag to turn the planet. Tap a glowing pin to pick where you land.'))
+          : null,
+        h('div', { class: 'wp-planet-side' },
+          worldCard(world, { challenge: hooks.challenge, effects: hooks.effects }),
+          h('h4', { class: 'wp-sites-title' }, 'Landing sites'),
+          siteList({ world, sites: sites.sites, selectedId: fp.siteId, practice: sites.practice, onSelect: pickSite }))));
+  }
+
   function systemView(target) {
     const { worlds, missing } = worldsForTarget(target, WORLDS);
-    const chosen = worlds.find((w) => w.id === fp.worldId) ?? null;
-    const sites = chosen ? resolveSites(chosen) : null;
     return h('section', { class: 'wp-system', 'aria-label': `Worlds at ${target.name}` },
       h('div', { class: 'wp-system-head' },
         h('div', null, systemHeader(target)),
         h('button', { type: 'button', class: 'btn btn-ghost wp-back', onclick: backToSky }, 'Back to the night sky')),
       target.kind === 'star' && worlds.length ? systemPortrait(target, worlds) : null,
       h('div', { class: 'wp-cards' },
-        worlds.map((w) => worldCard(w, { onChoose: chooseWorld, selected: w.id === fp.worldId, challenge: hooks.challenge, effects: hooks.effects })),
+        worlds.map((w) => worldCard(w, { onChoose: visitWorld, chooseLabel: `Visit ${w.name}`, selected: w.id === fp.worldId, challenge: hooks.challenge, effects: hooks.effects })),
         missing.map(missingCard)),
-      chosen ? h('div', { class: 'wp-site-step' },
-        h('h3', null, `Pick a landing site on ${chosen.name}`),
-        siteList({ world: chosen, sites: sites.sites, selectedId: fp.siteId, practice: sites.practice, onSelect: (siteId) => onChange({ picker: 'sky', siteId }) })) : null);
+      null);
   }
 
   function chosenStrip() {
@@ -166,8 +204,13 @@ export function skyPanel(fp, onChange, hooks = {}) {
   function paint() {
     const targets = currentTargets();
     const target = targets.find((t) => t.id === ui.targetId);
+    const planet = ui.view === 'planet' && target && ui.planetId ? worldById(ui.planetId) : null;
     const inSystem = ui.view === 'system' && target;
-    stage.hidden = Boolean(inSystem);
+    stage.hidden = Boolean(inSystem || planet);
+    if (planet) {
+      mount(body, planetView(planet, target));
+      return;
+    }
     if (inSystem) {
       mount(body, systemView(target));
       return;

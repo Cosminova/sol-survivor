@@ -27,7 +27,9 @@ import {
   Vector3,
   WebGLRenderer,
 } from 'three';
-import { SITES } from '../../data/sites.js';
+import { SITES, sitesForWorld } from '../../data/sites.js';
+import { worldById } from '../../data/worlds.js';
+import { worldMapCanvas, portraitLook } from '../worldPicker/portrait.js';
 import { loadMosaicCanvas } from './mosaic.js';
 import { advanceDrag, clamp, DEG, easeInOut, hash2, lerp, pointerReleased, UI } from './sceneUtil.js';
 
@@ -66,6 +68,7 @@ export function latLonToVec(lat, lon, r = 1) {
 export class PlanetScene {
   constructor() {
     this.body = null;
+    this.key = null; // 'moon' | 'mars' | a world id
     this.siteId = null;
     this.pins = [];
     this.spin = 0;
@@ -234,21 +237,25 @@ export class PlanetScene {
     this.container = null;
   }
 
-  /** @param {{ body: 'mars'|'moon', siteId: string|null }} sel */
+  /**
+   * @param {{ body: 'mars'|'moon', worldId?: string|null, siteId: string|null }} sel
+   * Moon and Mars wear the NASA Trek mosaics. Any other world (from the Cosminova sky picker) wears our own map,
+   * painted from its facts by src/ui/worldPicker/portrait.js, with pins for its landing sites.
+   */
   update(sel) {
+    const world = sel?.worldId && sel.worldId !== 'moon' && sel.worldId !== 'mars' ? worldById(sel.worldId) : null;
     const body = sel?.body === 'moon' ? 'moon' : 'mars';
-    const bodyChanged = body !== this.body;
+    const key = world ? world.id : body;
+    const keyChanged = key !== this.key;
     const siteChanged = sel?.siteId !== this.siteId;
+    this.key = key;
     this.body = body;
     this.siteId = sel?.siteId ?? null;
-    if (bodyChanged) {
-      this.tiltGroup.rotation.z = -(TILT[body] ?? 0);
-      this.glow.visible = body === 'mars';
-      this.globeMat.color.set(body === 'moon' ? 0xbcbcc0 : 0xd4987a);
-      this._loadTexture(body);
-      this._buildPins(body);
+    if (keyChanged) {
+      if (world) this._wearWorld(world);
+      else this._wearBody(body);
     }
-    if (bodyChanged || siteChanged) this._facePin();
+    if (keyChanged || siteChanged) this._facePin();
     for (const p of this.pins) {
       const sel2 = p.site.id === this.siteId;
       p.dot.material = sel2 ? this.pinMats.selected : this.pinMats.idle;
@@ -256,6 +263,34 @@ export class PlanetScene {
       p.halo.visible = sel2;
     }
     this._tick();
+  }
+
+  _wearBody(body) {
+    this.tiltGroup.rotation.z = -(TILT[body] ?? 0);
+    this.glow.visible = body === 'mars';
+    this.glowMat.uniforms.uColor.value.set(0xd9a071);
+    this.globeMat.color.set(body === 'moon' ? 0xbcbcc0 : 0xd4987a);
+    this._loadTexture(body);
+    this._buildPins(SITES.filter((s) => s.body === body));
+  }
+
+  _wearWorld(world) {
+    this.textureKey = world.id; // cancels any mosaic still loading
+    const look = portraitLook(world);
+    this.tiltGroup.rotation.z = 0; // axial tilt is unknown for exoplanets; moons sit upright
+    this.glow.visible = Boolean(look.glow);
+    if (look.glow) this.glowMat.uniforms.uColor.value.set(look.glow);
+    const t = new CanvasTexture(worldMapCanvas(world));
+    t.colorSpace = SRGBColorSpace;
+    this.globeMat.map?.dispose?.();
+    this.globeMat.bumpMap?.dispose?.();
+    this.globeMat.map = t;
+    this.globeMat.bumpMap = t;
+    this.globeMat.bumpScale = look.glow ? 0.004 : 0.01;
+    this.globeMat.color.set(0xffffff);
+    this.globeMat.needsUpdate = true;
+    this._buildPins(sitesForWorld(world.id));
+    this._render();
   }
 
   async _loadTexture(body) {
@@ -280,14 +315,14 @@ export class PlanetScene {
     this._render();
   }
 
-  _buildPins(body) {
+  _buildPins(sites) {
     for (const p of this.pins) { this.pinGroup.remove(p.group); p.group.traverse((o) => o.geometry?.dispose?.()); }
     this.pins = [];
     const dotGeo = new SphereGeometry(0.022, 12, 8);
     const ringGeo = new RingGeometry(0.045, 0.06, 32);
     const haloGeo = new SphereGeometry(0.06, 12, 8);
     const hitGeo = new SphereGeometry(0.11, 8, 6);
-    for (const site of SITES.filter((s) => s.body === body)) {
+    for (const site of sites) {
       const group = new Group();
       const pos = latLonToVec(site.lat, site.lon, 1.012);
       group.position.copy(pos);
@@ -304,7 +339,7 @@ export class PlanetScene {
   }
 
   _facePin() {
-    const site = SITES.find((s) => s.id === this.siteId);
+    const site = this.pins.find((p) => p.site.id === this.siteId)?.site;
     if (!site) return;
     // rotation about Y that brings the site's longitude to +z (facing the camera)
     const target = -Math.PI / 2 - site.lon * DEG;
